@@ -3,7 +3,7 @@
 public class StudentSkill
 {
     public int Id { get; set; } //pk
-    public int StudentUserId { get; set; } //whcih student own this skill (fk) studentProfiles.UserId
+    public string StudentUserId { get; set; } = string.Empty; //whcih student own this skill (fk) studentProfiles.UserId
     public int SkillId { get; set; } // fk to skills.id
 
     public string Source { get; set; } = "Manual"; // Manual | Extracted from the cv or not

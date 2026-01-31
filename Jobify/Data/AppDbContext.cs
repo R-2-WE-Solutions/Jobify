@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // ✅ ADDED
 using Jobify.Api.Models;
 
 namespace Jobify.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<IdentityUser> // 🔴 CHANGED
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<User> Users => Set<User>();
     public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<StudentSkill> StudentSkills => Set<StudentSkill>();
@@ -18,10 +19,14 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>().HasIndex(x => x.Email).IsUnique();
+        base.OnModelCreating(modelBuilder); // ✅ ADDED (IMPORTANT)
 
+        // ❌ REMOVED (Identity already enforces unique email)
+        // modelBuilder.Entity<User>().HasIndex(x => x.Email).IsUnique();
+
+        // 🔴 CHANGED: User → IdentityUser
         modelBuilder.Entity<StudentProfile>()
-            .HasOne<User>()
+            .HasOne<IdentityUser>()          
             .WithOne()
             .HasForeignKey<StudentProfile>(x => x.UserId);
 

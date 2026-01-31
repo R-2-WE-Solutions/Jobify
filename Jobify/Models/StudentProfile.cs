@@ -6,7 +6,7 @@ namespace Jobify.Api.Models;
 public class StudentProfile
 {
     [Key]
-    public int UserId { get; set; } //pk for the studentprofile, fk for Users.Id- links profile to user
+    public string UserId { get; set; } //pk for the studentprofile, fk for Users.Id- links profile to user
 
     public string? FullName { get; set; }
     public string? University { get; set; }

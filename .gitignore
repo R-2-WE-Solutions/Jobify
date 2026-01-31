@@ -1,3 +1,19 @@
 .vs/
 bin/
 obj/
+*.csproj.user
+# Environment / secrets
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+
+# Environment variables
+.env
+
+# ASP.NET Core secrets
+appsettings.json
+appsettings.*.json
+!appsettings.Development.example.json
+
+# Visual Studio user-specific files
+*.csproj.user
