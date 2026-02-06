@@ -46,7 +46,6 @@ Jobify/
 │   ├── Models/
 │   ├── Services/
 │   │   ├── JwtService.cs
-│   │   └── AuthService.cs
 │   ├── Program.cs
 │   └── Jobify.csproj
 │
