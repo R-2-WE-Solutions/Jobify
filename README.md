@@ -2,40 +2,41 @@
 
 # Jobify – Student Job Matching Platform
 
-**Jobify** is a full-stack web application designed to help **students discover relevant job and internship opportunities** through **skill-based matching**.
-The platform supports secure authentication, opportunity browsing, and an intelligent recommendation system.
+**Jobify** is a full-stack web application designed to help **students discover relevant job and internship opportunities** using **skill-based matching**.
+The system provides secure authentication, opportunity management, and an intelligent recommendation engine.
 
 ---
 
-## Tech Stack
+## 🚀 Tech Stack
 
 ### Backend
 
 * **ASP.NET Core (C#)** – RESTful API
-* **Entity Framework Core** – Database ORM
-* **SQL Server** – Relational database
-* **JWT Authentication** – Secure session handling
+* **Entity Framework Core** – ORM
+* **SQL Server** – Database
+* **JWT Authentication** – Secure access tokens
 * **Google & GitHub OAuth** – Social login
-* **Role-based authorization** – Student / Recruiter
+* **DTOs (Data Transfer Objects)** – Clean API contracts
 
 ### Frontend
 
 * **React** – UI development
-* **Vite** – Fast development & build tool
-* **CSS** – Component-based styling
+* **Vite** – Development & build tool
+* **Plain CSS** – Styling
 * **React Router** – Client-side routing
 
 ### Tools
 
 * **Git & GitHub** – Version control
 * **Visual Studio / VS Code** – Development
-* **Swagger** – API testing
+* **Postman** – API testing
 * **Figma** – UI/UX design
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
+```
 Jobify/
 ├── Jobify/                      # Backend (ASP.NET Core)
 │   ├── Controllers/
@@ -45,6 +46,7 @@ Jobify/
 │   ├── Models/
 │   ├── Services/
 │   │   ├── JwtService.cs
+│   │   └── AuthService.cs
 │   ├── Program.cs
 │   └── Jobify.csproj
 │
@@ -54,109 +56,95 @@ Jobify/
 ├── Jobify.sln
 ├── package.json
 └── README.md
+```
 
 ---
 
-## Authentication & Login Flow
+## 🔐 Authentication & Authorization
 
-Jobify implements a **secure multi-option authentication system**:
+### Login & Signup
 
-### Student Login
-
-* Email & password signup/login
+* Email and password authentication
 * Google OAuth
 * GitHub OAuth
-* JWT token stored on successful login
 
-### Recruiter Login
+### JWT Service
 
-* Email & password signup
-* Requires **admin approval** before accessing recruiter features
+* Generates and validates JWT access tokens
+* Embeds user ID and role in the token
+* Used to protect secured API endpoints
 
-### Password Management
+### DTO Usage
 
-* Forgot password flow
-* Token-based password reset via email
+* DTOs are used to:
+
+  * Validate incoming requests
+  * Prevent exposing database entities
+  * Keep API responses clean and secure
 
 ---
 
-## User Roles
+## 👤 User Roles
 
 * **Student**
 
-  * Create and update profile
-  * Add skills, portfolio, and experience
+  * Manage profile and skills
   * Browse opportunities
-  * Receive job recommendations
+  * Receive personalized recommendations
 
 * **Recruiter**
 
-  * Create and manage opportunities
+  * Create and manage job opportunities
   * Define required and mandatory skills
   * Review applicants
+  * Requires admin approval
 
 ---
 
-## Opportunity Pages
+## 📄 Opportunity Management
 
-Recruiters can create **job or internship opportunities** with:
+Recruiters can:
 
-* Title & description
-* Required skills
-* Skill weights (importance)
-* Mandatory skills
+* Create job and internship opportunities
+* Define skill requirements and importance levels
+* Add mandatory skills
 
 Students can:
 
-* Browse all available opportunities
-* View detailed opportunity pages
-* Be matched automatically through the recommendation system
+* Browse all opportunities
+* View opportunity details
+* Be matched automatically via recommendations
 
 ---
 
-## Recommendation System
+## 🤖 Recommendation System
 
-Jobify includes a **skill-based recommendation engine** that matches students to opportunities.
+Jobify includes a **skill-based recommendation engine** that:
 
-### How it works:
-
-1. **Skill normalization**
-
-   * Handles synonyms (e.g. `js` → `javascript`)
-2. **Mandatory skill filtering**
-
-   * Opportunities missing required skills are excluded
-3. **Weighted skill matching**
-
-   * Matches student skills with job skill importance
-4. **Threshold filtering**
-
-   * Only opportunities above a minimum match score are recommended
-5. **Ranking**
-
-   * Results are sorted by best match score
-
-The system returns a **ranked list of recommended opportunities** for each student.
+1. Normalizes skill names
+2. Filters out opportunities missing mandatory skills
+3. Calculates weighted match scores
+4. Applies a minimum match threshold
+5. Returns ranked recommendations
 
 ---
 
-## Architecture Overview
+## 🧠 Backend Architecture
 
-* **Controllers** → Handle HTTP requests and responses
-* **Services** → Business logic (auth, tokens, recommendations)
+* **Controllers** → API endpoints
+* **Services** → Business logic (auth, JWT, recommendations)
+* **DTOs** → Request/response models
 * **Models** → Database entities
-* **EF Core Migrations** → Database versioning
-* **Frontend Pages** → User interaction & flows
+* **EF Core Migrations** → Schema management
 
 ---
 
-## Features Implemented
+## ✅ Implemented Features
 
-* Secure authentication (JWT + OAuth)
-* Role-based access control
+* Secure JWT-based authentication
+* OAuth login (Google & GitHub)
+* Role-based authorization
 * Opportunity creation & browsing
-* Skill-based job recommendation system
-* Password reset functionality
-* Clean frontend routing and UI
-
+* Skill-based recommendation system
+* Clean separation using DTOs
 
