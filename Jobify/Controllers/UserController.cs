@@ -19,13 +19,7 @@ public class UsersController : ControllerBase
 
     // GET: /api/users
     // Returns a list of users with basic identity info + roles.
-    //
-    // Notes:
-    // - Useful for admin dashboards, debugging, and internal tooling.
-    // - Currently not protected; recommended to secure with [Authorize] or role-based policy.
-    //
-    // Security recommendation (later):
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetUsers()
     {
@@ -58,10 +52,7 @@ public class UsersController : ControllerBase
     //
     // Notes:
     // - Suitable for user detail pages / admin views.
-    // - Currently not protected; recommended to secure and/or restrict access.
-    //
-    // Security recommendation (later): 
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(string id)
     {

@@ -7,15 +7,14 @@ import ResetPasswordPage from "./pages/LoginPage/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/LoginPage/OAuthCallbackPage";
 import EmailConfirmed from "./pages/LoginPage/EmailConfirmed";
 
-
 import AppLayout from "./layout/AppLayout";
 
 import { BrowseOpportunities } from "./pages/BrowseOpportunities";
+import ProfilePage from "./pages/ProfilePage";
 
 // placeholder pages (create later if you want)
 const Dashboard = () => <div>Dashboard</div>;
 const Matches = () => <div>Matches</div>;
-const Profile = () => <div>Profile</div>;
 
 export default function App() {
     return (
@@ -36,11 +35,11 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/browse" element={<BrowseOpportunities />} />
                 <Route path="/matches" element={<Matches />} />
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     );
-}
+} 

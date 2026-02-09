@@ -4,6 +4,8 @@
 // App DB + services
 using Jobify.Api.Data;
 using Jobify.Api.Services;
+using Jobify.Api.Swagger;
+
 
 // Authentication / Authorization
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -178,6 +180,7 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    c.OperationFilter<FileUploadOperationFilter>();
 });
 
 var app = builder.Build();

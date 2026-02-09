@@ -14,13 +14,25 @@ public class StudentProfile
     public string? Bio { get; set; }
     public string? PortfolioUrl { get; set; }
 
-    //text fields to be filled manually or extarcttions- for sprint 1- later will be their own tables
+    //text fields
     public string? EducationText { get; set; }
     public string? ExperienceText { get; set; }
     public string? ProjectsText { get; set; }
     public string? InterestsText { get; set; }
     public string? CertificationsText { get; set; }
     public string? AwardsText { get; set; }
+
+    // ✅ Resume/CV upload
+    public string? ResumeFileName { get; set; }           // stored name on server
+    public string? ResumeOriginalFileName { get; set; }   // name user uploaded
+    public string? ResumeContentType { get; set; }
+    public DateTime? ResumeUploadedAtUtc { get; set; }
+
+    // ✅ University proof upload (enrollment / ID / doc)
+    public string? UniversityProofFileName { get; set; }
+    public string? UniversityProofOriginalFileName { get; set; }
+    public string? UniversityProofContentType { get; set; }
+    public DateTime? UniversityProofUploadedAtUtc { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

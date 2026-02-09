@@ -85,9 +85,7 @@ public class AuthController : ControllerBase
     }
 
 
-    // =====================================================
     // REGISTER (Student / Recruiter)
-    // =====================================================
     // Recruiter flow:
     // 1) Create Identity user (EmailConfirmed = false)
     // 2) Assign Recruiter role
@@ -168,7 +166,7 @@ public class AuthController : ControllerBase
             _db.RecruiterProfiles.Add(profile);
             await _db.SaveChangesAsync();
 
-            // Send confirmation email (failure should not destroy user creation)
+            // Send confirmation email
             try
             {
                 await SendRecruiterConfirmEmail(user);
@@ -190,13 +188,10 @@ public class AuthController : ControllerBase
             });
         }
 
-        // Students: you can choose to require email verification later too
         return Ok("User created successfully.");
     }
 
-    // =====================================================
     // RESEND CONFIRMATION EMAIL (Recruiter)
-    // =====================================================
     [HttpPost("resend-confirmation")]
     public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationRequest request)
     {
@@ -221,9 +216,8 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Confirmation email sent." });
     }
 
-    // =====================================================
     // CONFIRM EMAIL
-    // =====================================================
+
     // Confirms Identity email confirmation token.
     // If recruiter: EmailPending -> Pending (waiting admin)
     [HttpGet("confirm-email")]
@@ -278,9 +272,8 @@ public class AuthController : ControllerBase
     }
 
 
-    // =====================================================
     // LOGIN
-    // =====================================================
+
     // Recruiter login rules:
     // - must confirm email
     // - must be admin Verified
@@ -337,10 +330,7 @@ public class AuthController : ControllerBase
         });
     }
 
-    // =====================================================
     // ADMIN: list pending recruiters
-    // =====================================================
-    // Add Admin role later; for now it’s ready.
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/pending-recruiters")]
     public async Task<IActionResult> GetPendingRecruiters()
@@ -355,7 +345,6 @@ public class AuthController : ControllerBase
                 r.CompanyName,
                 r.EmailDomain,
 
-                // ✅ ADDED: links for admin review
                 r.WebsiteUrl,
                 r.LinkedinUrl,
                 r.InstagramUrl,
@@ -369,9 +358,7 @@ public class AuthController : ControllerBase
         return Ok(items);
     }
 
-    // =====================================================
     // ADMIN: approve recruiter
-    // =====================================================
     [Authorize(Roles = "Admin")]
     [HttpPost("admin/approve-recruiter/{userId}")]
     public async Task<IActionResult> ApproveRecruiter(string userId)
@@ -379,7 +366,7 @@ public class AuthController : ControllerBase
         var prof = await _db.RecruiterProfiles.FirstOrDefaultAsync(r => r.UserId == userId);
         if (prof == null) return NotFound("Recruiter profile not found.");
 
-        // ✅ avoid double approve + double email
+        // avoid double approve + double email
         if (prof.VerificationStatus == RecruiterVerificationStatus.Verified)
             return Ok(new { message = "Recruiter already approved." });
 
@@ -387,7 +374,7 @@ public class AuthController : ControllerBase
         prof.VerifiedAtUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        // ✅ get user email from Identity
+        // get user email from Identity
         var user = await _userManager.FindByIdAsync(userId);
         if (user != null && !string.IsNullOrWhiteSpace(user.Email))
         {
@@ -414,14 +401,12 @@ public class AuthController : ControllerBase
     }
 
 
-    // =====================================================
     // ADMIN: reject recruiter
-    // =====================================================
     [Authorize(Roles = "Admin")]
     [HttpPost("admin/reject-recruiter/{userId}")]
     public async Task<IActionResult> RejectRecruiter(string userId, [FromBody] RejectRecruiterRequest body)
     {
-        // 1) Get profile + user
+        // Get profile + user
         var prof = await _db.RecruiterProfiles.FirstOrDefaultAsync(r => r.UserId == userId);
         if (prof == null) return NotFound("Recruiter profile not found.");
 
@@ -432,7 +417,7 @@ public class AuthController : ControllerBase
             ? "Your organization could not be verified at this time."
             : body.Reason.Trim();
 
-        // 2) Send rejection email BEFORE deleting user
+        //Send rejection email BEFORE deleting user
         if (!string.IsNullOrWhiteSpace(user.Email))
         {
             try
@@ -450,7 +435,7 @@ public class AuthController : ControllerBase
             }
         }
 
-        // 3) Delete from DB (profile + identity user)
+        //Delete from DB (profile + identity user)
         await using var tx = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -477,9 +462,7 @@ public class AuthController : ControllerBase
     }
 
 
-    // =====================================================
     // FORGOT PASSWORD (EMAIL)
-    // =====================================================
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
@@ -515,9 +498,8 @@ public class AuthController : ControllerBase
         }
     }
 
-    // =====================================================
+
     // RESET PASSWORD
-    // =====================================================
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
@@ -541,9 +523,7 @@ public class AuthController : ControllerBase
         return Ok("Password reset successfully.");
     }
 
-    // =====================================================
     // EXTERNAL LOGIN (Google/GitHub)
-    // =====================================================
     [HttpGet("external/{provider}")]
     public async Task<IActionResult> ExternalLogin(string provider)
     {
@@ -645,9 +625,7 @@ public class AuthController : ControllerBase
         });
     }
 
-    // =====================================================
     // HELPERS
-    // =====================================================
     private async Task EnsureRoleExists(string role)
     {
         if (!await _roleManager.RoleExistsAsync(role))
@@ -935,9 +913,7 @@ public class AuthController : ControllerBase
     }
 
 
-    // =====================================================
     // DTOs
-    // =====================================================
     public record LoginRequest(string Email, string Password);
 
     public record RegisterRequest(

@@ -30,17 +30,6 @@ public class JwtTokenService
         _config = config;
     }
 
-    /**
-     * CreateToken
-     * -----------
-     * Generates a signed JWT for the given user and roles.
-     *
-     * @param user       Identity user for whom the token is issued
-     * @param roles      Roles assigned to the user (e.g. Student, Recruiter, Admin)
-     * @param expiresAt  OUT parameter returning the token expiration timestamp (UTC)
-     *
-     * @return           Serialized JWT string
-     */
     public string CreateToken(IdentityUser user, IList<string> roles, out DateTime expiresAt)
     {
         // Load JWT configuration section
@@ -54,13 +43,6 @@ public class JwtTokenService
         // Use HMAC SHA-256 for signing
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        /**
-         * Standard + custom claims included in the token:
-         * - sub  : unique user identifier
-         * - email: user's email
-         * - name : username or email
-         * - role : one claim per assigned role
-         */
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
@@ -85,7 +67,6 @@ public class JwtTokenService
             signingCredentials: creds
         );
 
-        // Serialize token to string for client consumption
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

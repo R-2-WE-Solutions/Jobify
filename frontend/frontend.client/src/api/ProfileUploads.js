@@ -1,0 +1,96 @@
+// src/api/profileUploads.js
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://localhost:5001";
+
+function authHeaders() {
+    const stored = JSON.parse(localStorage.getItem("jobify_user") || "{}");
+    const token = stored?.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// ---------- Resume ----------
+export async function uploadResume(file) {
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch(`${API_BASE}/api/profile/student/resume`, {
+        method: "POST",
+        headers: { ...authHeaders() }, // DO NOT set Content-Type manually
+        body: form,
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+}
+
+export async function deleteResume() {
+    const res = await fetch(`${API_BASE}/api/profile/student/resume`, {
+        method: "DELETE",
+        headers: { ...authHeaders() },
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+}
+
+export function downloadResume() {
+    // easiest: open file endpoint in new tab with auth as query is NOT safe.
+    // better: fetch blob with auth (below)
+}
+
+// ---------- University Proof ----------
+export async function uploadUniversityProof(file) {
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch(`${API_BASE}/api/profile/student/university-proof`, {
+        method: "POST",
+        headers: { ...authHeaders() },
+        body: form,
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+}
+
+export async function deleteUniversityProof() {
+    const res = await fetch(`${API_BASE}/api/profile/student/university-proof`, {
+        method: "DELETE",
+        headers: { ...authHeaders() },
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+}
+
+// ---------- Download helpers (works with JWT auth) ----------
+async function downloadWithAuth(url, fallbackName) {
+    const res = await fetch(url, { headers: { ...authHeaders() } });
+    if (!res.ok) throw new Error(await res.text());
+
+    const blob = await res.blob();
+
+    // try to read filename from header
+    const cd = res.headers.get("content-disposition") || "";
+    const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+    const fileName = decodeURIComponent(match?.[1] || fallbackName);
+
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+}
+
+export async function downloadResumeFile() {
+    return downloadWithAuth(`${API_BASE}/api/profile/student/resume`, "resume");
+}
+
+export async function downloadUniversityProofFile() {
+    return downloadWithAuth(
+        `${API_BASE}/api/profile/student/university-proof`,
+        "university_proof"
+    );
+}

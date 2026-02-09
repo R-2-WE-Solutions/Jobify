@@ -18,9 +18,7 @@ public class OpportunitiesController : ControllerBase
         _db = db;
     }
 
-    // =========================
     // GET LIST (PUBLIC)
-    // =========================
     // GET: /api/opportunities?q=&type=&level=&remote=&location=&skills=&minPay=&maxPay=&sort=&page=&pageSize=
     [HttpGet]
     public async Task<ActionResult<PagedResult<OpportunityCardDto>>> GetAll(
@@ -57,7 +55,6 @@ public class OpportunitiesController : ControllerBase
             );
         }
 
-        // ✅ FIX: Don't use ToString() in WHERE (EF can't translate it)
         // Parse the string into enum and compare enum-to-enum.
         if (!string.IsNullOrWhiteSpace(type))
         {
@@ -73,7 +70,6 @@ public class OpportunitiesController : ControllerBase
             }
         }
 
-        // ✅ FIX: Frontend sends Beginner/Intermediate/Senior but backend enum is Intern/Entry/Junior/Senior
         // Map UI -> enum, and also allow enum names.
         if (!string.IsNullOrWhiteSpace(level))
         {
@@ -171,9 +167,7 @@ public class OpportunitiesController : ControllerBase
         });
     }
 
-    // =========================
     // GET BY ID (PUBLIC)
-    // =========================
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OpportunityCardDto>> GetById(int id)
     {
@@ -206,9 +200,7 @@ public class OpportunitiesController : ControllerBase
         });
     }
 
-    // =========================
     // CREATE (RECRUITER ONLY)
-    // =========================
     [Authorize(Roles = "Recruiter")]
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreateOpportunityDto dto)
@@ -245,9 +237,7 @@ public class OpportunitiesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, new { opportunity.Id });
     }
 
-    // =========================
     // UPDATE (RECRUITER ONLY)
-    // =========================
     [Authorize(Roles = "Recruiter")]
     [HttpPut("{id:int}")]
     public async Task<ActionResult> Update(int id, [FromBody] UpdateOpportunityDto dto)
@@ -282,9 +272,7 @@ public class OpportunitiesController : ControllerBase
         return NoContent();
     }
 
-    // =========================
     // DELETE (RECRUITER ONLY)
-    // =========================
     [Authorize(Roles = "Recruiter")]
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id)
@@ -302,9 +290,7 @@ public class OpportunitiesController : ControllerBase
         return NoContent();
     }
 
-    // =========================
     // Helper: replace skills for an opportunity
-    // =========================
     private async Task ReplaceSkills(int opportunityId, List<string> skills)
     {
         // normalize

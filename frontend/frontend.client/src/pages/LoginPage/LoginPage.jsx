@@ -94,7 +94,6 @@ export default function LoginPage() {
         window.location.href = `${API_URL}/api/Auth/external/GitHub`;
     };
 
-
     /** Theme state (local UI only) */
     const [darkMode, setDarkMode] = useState(false);
     const toggleDarkMode = () => setDarkMode((d) => !d);
