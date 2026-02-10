@@ -1,5 +1,5 @@
-// src/api/profileUploads.js
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://localhost:5001";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 function authHeaders() {
     const stored = JSON.parse(localStorage.getItem("jobify_user") || "{}");
@@ -14,7 +14,7 @@ export async function uploadResume(file) {
 
     const res = await fetch(`${API_BASE}/api/profile/student/resume`, {
         method: "POST",
-        headers: { ...authHeaders() }, // DO NOT set Content-Type manually
+        headers: { ...authHeaders() }, 
         body: form,
     });
 
@@ -33,8 +33,7 @@ export async function deleteResume() {
 }
 
 export function downloadResume() {
-    // easiest: open file endpoint in new tab with auth as query is NOT safe.
-    // better: fetch blob with auth (below)
+
 }
 
 // ---------- University Proof ----------
