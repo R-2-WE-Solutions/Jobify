@@ -18,6 +18,7 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../layout/useTheme";
 import {
     Eye,
     EyeOff,
@@ -104,8 +105,9 @@ export default function ResetPasswordPage() {
         "https://localhost:7176";
 
     /** Theme state (local UI only) */
-    const [darkMode, setDarkMode] = useState(false);
-    const toggleDarkMode = () => setDarkMode((d) => !d);
+    const { darkMode, setDarkMode } = useTheme();
+
+    const toggleDarkMode = () => setDarkMode(d => !d);
 
     /** Read token + email from URL */
     const { token, email } = useQueryParams();

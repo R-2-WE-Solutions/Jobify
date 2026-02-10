@@ -16,6 +16,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../layout/useTheme";
 import {
     Moon,
     Sun,
@@ -80,8 +81,9 @@ export default function ForgotPasswordPage() {
     const navigate = useNavigate();
 
     /** UI theme state (local only) */
-    const [darkMode, setDarkMode] = useState(false);
-    const toggleDarkMode = () => setDarkMode((d) => !d);
+    const { darkMode, setDarkMode } = useTheme();
+
+    const toggleDarkMode = () => setDarkMode(d => !d);
 
     /** Form & request state */
     const [email, setEmail] = useState("");

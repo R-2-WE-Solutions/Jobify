@@ -45,7 +45,7 @@ public class OpportunitiesController : ControllerBase
                 .ThenInclude(os => os.Skill)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(q))
+        if (!string.IsNullOrWhiteSpace(q)) // filter by search bar
         {
             var s = q.Trim().ToLower();
             query = query.Where(o =>
@@ -56,7 +56,7 @@ public class OpportunitiesController : ControllerBase
         }
 
         // Parse the string into enum and compare enum-to-enum.
-        if (!string.IsNullOrWhiteSpace(type))
+        if (!string.IsNullOrWhiteSpace(type)) //filter by internship etc... level
         {
             var rawType = type.Trim();
 
@@ -71,7 +71,7 @@ public class OpportunitiesController : ControllerBase
         }
 
         // Map UI -> enum, and also allow enum names.
-        if (!string.IsNullOrWhiteSpace(level))
+        if (!string.IsNullOrWhiteSpace(level)) //filter by junior senior entry....
         {
             var raw = level.Trim().ToLower();
 
