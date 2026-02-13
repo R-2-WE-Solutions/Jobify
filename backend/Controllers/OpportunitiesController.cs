@@ -4,6 +4,9 @@ using Jobify.Api.Data;
 using Jobify.Api.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Jobify.Api.Models;
+using System.Text.Json;
+using System.Security.Claims;
+
 
 namespace Jobify.Api.Controllers;
 
@@ -144,6 +147,9 @@ public class OpportunitiesController : ControllerBase
                 CompanyName = o.CompanyName,
                 Location = o.Location,
                 IsRemote = o.IsRemote,
+
+                WorkMode = o.WorkMode.ToString(),
+
                 Type = o.Type.ToString(),
                 Level = o.Level.ToString(),
                 MinPay = o.MinPay,
@@ -167,9 +173,9 @@ public class OpportunitiesController : ControllerBase
         });
     }
 
-    // GET BY ID (PUBLIC)
+    // GET BY ID (PUBLIC) - DETAILS
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<OpportunityCardDto>> GetById(int id)
+    public async Task<ActionResult<OpportunityDetailsDto>> GetById(int id)
     {
         var o = await _db.Opportunities
             .AsNoTracking()
@@ -179,28 +185,97 @@ public class OpportunitiesController : ControllerBase
 
         if (o == null) return NotFound();
 
-        return Ok(new OpportunityCardDto
+        var qa = await _db.OpportunityQuestions
+            .AsNoTracking()
+            .Where(q => q.OpportunityId == id)
+            .OrderByDescending(q => q.AskedAtUtc)
+            .Select(q => new QaDto
+            {
+                Id = q.Id,
+                Question = q.Question,
+                Answer = q.Answer,
+                AskedAtUtc = q.AskedAtUtc
+            })
+            .ToListAsync();
+
+        return Ok(new OpportunityDetailsDto
         {
             Id = o.Id,
             Title = o.Title,
             CompanyName = o.CompanyName,
             Location = o.Location,
             IsRemote = o.IsRemote,
+            WorkMode = o.WorkMode.ToString(),
+            LocationName = o.LocationName,
+            FullAddress = o.FullAddress,
+            Latitude = o.Latitude,
+            Longitude = o.Longitude,
+
             Type = o.Type.ToString(),
             Level = o.Level.ToString(),
             MinPay = o.MinPay,
             MaxPay = o.MaxPay,
+            Description = o.Description,
             CreatedAtUtc = o.CreatedAtUtc,
             DeadlineUtc = o.DeadlineUtc,
+
+            Responsibilities = ReadList(o.ResponsibilitiesJson),
+            PreferredSkills = ReadList(o.PreferredSkillsJson),
+            Benefits = ReadList(o.BenefitsJson),
+            Assessment = string.IsNullOrWhiteSpace(o.AssessmentJson)
+                ? null
+                : JsonSerializer.Deserialize<object>(o.AssessmentJson),
+
             Skills = o.OpportunitySkills
                 .Where(os => os.Skill != null)
                 .Select(os => os.Skill!.Name)
                 .ToList(),
-            MatchPercent = null
+
+            Qa = qa
         });
     }
 
-    // CREATE (RECRUITER ONLY)
+    [Authorize]
+    [HttpPost("{id:int}/questions")]
+    public async Task<ActionResult> AskQuestion(int id, [FromBody] QaDto dto)
+    {
+        var exists = await _db.Opportunities.AnyAsync(o => o.Id == id);
+        if (!exists) return NotFound();
+
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Question))
+            return BadRequest("Question is required.");
+
+        var q = new OpportunityQuestion
+        {
+            OpportunityId = id,
+            Question = dto.Question.Trim(),
+            AskedAtUtc = DateTime.UtcNow
+        };
+
+        _db.OpportunityQuestions.Add(q);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { q.Id });
+    }
+
+
+    [Authorize(Roles = "Recruiter")]
+    [HttpPut("questions/{questionId:int}/answer")]
+    public async Task<ActionResult> AnswerQuestion(int questionId, [FromBody] QaDto dto)
+    {
+        var q = await _db.OpportunityQuestions.FirstOrDefaultAsync(x => x.Id == questionId);
+        if (q == null) return NotFound();
+
+        q.Answer = string.IsNullOrWhiteSpace(dto?.Answer)
+            ? null
+            : dto.Answer.Trim();
+
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+
     [Authorize(Roles = "Recruiter")]
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreateOpportunityDto dto)
@@ -214,12 +289,27 @@ public class OpportunitiesController : ControllerBase
         if (!Enum.TryParse<ExperienceLevel>(dto.Level, true, out var parsedLevel))
             return BadRequest("Invalid Level.");
 
+        if (!Enum.TryParse<WorkMode>(dto.WorkMode, true, out var parsedMode))
+            return BadRequest("Invalid WorkMode. Use OnSite, Remote, or Hybrid.");
+
         var opportunity = new Opportunity
         {
             Title = dto.Title.Trim(),
             CompanyName = dto.CompanyName.Trim(),
             Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim(),
-            IsRemote = dto.IsRemote,
+
+            IsRemote = parsedMode == WorkMode.Remote,
+
+            WorkMode = parsedMode,
+            LocationName = string.IsNullOrWhiteSpace(dto.LocationName) ? null : dto.LocationName.Trim(),
+            FullAddress = string.IsNullOrWhiteSpace(dto.FullAddress) ? null : dto.FullAddress.Trim(),
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
+            ResponsibilitiesJson = WriteList(dto.Responsibilities),
+            PreferredSkillsJson = WriteList(dto.PreferredSkills),
+            BenefitsJson = WriteList(dto.Benefits),
+            AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment),
+
             Type = parsedType,
             Level = parsedLevel,
             MinPay = dto.MinPay,
@@ -237,7 +327,6 @@ public class OpportunitiesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, new { opportunity.Id });
     }
 
-    // UPDATE (RECRUITER ONLY)
     [Authorize(Roles = "Recruiter")]
     [HttpPut("{id:int}")]
     public async Task<ActionResult> Update(int id, [FromBody] UpdateOpportunityDto dto)
@@ -254,10 +343,25 @@ public class OpportunitiesController : ControllerBase
         if (!Enum.TryParse<ExperienceLevel>(dto.Level, true, out var parsedLevel))
             return BadRequest("Invalid Level.");
 
+        if (!Enum.TryParse<WorkMode>(dto.WorkMode, true, out var parsedMode))
+            return BadRequest("Invalid WorkMode. Use OnSite, Remote, or Hybrid.");
+
         opportunity.Title = dto.Title.Trim();
         opportunity.CompanyName = dto.CompanyName.Trim();
         opportunity.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
-        opportunity.IsRemote = dto.IsRemote;
+
+        opportunity.IsRemote = parsedMode == WorkMode.Remote;
+
+        opportunity.WorkMode = parsedMode;
+        opportunity.LocationName = string.IsNullOrWhiteSpace(dto.LocationName) ? null : dto.LocationName.Trim();
+        opportunity.FullAddress = string.IsNullOrWhiteSpace(dto.FullAddress) ? null : dto.FullAddress.Trim();
+        opportunity.Latitude = dto.Latitude;
+        opportunity.Longitude = dto.Longitude;
+        opportunity.ResponsibilitiesJson = WriteList(dto.Responsibilities);
+        opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);
+        opportunity.BenefitsJson = WriteList(dto.Benefits);
+        opportunity.AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment);
+
         opportunity.Type = parsedType;
         opportunity.Level = parsedLevel;
         opportunity.MinPay = dto.MinPay;
@@ -272,7 +376,6 @@ public class OpportunitiesController : ControllerBase
         return NoContent();
     }
 
-    // DELETE (RECRUITER ONLY)
     [Authorize(Roles = "Recruiter")]
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id)
@@ -280,9 +383,11 @@ public class OpportunitiesController : ControllerBase
         var opportunity = await _db.Opportunities.FirstOrDefaultAsync(o => o.Id == id);
         if (opportunity == null) return NotFound();
 
-        // remove joins first
         var joins = await _db.OpportunitySkills.Where(os => os.OpportunityId == id).ToListAsync();
         _db.OpportunitySkills.RemoveRange(joins);
+
+        var questions = await _db.OpportunityQuestions.Where(q => q.OpportunityId == id).ToListAsync();
+        _db.OpportunityQuestions.RemoveRange(questions);
 
         _db.Opportunities.Remove(opportunity);
         await _db.SaveChangesAsync();
@@ -290,31 +395,59 @@ public class OpportunitiesController : ControllerBase
         return NoContent();
     }
 
-    // Helper: replace skills for an opportunity
+    [Authorize(Roles = "Student")]
+    [HttpPost("{id:int}/apply")]
+    public async Task<IActionResult> ApplyNow(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var oppExists = await _db.Opportunities.AnyAsync(o => o.Id == id);
+        if (!oppExists) return NotFound("Opportunity not found.");
+
+        // If already applied (not withdrawn), return existing application
+        var existing = await _db.Applications
+            .FirstOrDefaultAsync(a => a.OpportunityId == id && a.UserId == userId && a.Status != ApplicationStatus.Withdrawn);
+
+        if (existing != null)
+            return Ok(new { applicationId = existing.Id, status = existing.Status.ToString() });
+
+        var app = new Application
+        {
+            OpportunityId = id,
+            UserId = userId,
+            Status = ApplicationStatus.Draft,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        _db.Applications.Add(app);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { applicationId = app.Id, status = app.Status.ToString() });
+    }
+
+
     private async Task ReplaceSkills(int opportunityId, List<string> skills)
     {
-        // normalize
         var skillNames = (skills ?? new List<string>())
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        // clear existing joins
         var existingJoins = await _db.OpportunitySkills.Where(os => os.OpportunityId == opportunityId).ToListAsync();
         _db.OpportunitySkills.RemoveRange(existingJoins);
         await _db.SaveChangesAsync();
 
         if (skillNames.Count == 0) return;
 
-        // fetch existing skills
         var existingSkills = await _db.Skills
             .Where(s => skillNames.Contains(s.Name))
             .ToListAsync();
 
         var existingNames = existingSkills.Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // create missing
         var missing = skillNames
             .Where(n => !existingNames.Contains(n))
             .Select(n => new Skill { Name = n })
@@ -327,7 +460,6 @@ public class OpportunitiesController : ControllerBase
             existingSkills.AddRange(missing);
         }
 
-        // create joins
         var joinsToAdd = existingSkills.Select(s => new OpportunitySkill
         {
             OpportunityId = opportunityId,
@@ -336,5 +468,23 @@ public class OpportunitiesController : ControllerBase
 
         _db.OpportunitySkills.AddRange(joinsToAdd);
         await _db.SaveChangesAsync();
+    }
+
+    private static List<string> ReadList(string? json)
+        => string.IsNullOrWhiteSpace(json)
+            ? new List<string>()
+            : (JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>());
+
+    private static string? WriteList(List<string>? list)
+    {
+        if (list == null) return null;
+
+        var cleaned = list
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return cleaned.Count == 0 ? null : JsonSerializer.Serialize(cleaned);
     }
 }

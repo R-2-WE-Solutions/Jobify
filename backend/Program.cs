@@ -27,16 +27,11 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =======================
 // Services (Dependency Injection)
-// =======================
-
 // Enables API controllers ([ApiController])
 builder.Services.AddControllers();
 
-// -----------------------
 // Database (SQL Server)
-// -----------------------
 // Registers AppDbContext so it can be injected anywhere
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -44,9 +39,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// -----------------------
 // ASP.NET Identity
-// -----------------------
 // Handles users, roles, passwords, hashing, tokens, etc.
 builder.Services
     .AddIdentity<IdentityUser, IdentityRole>()
@@ -61,9 +54,7 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromMinutes(30);
 });
 
-// -----------------------
 // CORS (allow frontend to call backend)
-// -----------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -77,18 +68,15 @@ builder.Services.AddCors(options =>
             })
             .AllowAnyHeader()
             .AllowAnyMethod()
+            .AllowCredentials()
     );
 });
 
-// -----------------------
 // Custom services
-// -----------------------
 // Service that creates JWT tokens on login
 builder.Services.AddScoped<JwtTokenService>();
 
-// -----------------------
 // Authentication
-// -----------------------
 builder.Services
     .AddAuthentication(options =>
     {
@@ -143,14 +131,10 @@ builder.Services
         options.Scope.Add("user:email");
     });
 
-// -----------------------
 // Authorization
-// -----------------------
 builder.Services.AddAuthorization();
 
-// -----------------------
 // Swagger (API documentation)
-// -----------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -185,9 +169,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// =======================
 // Seed roles + admin user
-// =======================
 // Runs once at startup
 using (var scope = app.Services.CreateScope())
 {
@@ -233,9 +215,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// =======================
 // Middleware pipeline
-// =======================
 
 if (app.Environment.IsDevelopment())
 {

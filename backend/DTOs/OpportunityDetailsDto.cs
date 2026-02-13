@@ -1,34 +1,39 @@
 ﻿namespace Jobify.Api.DTOs;
 
-public class UpdateOpportunityDto
+public class OpportunityDetailsDto
 {
+    public int Id { get; set; }
     public string Title { get; set; } = "";
     public string CompanyName { get; set; } = "";
     public string? Location { get; set; }
     public bool IsRemote { get; set; }
 
-    public string Type { get; set; } = "Internship";
-    public string Level { get; set; } = "Entry";
+    public string Type { get; set; } = "";
+    public string Level { get; set; } = "";
 
     public decimal? MinPay { get; set; }
     public decimal? MaxPay { get; set; }
 
     public string? Description { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
     public DateTime? DeadlineUtc { get; set; }
 
     public List<string> Skills { get; set; } = new();
 
     public string WorkMode { get; set; } = "OnSite";
-
     public string? LocationName { get; set; }
     public string? FullAddress { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
 
+    public object? Assessment { get; set; }
+
+
     public List<string> Responsibilities { get; set; } = new();
     public List<string> PreferredSkills { get; set; } = new();
     public List<string> Benefits { get; set; } = new();
 
-    public object? Assessment { get; set; }
+    public List<QaDto> Qa { get; set; } = new();
 
 }

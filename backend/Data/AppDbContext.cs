@@ -17,9 +17,13 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<OpportunitySkill> OpportunitySkills => Set<OpportunitySkill>();
 
+    public DbSet<OpportunityQuestion> OpportunityQuestions => Set<OpportunityQuestion>();
+
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     public DbSet<RecruiterProfile> RecruiterProfiles => Set<RecruiterProfile>();
+
+    public DbSet<Application> Applications => Set<Application>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
