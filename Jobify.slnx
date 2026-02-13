@@ -1,7 +1,7 @@
 <Solution>
+  <Project Path="backend/Jobify.csproj" />
   <Project Path="frontend/frontend.client/frontend.esproj">
     <Build />
     <Deploy />
   </Project>
-  <Project Path="Jobify/Jobify.csproj" />
 </Solution>

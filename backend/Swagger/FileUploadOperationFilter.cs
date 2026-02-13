@@ -1,40 +1,41 @@
 ﻿using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Jobify.Api.Swagger;
-
-public class FileUploadOperationFilter : IOperationFilter
+namespace Jobify.Api.Swagger
 {
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    public class FileUploadOperationFilter : IOperationFilter
     {
-        var hasFile = context.MethodInfo
-            .GetParameters()
-            .Any(p => p.ParameterType == typeof(IFormFile));
-
-        if (!hasFile)
-            return;
-
-        operation.RequestBody = new OpenApiRequestBody
+        public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            Content =
+            // Detect IFormFile parameters
+            var hasFile = context.MethodInfo
+                .GetParameters()
+                .Any(p => p.ParameterType == typeof(IFormFile));
+
+            if (!hasFile) return;
+
+            operation.RequestBody = new OpenApiRequestBody
             {
-                ["multipart/form-data"] = new OpenApiMediaType
+                Content =
                 {
-                    Schema = new OpenApiSchema
+                    ["multipart/form-data"] = new OpenApiMediaType
                     {
-                        Type = "object",
-                        Properties =
+                        Schema = new OpenApiSchema
                         {
-                            ["file"] = new OpenApiSchema
+                            Type = "object",
+                            Properties =
                             {
-                                Type = "string",
-                                Format = "binary"
-                            }
-                        },
-                        Required = new HashSet<string> { "file" }
+                                ["file"] = new OpenApiSchema
+                                {
+                                    Type = "string",
+                                    Format = "binary"
+                                }
+                            },
+                            Required = new HashSet<string> { "file" }
+                        }
                     }
                 }
-            }
-        };
+            };
+        }
     }
 }

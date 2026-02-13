@@ -19,6 +19,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../layout/useTheme";
 import {
     Eye,
     EyeOff,
@@ -95,8 +96,9 @@ export default function LoginPage() {
     };
 
     /** Theme state (local UI only) */
-    const [darkMode, setDarkMode] = useState(false);
-    const toggleDarkMode = () => setDarkMode((d) => !d);
+    const { darkMode, setDarkMode } = useTheme();
+
+    const toggleDarkMode = () => setDarkMode(d => !d);
 
     /** Role toggle affects UI copy/stats (auth itself is based on backend response) */
     const [userRole, setUserRole] = useState("candidate");

@@ -22,6 +22,7 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../layout/useTheme";
 import {
     Eye,
     EyeOff,
@@ -107,8 +108,9 @@ export default function SignupPage() {
     };
 
     /** Theme state (local UI only) */
-    const [darkMode, setDarkMode] = useState(false);
-    const toggleDarkMode = () => setDarkMode((d) => !d);
+    const { darkMode, setDarkMode } = useTheme();
+
+    const toggleDarkMode = () => setDarkMode(d => !d);
 
     /** Role selection controls which fields are shown and validated */
     const [userRole, setUserRole] = useState("candidate");

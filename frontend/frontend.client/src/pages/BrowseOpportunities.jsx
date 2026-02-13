@@ -13,10 +13,10 @@ import { useNavigate } from "react-router-dom";
 
 import "./styles/browseopportunities.css";
 
-// ✅ Vite API URL (set in .env: VITE_API_URL=https://localhost:7176)
+// Vite API URL (set in .env: VITE_API_URL=https://localhost:7176)
 const API_URL = import.meta.env.VITE_API_URL;
 
-// ✅ logo based on type/level (emoji avatar)
+// logo based on type/level (emoji avatar)
 function getOppLogo(type, level) {
     const t = String(type || "").toLowerCase();
     const l = String(level || "").toLowerCase();
@@ -36,13 +36,13 @@ export function BrowseOpportunities() {
     const [sortBy, setSortBy] = useState("match");
 
     const [typeFilter, setTypeFilter] = useState("all");
-    const [levelFilter, setLevelFilter] = useState("all"); // ✅ now will be Entry / Junior / Senior
+    const [levelFilter, setLevelFilter] = useState("all"); // now will be Entry / Junior / Senior
     const [locationFilter, setLocationFilter] = useState("all");
     const [matchFilter, setMatchFilter] = useState("all");
 
     const [savedItems, setSavedItems] = useState([2]);
 
-    // ✅ backend data
+    // backend data
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -52,7 +52,7 @@ export function BrowseOpportunities() {
         );
     };
 
-    // ✅ fetch from backend
+    // fetch from backend
     useEffect(() => {
         const controller = new AbortController();
 
@@ -107,7 +107,7 @@ export function BrowseOpportunities() {
                                     ? `From $${o.minPay}`
                                     : `Up to $${o.maxPay}`;
 
-                    const locationText = o.isRemote ? "Remote" : (o.location || "—");
+                    const locationText = o.isRemote ? "Remote" : (o.isHybrid ? "Hybrid" : "On-site");
 
                     const postedText = o.createdAtUtc ? timeAgoFromUtc(o.createdAtUtc) : "—";
                     const deadlineText = o.deadlineUtc ? daysLeftFromUtc(o.deadlineUtc) : "—";
@@ -161,7 +161,7 @@ export function BrowseOpportunities() {
             const matchesType =
                 typeFilter === "all" || opp.type.toLowerCase() === typeFilter.toLowerCase();
 
-            // ✅ FIX: Now levelFilter values match backend level strings (Entry/Junior/Senior)
+            //Now levelFilter values match backend level strings (Entry/Junior/Senior)
             const matchesLevel =
                 levelFilter === "all" || opp.level.toLowerCase() === levelFilter.toLowerCase();
 
@@ -277,7 +277,7 @@ export function BrowseOpportunities() {
                                         </select>
                                     </div>
 
-                                    {/* ✅ FIXED: Entry / Junior / Senior */}
+                                    {/* Entry / Junior / Senior */}
                                     <div className="bo-field">
                                         <label className="bo-label">Level</label>
                                         <select
@@ -364,7 +364,7 @@ export function BrowseOpportunities() {
                                                         <button
                                                             type="button"
                                                             className="bo-oppTitleBtn"
-                                                            onClick={() => navigate(`/opportunity/${opp.id}`)}
+                                                            onClick={() => navigate(`/opportunities/${opp.id}`)}
                                                         >
                                                             {opp.title}
                                                         </button>
@@ -375,7 +375,9 @@ export function BrowseOpportunities() {
                                                 <div className="bo-meta">
                                                     <span className={badgeTypeClass(opp.type)}>{opp.type}</span>
                                                     <span className="bo-badge bo-badgeOutline">{opp.level}</span>
+                                                </div>
 
+                                                <div className="bo-meta bo-metaSecondary">
                                                     <span className="bo-metaItem">
                                                         <MapPin className="bo-ico" />
                                                         {opp.location}
@@ -384,6 +386,7 @@ export function BrowseOpportunities() {
                                                     <span className="bo-dot">•</span>
                                                     <span>{opp.salary}</span>
                                                 </div>
+
 
                                                 <div className="bo-skills">
                                                     {opp.skills.map((skill) => (
@@ -418,9 +421,9 @@ export function BrowseOpportunities() {
                                                 <button
                                                     type="button"
                                                     className="bo-btn bo-btnPrimary"
-                                                    onClick={() => navigate(`/apply/${opp.id}`)}
+                                                    onClick={() => navigate(`/opportunities/${opp.id}`)}
                                                 >
-                                                    Apply Now
+                                                    View Details
                                                 </button>
 
                                                 <button

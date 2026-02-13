@@ -21,4 +21,18 @@ public class CreateOpportunityDto
 
     // skills names sent from frontend, example: ["React", "SQL"]
     public List<string> Skills { get; set; } = new();
+
+    public string WorkMode { get; set; } = "OnSite";
+
+    public string? LocationName { get; set; }
+    public string? FullAddress { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
+    public List<string> Responsibilities { get; set; } = new();
+    public List<string> PreferredSkills { get; set; } = new();
+    public List<string> Benefits { get; set; } = new();
+
+    public object? Assessment { get; set; }
+
 }

@@ -19,5 +19,7 @@ public class OpportunityCardDto
 
     public List<string> Skills { get; set; } = new();
 
+    public string WorkMode { get; set; } = "OnSite";
+
     public int? MatchPercent { get; set; }   // later (best match)
 }
