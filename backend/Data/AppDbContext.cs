@@ -25,6 +25,12 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
 
     public DbSet<Application> Applications => Set<Application>();
 
+    public DbSet<ApplicationAssessment> ApplicationAssessments => Set<ApplicationAssessment>();
+
+    public DbSet<ProctorEvent> ProctorEvents => Set<ProctorEvent>();
+
+
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

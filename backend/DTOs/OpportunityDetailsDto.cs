@@ -29,6 +29,10 @@ public class OpportunityDetailsDto
 
     public object? Assessment { get; set; }
 
+    public int AssessmentTimeLimitSeconds { get; set; }
+    public int AssessmentMcqCount { get; set; }
+    public int AssessmentChallengeCount { get; set; }
+
 
     public List<string> Responsibilities { get; set; } = new();
     public List<string> PreferredSkills { get; set; } = new();

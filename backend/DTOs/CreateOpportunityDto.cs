@@ -33,6 +33,13 @@ public class CreateOpportunityDto
     public List<string> PreferredSkills { get; set; } = new();
     public List<string> Benefits { get; set; } = new();
 
+    public int AssessmentTimeLimitSeconds { get; set; }
+    public int AssessmentMcqCount { get; set; }
+    public int AssessmentChallengeCount { get; set; }
+
+
     public object? Assessment { get; set; }
+
+
 
 }

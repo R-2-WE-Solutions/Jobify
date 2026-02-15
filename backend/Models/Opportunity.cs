@@ -52,5 +52,10 @@ public class Opportunity
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? DeadlineUtc { get; set; }
 
+    public int AssessmentTimeLimitSeconds { get; set; } = 45 * 60;
+    public int AssessmentMcqCount { get; set; } = 5;
+    public int AssessmentChallengeCount { get; set; } = 2;
+
+
     public ICollection<OpportunitySkill> OpportunitySkills { get; set; } = new List<OpportunitySkill>();
 }

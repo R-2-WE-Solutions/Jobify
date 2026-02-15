@@ -1,4 +1,6 @@
+Here’s the updated clean version:
 
+---
 # Jobify – Student Job Matching Platform
 
 Jobify is a full-stack web application that connects students with job and internship opportunities through skill-based matching.

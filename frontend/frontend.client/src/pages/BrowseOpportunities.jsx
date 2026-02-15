@@ -65,18 +65,14 @@ export function BrowseOpportunities() {
 
                 if (searchQuery.trim()) params.set("q", searchQuery.trim());
 
-                // backend expects: type = Internship/Job/Scholarship/Workshop
                 if (typeFilter !== "all") params.set("type", typeFilter);
 
-                // ✅ FIX: backend + UI now agree: level = Entry/Junior/Senior
                 if (levelFilter !== "all") params.set("level", levelFilter);
-
-                // locationFilter -> remote boolean or location string
                 if (locationFilter === "remote") params.set("remote", "true");
                 if (locationFilter === "onsite") params.set("remote", "false");
                 if (locationFilter === "hybrid") params.set("location", "hybrid");
 
-                // sort mapping
+
                 const backendSort =
                     sortBy === "salary"
                         ? "salaryhigh"
@@ -156,12 +152,9 @@ export function BrowseOpportunities() {
                 opp.company.toLowerCase().includes(q) ||
                 opp.skills.some((s) => s.toLowerCase().includes(q));
 
-            // Note: because we already filter on backend, these are mostly redundant,
-            // but keeping them is fine.
             const matchesType =
                 typeFilter === "all" || opp.type.toLowerCase() === typeFilter.toLowerCase();
 
-            //Now levelFilter values match backend level strings (Entry/Junior/Senior)
             const matchesLevel =
                 levelFilter === "all" || opp.level.toLowerCase() === levelFilter.toLowerCase();
 
@@ -455,7 +448,6 @@ export function BrowseOpportunities() {
     );
 }
 
-/* helpers */
 function extractDays(postedText) {
     const t = String(postedText || "").toLowerCase();
     if (t.includes("week")) {

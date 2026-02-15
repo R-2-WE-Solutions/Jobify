@@ -22,4 +22,8 @@ public class OpportunityCardDto
     public string WorkMode { get; set; } = "OnSite";
 
     public int? MatchPercent { get; set; }   // later (best match)
+
+    public int AssessmentTimeLimitSeconds { get; set; }
+    public int AssessmentMcqCount { get; set; }
+    public int AssessmentChallengeCount { get; set; }
 }

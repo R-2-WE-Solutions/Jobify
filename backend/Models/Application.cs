@@ -25,4 +25,8 @@ public class Application
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public ApplicationAssessment? Assessment { get; set; }
+
+    public string? AssessmentJson { get; set; }
 }

@@ -160,6 +160,11 @@ public class OpportunitiesController : ControllerBase
                     .Where(os => os.Skill != null)
                     .Select(os => os.Skill!.Name)
                     .ToList(),
+
+                AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
+                AssessmentMcqCount = o.AssessmentMcqCount,
+                AssessmentChallengeCount = o.AssessmentChallengeCount,
+
                 MatchPercent = null
             })
             .ToListAsync();
@@ -226,6 +231,11 @@ public class OpportunitiesController : ControllerBase
                 ? null
                 : JsonSerializer.Deserialize<object>(o.AssessmentJson),
 
+            AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
+            AssessmentMcqCount = o.AssessmentMcqCount,
+            AssessmentChallengeCount = o.AssessmentChallengeCount,
+
+
             Skills = o.OpportunitySkills
                 .Where(os => os.Skill != null)
                 .Select(os => os.Skill!.Name)
@@ -234,6 +244,104 @@ public class OpportunitiesController : ControllerBase
             Qa = qa
         });
     }
+
+    [HttpGet("{id}/similar")]
+    public async Task<ActionResult<List<OpportunityCardDto>>> GetSimilar(
+    int id,
+    [FromQuery] int take = 4)
+    {
+        // 1️⃣ Load the base opportunity with its skills
+        var baseOpp = await _db.Opportunities
+            .Include(o => o.OpportunitySkills)
+                .ThenInclude(os => os.Skill)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (baseOpp == null)
+            return NotFound();
+
+        var baseSkills = baseOpp.OpportunitySkills
+            .Select(os => os.Skill.Name)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // 2️⃣ Get candidate pool (cheap filter first)
+        var candidates = await _db.Opportunities
+            .Include(o => o.OpportunitySkills)
+                .ThenInclude(os => os.Skill)
+            .Where(o =>
+                o.Id != id &&
+                o.Type == baseOpp.Type)  // strong filter
+            .Take(150)
+            .ToListAsync();
+
+        // 3️⃣ Similarity scoring
+        double Score(Opportunity o)
+        {
+            var skills = o.OpportunitySkills
+                .Select(os => os.Skill.Name)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var intersection = skills.Intersect(baseSkills).Count();
+            var union = skills.Union(baseSkills).Count();
+
+            var jaccard = union == 0 ? 0.0 : (double)intersection / union;
+
+            var score = jaccard;
+
+            if (o.Level == baseOpp.Level)
+                score += 0.15;
+
+            if (o.WorkMode == baseOpp.WorkMode)
+                score += 0.10;
+
+            if (!string.IsNullOrWhiteSpace(o.Location) &&
+                o.Location == baseOpp.Location)
+                score += 0.10;
+
+            return score;
+        }
+
+        // 4️⃣ Return top similar opportunities
+        var result = candidates
+            .Select(o => new { Opportunity = o, Score = Score(o) })
+            .Where(x => x.Score > 0) // optional filter
+            .OrderByDescending(x => x.Score)
+            .Take(Math.Clamp(take, 1, 12))
+            .Select(x => new OpportunityCardDto
+            {
+                Id = x.Opportunity.Id,
+                Title = x.Opportunity.Title,
+                CompanyName = x.Opportunity.CompanyName,
+                Location = x.Opportunity.Location,
+                IsRemote = x.Opportunity.IsRemote,
+
+                Type = x.Opportunity.Type.ToString(),
+                Level = x.Opportunity.Level.ToString(),
+
+                MinPay = x.Opportunity.MinPay,
+                MaxPay = x.Opportunity.MaxPay,
+
+                CreatedAtUtc = x.Opportunity.CreatedAtUtc,
+                DeadlineUtc = x.Opportunity.DeadlineUtc,
+
+                Skills = x.Opportunity.OpportunitySkills
+                    .Select(s => s.Skill.Name)
+                    .ToList(),
+
+                WorkMode = x.Opportunity.WorkMode.ToString(),
+
+                MatchPercent = null,
+
+                AssessmentTimeLimitSeconds = x.Opportunity.AssessmentTimeLimitSeconds,
+                AssessmentMcqCount = x.Opportunity.AssessmentMcqCount,
+                AssessmentChallengeCount = x.Opportunity.AssessmentChallengeCount
+            })
+            .ToList();
+
+        return result;
+    }
+
 
     [Authorize]
     [HttpPost("{id:int}/questions")]

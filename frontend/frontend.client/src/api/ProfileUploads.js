@@ -7,7 +7,6 @@ function authHeaders() {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// ---------- Resume ----------
 export async function uploadResume(file) {
     const form = new FormData();
     form.append("file", file);
@@ -35,8 +34,6 @@ export async function deleteResume() {
 export function downloadResume() {
 
 }
-
-// ---------- University Proof ----------
 export async function uploadUniversityProof(file) {
     const form = new FormData();
     form.append("file", file);
@@ -61,14 +58,12 @@ export async function deleteUniversityProof() {
     return res.json();
 }
 
-// ---------- Download helpers (works with JWT auth) ----------
 async function downloadWithAuth(url, fallbackName) {
     const res = await fetch(url, { headers: { ...authHeaders() } });
     if (!res.ok) throw new Error(await res.text());
 
     const blob = await res.blob();
 
-    // try to read filename from header
     const cd = res.headers.get("content-disposition") || "";
     const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
     const fileName = decodeURIComponent(match?.[1] || fallbackName);

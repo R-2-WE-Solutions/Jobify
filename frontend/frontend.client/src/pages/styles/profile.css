@@ -20,7 +20,6 @@
         margin: 0;
     }
 
-/* Loading and Alerts */
 .loading {
     text-align: center;
     padding: 3rem;
@@ -47,7 +46,6 @@
     color: #065f46;
 }
 
-/* Form Layout */
 .profile-form {
     display: flex;
     flex-direction: column;
@@ -132,7 +130,6 @@
             text-decoration: underline;
         }
 
-/* Verification Badge */
 .badge {
     display: inline-block;
     padding: 0.375rem 0.75rem;
@@ -168,7 +165,6 @@
     color: #374151;
 }
 
-/* Action Buttons */
 .profile-actions {
     display: flex;
     gap: 1rem;
@@ -220,7 +216,6 @@
         opacity: 0.6;
     }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .profile-container {
         padding: 1rem;
@@ -250,7 +245,6 @@
     }
 }
 
-/* Animation for success message */
 @keyframes slideIn {
     from {
         opacity: 0;

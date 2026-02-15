@@ -1,0 +1,830 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Jobify.Api.Data;
+using Jobify.Api.Models;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+
+//application and assesment controller -> the assesment isnt fully finished yet lol 
+
+namespace Jobify.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class ApplicationsController : ControllerBase
+{
+    private readonly AppDbContext _db;
+    private readonly IHttpClientFactory _http;
+    private readonly IConfiguration _config;
+    private readonly IWebHostEnvironment _env;
+
+    public ApplicationsController(AppDbContext db, IHttpClientFactory http, IConfiguration config, IWebHostEnvironment env)
+    {
+        _db = db;
+        _http = http;
+        _config = config;
+        _env = env;
+    }
+
+    // Helpers
+    private string? CurrentUserId()
+        => User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    private static int SecureSeed()
+        => Random.Shared.Next(int.MinValue, int.MaxValue);
+
+    private static List<string> Shuffle(List<string> items, int seed)
+    {
+        var rng = new Random(seed);
+        for (int i = items.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (items[i], items[j]) = (items[j], items[i]);
+        }
+        return items;
+    }
+
+    private static bool IsExpired(ApplicationAssessment attempt)
+        => DateTime.UtcNow > attempt.ExpiresAtUtc;
+
+    private static object? MakePublicAssessment(string? assessmentJson, List<string>? questionOrder = null)
+    {
+        if (string.IsNullOrWhiteSpace(assessmentJson)) return null;
+
+        using var doc = JsonDocument.Parse(assessmentJson);
+        var root = doc.RootElement;
+
+        int timeLimitSeconds = root.TryGetProperty("timeLimitSeconds", out var tl) && tl.ValueKind == JsonValueKind.Number
+            ? tl.GetInt32()
+            : 1800;
+
+        bool randomize = root.TryGetProperty("randomize", out var r) && r.ValueKind == JsonValueKind.True;
+
+        if (!root.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array)
+        {
+            return new { timeLimitSeconds, randomize, questions = new List<object>() };
+        }
+
+        var map = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var q in qs.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String ? idEl.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id)) continue;
+
+            var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String ? tEl.GetString() : "mcq";
+
+            if (string.Equals(type, "mcq", StringComparison.OrdinalIgnoreCase))
+            {
+                var prompt = q.TryGetProperty("prompt", out var pEl) && pEl.ValueKind == JsonValueKind.String ? pEl.GetString() : "";
+                var options = new List<string?>();
+
+                if (q.TryGetProperty("options", out var optEl) && optEl.ValueKind == JsonValueKind.Array)
+                    foreach (var o in optEl.EnumerateArray())
+                        options.Add(o.ValueKind == JsonValueKind.String ? o.GetString() : null);
+
+                map[id] = new { id, type = "mcq", prompt, options };
+            }
+            else if (string.Equals(type, "code", StringComparison.OrdinalIgnoreCase))
+            {
+                var title = q.TryGetProperty("title", out var ti) && ti.ValueKind == JsonValueKind.String ? ti.GetString() : "";
+                var prompt = q.TryGetProperty("prompt", out var pEl) && pEl.ValueKind == JsonValueKind.String ? pEl.GetString() : "";
+                var starterCode = q.TryGetProperty("starterCode", out var sc) && sc.ValueKind == JsonValueKind.String ? sc.GetString() : "";
+
+                var allowed = new List<int>();
+                if (q.TryGetProperty("languageIdsAllowed", out var langs) && langs.ValueKind == JsonValueKind.Array)
+                    foreach (var l in langs.EnumerateArray())
+                        if (l.ValueKind == JsonValueKind.Number) allowed.Add(l.GetInt32());
+
+                var publicTests = new List<object>();
+                if (q.TryGetProperty("publicTests", out var pts) && pts.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var pt in pts.EnumerateArray())
+                    {
+                        var stdin = pt.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() : "";
+                        var expected = pt.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : "";
+                        publicTests.Add(new { stdin, expected });
+                    }
+                }
+
+                map[id] = new
+                {
+                    id,
+                    type = "code",
+                    title,
+                    prompt,
+                    starterCode,
+                    languageIdsAllowed = allowed,
+                    publicTests
+                };
+            }
+        }
+
+        var ordered = new List<object>();
+        if (questionOrder != null && questionOrder.Count > 0)
+        {
+            foreach (var qid in questionOrder)
+                if (map.TryGetValue(qid, out var pq)) ordered.Add(pq);
+        }
+        else
+        {
+            ordered = map.Values.ToList();
+        }
+
+        return new { timeLimitSeconds, randomize, questions = ordered };
+    }
+
+    private static decimal ComputeMcqScore(string assessmentJson, string answersJson)
+    {
+        using var assessmentDoc = JsonDocument.Parse(assessmentJson);
+        using var answersDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(answersJson) ? "{}" : answersJson);
+
+        if (!assessmentDoc.RootElement.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array)
+            return 0;
+
+        int totalMcq = 0;
+        int correct = 0;
+
+        foreach (var q in qs.EnumerateArray())
+        {
+            var type = q.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : "mcq";
+            if (!string.Equals(type, "mcq", StringComparison.OrdinalIgnoreCase)) continue;
+
+            if (!q.TryGetProperty("id", out var idEl) || idEl.ValueKind != JsonValueKind.String) continue;
+            var qid = idEl.GetString();
+            if (string.IsNullOrWhiteSpace(qid)) continue;
+
+            if (!q.TryGetProperty("correctIndex", out var cEl) || cEl.ValueKind != JsonValueKind.Number) continue;
+            var correctIndex = cEl.GetInt32();
+
+            totalMcq++;
+
+            if (answersDoc.RootElement.TryGetProperty(qid, out var chosen) &&
+                chosen.ValueKind == JsonValueKind.Number &&
+                chosen.GetInt32() == correctIndex)
+            {
+                correct++;
+            }
+        }
+
+        if (totalMcq == 0) return 0;
+        return Math.Round((decimal)correct * 100m / totalMcq, 2);
+    }
+
+    // DTOs
+    public class MyApplicationDto
+    {
+        public int ApplicationId { get; set; }
+        public int OpportunityId { get; set; }
+        public string OpportunityTitle { get; set; } = "";
+        public string CompanyName { get; set; } = "";
+        public string Status { get; set; } = "";
+        public DateTime CreatedAtUtc { get; set; }
+        public bool HasAssessment { get; set; }
+    }
+
+    public class StartAssessmentDto
+    {
+        public bool WebcamConsent { get; set; }
+    }
+
+    public class SaveAssessmentDto
+    {
+        public object? Answers { get; set; } 
+    }
+
+    public class ProctorEventDto
+    {
+        public string Type { get; set; } = ""; 
+        public object? Details { get; set; }
+    }
+
+    public class RunCodeDto
+    {
+        public string QuestionId { get; set; } = "";
+        public int LanguageId { get; set; }
+        public string SourceCode { get; set; } = "";
+        public string? StdinOverride { get; set; } 
+    }
+
+    public class SnapshotDto
+    {
+        public string Base64Jpeg { get; set; } = ""; 
+    }
+
+    // GET my applications
+    [Authorize(Roles = "Student")]
+    [HttpGet("me")]
+    public async Task<ActionResult<List<MyApplicationDto>>> GetMyApplications()
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var apps = await _db.Applications
+            .AsNoTracking()
+            .Include(a => a.Opportunity)
+            .Where(a => a.UserId == userId && a.Status != ApplicationStatus.Withdrawn)
+            .OrderByDescending(a => a.CreatedAtUtc)
+            .Select(a => new MyApplicationDto
+            {
+                ApplicationId = a.Id,
+                OpportunityId = a.OpportunityId,
+                OpportunityTitle = a.Opportunity.Title,
+                CompanyName = a.Opportunity.CompanyName,
+                Status = a.Status.ToString(),
+                CreatedAtUtc = a.CreatedAtUtc,
+                HasAssessment = a.Opportunity.AssessmentJson != null && a.Opportunity.AssessmentJson != ""
+            })
+            .ToListAsync();
+
+        return Ok(apps);
+    }
+
+    // GET application details incl. public assessment + expiry
+    [Authorize(Roles = "Student")]
+    [HttpGet("{applicationId:int}")]
+    public async Task<IActionResult> GetMyApplication(int applicationId)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var app = await _db.Applications
+            .AsNoTracking()
+            .Include(a => a.Opportunity)
+            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+
+        if (app == null) return NotFound();
+
+        var attempt = await _db.ApplicationAssessments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
+
+        List<string>? order = null;
+        if (attempt != null && !string.IsNullOrWhiteSpace(attempt.QuestionOrderJson))
+        {
+            try { order = JsonSerializer.Deserialize<List<string>>(attempt.QuestionOrderJson); } catch { }
+        }
+
+        object? savedAnswers = null;
+        if (attempt != null && !string.IsNullOrWhiteSpace(attempt.AnswersJson))
+        {
+            try { savedAnswers = JsonSerializer.Deserialize<object>(attempt.AnswersJson); } catch { }
+        }
+
+        return Ok(new
+        {
+            applicationId = app.Id,
+            opportunityId = app.OpportunityId,
+            status = app.Status.ToString(),
+            createdAtUtc = app.CreatedAtUtc,
+
+            hasAssessment = !string.IsNullOrWhiteSpace(app.Opportunity.AssessmentJson),
+            assessment = MakePublicAssessment(app.Opportunity.AssessmentJson, order),
+
+            attempt = attempt == null ? null : new
+            {
+                attemptId = attempt.Id,
+                attempt.StartedAtUtc,
+                attempt.ExpiresAtUtc,
+                attempt.SubmittedAtUtc,
+                attempt.Score,
+                attempt.WebcamConsent,
+                attempt.Flagged,
+                attempt.FlagReason,
+
+                mcqCount = attempt.McqCountSnapshot,
+                challengeCount = attempt.ChallengeCountSnapshot,
+                timeLimitSeconds = attempt.TimeLimitSeconds,
+
+                savedAnswers
+            }
+        });
+    }
+
+    // Start assessment
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/assessment/start")]
+    public async Task<IActionResult> StartAssessment(int applicationId, [FromBody] StartAssessmentDto dto)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var app = await _db.Applications
+            .Include(a => a.Opportunity)
+            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+
+        if (app == null) return NotFound();
+        if (app.Status == ApplicationStatus.Withdrawn) return BadRequest("Application is withdrawn.");
+
+        if (string.IsNullOrWhiteSpace(app.Opportunity.AssessmentJson))
+            return BadRequest("This opportunity has no assessment.");
+
+        var existing = await _db.ApplicationAssessments.FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
+        if (existing != null)
+        {
+            // don't restart after submit
+            if (existing.SubmittedAtUtc != null)
+                return Ok(new { attemptId = existing.Id, alreadySubmitted = true, expiresAtUtc = existing.ExpiresAtUtc });
+
+            // ensure in assessment
+            app.Status = ApplicationStatus.InAssessment;
+            existing.WebcamConsent = dto.WebcamConsent;
+            await _db.SaveChangesAsync();
+
+            return Ok(new { attemptId = existing.Id, expiresAtUtc = existing.ExpiresAtUtc });
+        }
+
+        // Parse assessment for time limit + question ids + counts
+        int timeLimitSeconds = 1800;
+        bool randomize = true;
+        var questionIds = new List<string>();
+
+        int mcqCount = 0;
+        int challengeCount = 0;
+
+        using (var doc = JsonDocument.Parse(app.Opportunity.AssessmentJson))
+        {
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("timeLimitSeconds", out var tl) && tl.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tl.GetInt32();
+
+            if (root.TryGetProperty("randomize", out var r) &&
+                (r.ValueKind == JsonValueKind.True || r.ValueKind == JsonValueKind.False))
+                randomize = r.ValueKind == JsonValueKind.True;
+
+            if (root.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var q in qs.EnumerateArray())
+                {
+                    if (q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String)
+                    {
+                        var id = idEl.GetString();
+                        if (!string.IsNullOrWhiteSpace(id)) questionIds.Add(id!);
+                    }
+                    var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String
+                        ? tEl.GetString()
+                        : "mcq";
+
+                    if (string.Equals(type, "mcq", StringComparison.OrdinalIgnoreCase)) mcqCount++;
+                    else if (string.Equals(type, "code", StringComparison.OrdinalIgnoreCase)) challengeCount++;
+                }
+            }
+        }
+
+
+        if (questionIds.Count == 0) return BadRequest("Assessment has no questions.");
+
+        var seed = SecureSeed();
+        var order = randomize ? Shuffle(questionIds, seed) : questionIds;
+
+        app.Status = ApplicationStatus.InAssessment;
+
+        var attempt = new ApplicationAssessment
+        {
+            ApplicationId = app.Id,
+            AnswersJson = "{}",
+            StartedAtUtc = DateTime.UtcNow,
+            TimeLimitSeconds = timeLimitSeconds,
+            ExpiresAtUtc = DateTime.UtcNow.AddSeconds(timeLimitSeconds),
+
+            McqCountSnapshot = mcqCount,
+            ChallengeCountSnapshot = challengeCount,
+
+            RandomSeed = seed,
+            QuestionOrderJson = JsonSerializer.Serialize(order),
+            WebcamConsent = dto.WebcamConsent,
+            CopyPasteCount = 0,
+            TabSwitchCount = 0,
+            SuspiciousCount = 0,
+            Flagged = false
+        };
+
+
+        _db.ApplicationAssessments.Add(attempt);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { attemptId = attempt.Id, expiresAtUtc = attempt.ExpiresAtUtc });
+    }
+
+    // Save answers
+    [Authorize(Roles = "Student")]
+    [HttpPut("{applicationId:int}/assessment")]
+    public async Task<IActionResult> SaveAssessment(int applicationId, [FromBody] SaveAssessmentDto dto)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var attempt = await _db.ApplicationAssessments
+            .Include(x => x.Application)
+            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+
+        if (attempt == null) return NotFound("Assessment not started.");
+        if (attempt.SubmittedAtUtc != null) return BadRequest("Already submitted.");
+        if (IsExpired(attempt)) return BadRequest("Time is up.");
+
+        attempt.AnswersJson = JsonSerializer.Serialize(dto.Answers ?? new { });
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // Proctor event (copy/paste/tab switching)
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/assessment/proctor-event")]
+    public async Task<IActionResult> ProctorEvent(int applicationId, [FromBody] ProctorEventDto dto)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var attempt = await _db.ApplicationAssessments
+            .Include(x => x.Application)
+            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+
+        if (attempt == null) return NotFound("Assessment not started.");
+        if (attempt.SubmittedAtUtc != null) return NoContent();
+
+        // log
+        _db.ProctorEvents.Add(new ProctorEvent
+        {
+            ApplicationAssessmentId = attempt.Id,
+            Type = dto.Type?.Trim() ?? "",
+            Details = dto.Details == null ? null : JsonSerializer.Serialize(dto.Details),
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        // update counters + flag rules
+        var t = (dto.Type ?? "").Trim().ToUpperInvariant();
+        if (t is "COPY" or "PASTE" or "CUT")
+            attempt.CopyPasteCount++;
+
+        if (t is "TAB_BLUR" or "VISIBILITY_HIDDEN" or "WINDOW_BLUR")
+            attempt.TabSwitchCount++;
+
+        if (t is "DEVTOOLS" or "UNUSUAL_BEHAVIOR")
+            attempt.SuspiciousCount++;
+
+        // thresholds (adjust)
+        if (!attempt.Flagged)
+        {
+            if (attempt.TabSwitchCount >= 3)
+            {
+                attempt.Flagged = true;
+                attempt.FlagReason = "Too many tab switches.";
+            }
+            else if (attempt.CopyPasteCount >= 5)
+            {
+                attempt.Flagged = true;
+                attempt.FlagReason = "Too many copy/paste events.";
+            }
+            else if (attempt.SuspiciousCount >= 2)
+            {
+                attempt.Flagged = true;
+                attempt.FlagReason = "Suspicious behavior detected.";
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { attempt.Flagged, attempt.FlagReason, attempt.TabSwitchCount, attempt.CopyPasteCount });
+    }
+
+    // Webcam snapshot upload 
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/assessment/snapshot")]
+    public async Task<IActionResult> UploadSnapshot(int applicationId, [FromBody] SnapshotDto dto)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var attempt = await _db.ApplicationAssessments
+            .Include(x => x.Application)
+            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+
+        if (attempt == null) return NotFound("Assessment not started.");
+        if (!attempt.WebcamConsent) return BadRequest("No webcam consent.");
+        if (attempt.SubmittedAtUtc != null) return NoContent();
+
+        var b64 = dto.Base64Jpeg ?? "";
+        if (b64.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            var comma = b64.IndexOf(',');
+            if (comma >= 0) b64 = b64[(comma + 1)..];
+        }
+
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(b64); }
+        catch { return BadRequest("Invalid base64."); }
+
+        var dir = Path.Combine(_env.ContentRootPath, "Snapshots");
+        Directory.CreateDirectory(dir);
+
+        var filename = $"app{applicationId}_attempt{attempt.Id}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.jpg";
+        var path = Path.Combine(dir, filename);
+
+        await System.IO.File.WriteAllBytesAsync(path, bytes);
+
+        _db.ProctorEvents.Add(new ProctorEvent
+        {
+            ApplicationAssessmentId = attempt.Id,
+            Type = "WEBCAM_SNAPSHOT",
+            Details = JsonSerializer.Serialize(new { saved = true, file = filename }),
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { saved = true });
+    }
+
+    // Judge0: RUN code against PUBLIC tests only
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/assessment/run")]
+    public async Task<IActionResult> RunCode(int applicationId, [FromBody] RunCodeDto dto)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var attempt = await _db.ApplicationAssessments
+            .Include(x => x.Application)
+                .ThenInclude(a => a.Opportunity)
+            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+
+        if (attempt == null) return NotFound("Assessment not started.");
+        if (attempt.SubmittedAtUtc != null) return BadRequest("Already submitted.");
+        if (IsExpired(attempt)) return BadRequest("Time is up.");
+
+        var assessmentJson = attempt.Application.Opportunity.AssessmentJson;
+        if (string.IsNullOrWhiteSpace(assessmentJson)) return BadRequest("No assessment.");
+
+        // Find the code question + its public tests
+        JsonElement? codeQuestion = null;
+        using (var doc = JsonDocument.Parse(assessmentJson))
+        {
+            var root = doc.RootElement;
+            if (root.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var q in qs.EnumerateArray())
+                {
+                    var id = q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String ? idEl.GetString() : null;
+                    var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String ? tEl.GetString() : null;
+
+                    if (string.Equals(type, "code", StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(id, dto.QuestionId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        codeQuestion = q;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (codeQuestion == null) return BadRequest("Invalid code questionId.");
+
+        var qEl = codeQuestion.Value;
+
+        // Validate allowed languages
+        var allowed = new HashSet<int>();
+        if (qEl.TryGetProperty("languageIdsAllowed", out var langs) && langs.ValueKind == JsonValueKind.Array)
+            foreach (var l in langs.EnumerateArray())
+                if (l.ValueKind == JsonValueKind.Number) allowed.Add(l.GetInt32());
+
+        if (allowed.Count > 0 && !allowed.Contains(dto.LanguageId))
+            return BadRequest("Language not allowed for this question.");
+
+        // pick stdin: first public test or override
+        string stdin = "";
+        string expected = "";
+        if (qEl.TryGetProperty("publicTests", out var pts) && pts.ValueKind == JsonValueKind.Array && pts.GetArrayLength() > 0)
+        {
+            var first = pts[0];
+            stdin = first.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+            expected = first.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.StdinOverride))
+            stdin = dto.StdinOverride!;
+
+        var result = await Judge0Submit(dto.SourceCode, dto.LanguageId, stdin, expected);
+
+        return Ok(result);
+    }
+
+    // Submit assessment:
+    // - enforce time
+    // - grade MCQ
+    // - grade CODE using HIDDEN tests via Judge0
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/assessment/submit")]
+    public async Task<IActionResult> Submit(int applicationId)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var attempt = await _db.ApplicationAssessments
+            .Include(x => x.Application)
+                .ThenInclude(a => a.Opportunity)
+            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+
+        if (attempt == null) return NotFound("Assessment not started.");
+        if (attempt.SubmittedAtUtc != null) return BadRequest("Already submitted.");
+
+        if (IsExpired(attempt))
+            return BadRequest("Time is up.");
+
+        var assessmentJson = attempt.Application.Opportunity.AssessmentJson;
+        if (string.IsNullOrWhiteSpace(assessmentJson)) return BadRequest("No assessment.");
+
+        // Parse answers
+        JsonElement answersRoot;
+        try
+        {
+            using var ansDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(attempt.AnswersJson) ? "{}" : attempt.AnswersJson);
+            answersRoot = ansDoc.RootElement.Clone();
+        }
+        catch
+        {
+            answersRoot = JsonDocument.Parse("{}").RootElement.Clone();
+        }
+
+        // MCQ score (0..100 of MCQs)
+        var mcqScore = ComputeMcqScore(assessmentJson, attempt.AnswersJson);
+
+        // Code score: run hidden tests for each code question and compute percent pass
+        var (codeScore, codeDetails) = await GradeCodeQuestions(assessmentJson, answersRoot);
+
+        // Combine scores (simple weighting: 50% mcq, 50% code if both exist)
+        // If only one type exists, that one is 100%.
+        var hasMcq = HasQuestionType(assessmentJson, "mcq");
+        var hasCode = HasQuestionType(assessmentJson, "code");
+
+        decimal finalScore;
+        if (hasMcq && hasCode) finalScore = Math.Round((mcqScore * 0.5m) + (codeScore * 0.5m), 2);
+        else if (hasCode) finalScore = codeScore;
+        else finalScore = mcqScore;
+
+        attempt.Score = finalScore;
+        attempt.SubmittedAtUtc = DateTime.UtcNow;
+
+        attempt.Application.Status = ApplicationStatus.Submitted;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            status = attempt.Application.Status.ToString(),
+            finalScore,
+            mcqScore,
+            codeScore,
+            codeDetails,
+            flagged = attempt.Flagged,
+            flagReason = attempt.FlagReason
+        });
+    }
+
+    private static bool HasQuestionType(string assessmentJson, string typeWanted)
+    {
+        using var doc = JsonDocument.Parse(assessmentJson);
+        if (!doc.RootElement.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array) return false;
+        foreach (var q in qs.EnumerateArray())
+        {
+            var type = q.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
+            if (string.Equals(type, typeWanted, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    private async Task<(decimal score, object details)> GradeCodeQuestions(string assessmentJson, JsonElement answersRoot)
+    {
+        using var doc = JsonDocument.Parse(assessmentJson);
+        var root = doc.RootElement;
+
+        if (!root.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array)
+            return (0, new { });
+
+        int totalCodeQuestions = 0;
+        int totalHiddenTests = 0;
+        int passedHiddenTests = 0;
+
+        var perQuestion = new List<object>();
+
+        foreach (var q in qs.EnumerateArray())
+        {
+            var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String ? tEl.GetString() : "";
+            if (!string.Equals(type, "code", StringComparison.OrdinalIgnoreCase)) continue;
+
+            var qid = q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String ? idEl.GetString() : null;
+            if (string.IsNullOrWhiteSpace(qid)) continue;
+
+            totalCodeQuestions++;
+
+            int languageId = 0;
+            string sourceCode = "";
+
+            if (answersRoot.ValueKind == JsonValueKind.Object && answersRoot.TryGetProperty(qid!, out var aEl) && aEl.ValueKind == JsonValueKind.Object)
+            {
+                if (aEl.TryGetProperty("languageId", out var l) && l.ValueKind == JsonValueKind.Number) languageId = l.GetInt32();
+                if (aEl.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String) sourceCode = c.GetString() ?? "";
+            }
+
+            if (languageId == 0 || string.IsNullOrWhiteSpace(sourceCode))
+            {
+                perQuestion.Add(new { questionId = qid, passed = 0, total = 0, error = "No code submitted." });
+                continue;
+            }
+
+            // Hidden tests
+            int qTotal = 0;
+            int qPassed = 0;
+
+            if (q.TryGetProperty("hiddenTests", out var hts) && hts.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var ht in hts.EnumerateArray())
+                {
+                    var stdin = ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+                    var expected = ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+
+                    if (stdin == null) stdin = "";
+                    if (expected == null) expected = "";
+
+                    qTotal++;
+                    totalHiddenTests++;
+
+                    var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
+
+                    var ok = false;
+                    if (res.TryGetValue("status", out var stObj) && stObj is string st)
+                    {
+                        // "Accepted" typical
+                        ok = st.Equals("Accepted", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    if (ok)
+                    {
+                        qPassed++;
+                        passedHiddenTests++;
+                    }
+                }
+            }
+
+            perQuestion.Add(new { questionId = qid, passed = qPassed, total = qTotal });
+        }
+
+        // score is percent of hidden tests passed
+        if (totalHiddenTests == 0) return (0, new { perQuestion });
+
+        var score = Math.Round((decimal)passedHiddenTests * 100m / totalHiddenTests, 2);
+        return (score, new { perQuestion, passedHiddenTests, totalHiddenTests });
+    }
+
+    // Judge0 call (wait=true)
+    private async Task<Dictionary<string, object?>> Judge0Submit(string sourceCode, int languageId, string stdin, string expectedOutput)
+    {
+        var baseUrl = _config["Judge0:BaseUrl"]?.Trim();
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            throw new InvalidOperationException("Judge0:BaseUrl is not configured.");
+
+        var client = _http.CreateClient();
+
+        var payload = new
+        {
+            source_code = sourceCode,
+            language_id = languageId,
+            stdin = stdin,
+            expected_output = expectedOutput
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var url = $"{baseUrl.TrimEnd('/')}/submissions?base64_encoded=false&wait=true";
+        var resp = await client.PostAsync(url, content);
+        var body = await resp.Content.ReadAsStringAsync();
+
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement;
+
+        string status = "";
+        if (root.TryGetProperty("status", out var st) && st.ValueKind == JsonValueKind.Object)
+        {
+            if (st.TryGetProperty("description", out var d) && d.ValueKind == JsonValueKind.String)
+                status = d.GetString() ?? "";
+        }
+
+        string? stdout = root.TryGetProperty("stdout", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString() : null;
+        string? stderr = root.TryGetProperty("stderr", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null;
+        string? compile = root.TryGetProperty("compile_output", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
+        string? message = root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
+
+        return new Dictionary<string, object?>
+        {
+            ["status"] = status,
+            ["stdout"] = stdout,
+            ["stderr"] = stderr,
+            ["compile_output"] = compile,
+            ["message"] = message
+        };
+    }
+}

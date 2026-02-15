@@ -900,6 +900,7 @@ body {
     margin: 0 0 6px;
     font-weight: 1000;
     font-size: 15px;
+    color: #1d4ed8;
 }
 
 .similarMeta {
@@ -1074,4 +1075,34 @@ body {
     height: 300px; 
     border: 0;
     border-radius: 16px;
+}
+
+.companyLogo {
+    width: 64px;
+    height: 64px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+    .companyLogo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+.similarLogo {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
