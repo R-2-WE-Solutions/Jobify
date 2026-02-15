@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import "./styles/JobDetailsPage.css";
+import "../styles/JobDetailsPage.css";
 
 import {
     MapPin,
@@ -62,6 +62,24 @@ function formatDeadline(utcString) {
     });
 }
 
+function CompanyLogo({ name, size = 64, logoUrl }) {
+    const letter = (name?.trim()?.[0] || "J").toUpperCase();
+
+    return (
+        <div
+            className="companyLogo"
+            style={{ width: size, height: size, borderRadius: Math.round(size * 0.28) }}
+        >
+            {logoUrl ? (
+                <img src={logoUrl} alt={name || "Company"} />
+            ) : (
+                <span className="companyLogoFallback">{letter}</span>
+            )}
+        </div>
+    );
+}
+
+
 export default function JobDetailsPage() {
     const { id } = useParams();
 
@@ -88,7 +106,7 @@ export default function JobDetailsPage() {
                 return;
             }
 
-            const data = await res.json(); // { applicationId, status }
+            const data = await res.json(); 
             navigate(`/apply/${data.applicationId}/review`);
         } catch (e) {
             console.error(e);
@@ -103,11 +121,18 @@ export default function JobDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
 
+    const [similar, setSimilar] = useState([]);
+    const [similarLoading, setSimilarLoading] = useState(true);
+    const [similarErr, setSimilarErr] = useState("");
+
+
     const [askOpen, setAskOpen] = useState(false);
     const [questionText, setQuestionText] = useState("");
     const [askLoading, setAskLoading] = useState(false);
     const [askErr, setAskErr] = useState("");
     const [askOk, setAskOk] = useState("");
+
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -140,6 +165,39 @@ export default function JobDetailsPage() {
         fetchDetails();
         return () => controller.abort();
     }, [id]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const loadSimilar = async () => {
+            try {
+                setSimilarLoading(true);
+                setSimilarErr("");
+
+                const res = await fetch(`${API_URL}/api/opportunities/${id}/similar?take=4`, {
+                    signal: controller.signal,
+                    headers: { "Content-Type": "application/json" },
+                });
+
+                if (!res.ok) throw new Error(`Failed to load similar (${res.status})`);
+
+                const data = await res.json();
+                setSimilar(Array.isArray(data) ? data : []);
+            } catch (e) {
+                if (e?.name !== "AbortError") {
+                    console.error(e);
+                    setSimilarErr(e?.message || "Failed to load similar opportunities");
+                    setSimilar([]);
+                }
+            } finally {
+                setSimilarLoading(false);
+            }
+        };
+
+        if (id) loadSimilar();
+        return () => controller.abort();
+    }, [id]);
+
 
     const submitQuestion = async () => {
         try {
@@ -183,7 +241,6 @@ export default function JobDetailsPage() {
             setQuestionText("");
             setAskOpen(false);
 
-            // Refresh details so Q&A list updates
             const refreshed = await fetch(`${API_URL}/api/opportunities/${id}`, {
                 headers: { "Content-Type": "application/json" },
             });
@@ -257,8 +314,11 @@ export default function JobDetailsPage() {
                     <div className="heroTop">
                         <div className="heroLeft">
                             <div className="logoWrap">
-                                <div className="logoImg" />
+                                <div className="companyLogo">
+                                    <Building2 size={30} strokeWidth={1.8} />
+                                </div>
                             </div>
+
 
                             <div className="heroInfo">
                                 <h1 className="heroTitle">{job.title}</h1>
@@ -639,20 +699,61 @@ export default function JobDetailsPage() {
                     </div>
 
                     <div className="similarGrid">
-                        <div className="similarCard">
-                            <div className="similarTop">
-                                <div className="similarLogo" />
-                                <button className="bookmarkBtn" title="Save">
-                                    <Bookmark size={20} />
-                                </button>
+                        {similarLoading ? (
+                            <div className="similarCard">
+                                <h3 className="similarJobTitle">Loading…</h3>
+                                <p className="similarMeta">Fetching similar opportunities</p>
+                                <span className="salaryPill">—</span>
                             </div>
+                        ) : similarErr ? (
+                            <div className="similarCard">
+                                <h3 className="similarJobTitle">Couldn’t load</h3>
+                                <p className="similarMeta">{similarErr}</p>
+                                <span className="salaryPill">—</span>
+                            </div>
+                        ) : similar.length === 0 ? (
+                            <div className="similarCard">
+                                <h3 className="similarJobTitle">No similar opportunities</h3>
+                                <p className="similarMeta">Try creating a few more opportunities with overlapping skills.</p>
+                                <span className="salaryPill">—</span>
+                            </div>
+                        ) : (
+                            similar.map((s) => (
+                                <div
+                                    key={s.id}
+                                    className="similarCard"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => navigate(`/opportunity/${s.id}`)}
+                                    onKeyDown={(e) => e.key === "Enter" && navigate(`/opportunity/${s.id}`)}
+                                >
+                                    <div className="similarTop">
+                                        <div className="similarLogo">
+                                            <Building2 size={22} strokeWidth={1.8} />
+                                        </div>
+                                        <button
+                                            className="bookmarkBtn"
+                                            title="Save"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); 
+                                                
+                                            }}
+                                        >
+                                            <Bookmark size={20} />
+                                        </button>
+                                    </div>
 
-                            <h3 className="similarJobTitle">Coming soon…</h3>
-                            <p className="similarMeta">—</p>
+                                    <h3 className="similarJobTitle">{s.title}</h3>
+                                    <p className="similarMeta">
+                                        {s.companyName} • {s.isRemote ? "Remote" : (s.workMode || "On-site")}
+                                    </p>
 
-                            <span className="salaryPill">—</span>
-                        </div>
+                                    <span className="salaryPill">{formatMoneyRange(s.minPay, s.maxPay)}</span>
+                                </div>
+                            ))
+                        )}
                     </div>
+
                 </div>
             </main>
         </div>

@@ -1,9 +1,6 @@
-/* browseopportunities.css */
 
-/* ✅ font (easy way) */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
-/* ✅ reset + global typography */
 :root {
     --bg: #fffff;
     --card: #ffffff;
@@ -35,7 +32,6 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* ✅ page container look like your "wanted" screenshot */
 .bo-root {
     width: 100%;
     max-width: 1120px;
@@ -61,6 +57,7 @@ body {
     line-height: 1.08;
     letter-spacing: -0.02em;
     font-weight: 800;
+    color: #1d4ed8;
 }
 
 .bo-subtitle {
@@ -70,7 +67,6 @@ body {
     line-height: 1.5;
 }
 
-/* ✅ card */
 .bo-card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -82,7 +78,6 @@ body {
     padding: 18px;
 }
 
-/* ✅ toolbar row */
 .bo-toolbar {
     display: grid;
     grid-template-columns: 1fr;
@@ -96,7 +91,6 @@ body {
     }
 }
 
-/* ✅ input */
 .bo-searchWrap {
     position: relative;
 }
@@ -136,7 +130,6 @@ body {
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
-/* ✅ buttons */
 .bo-btn {
     border: 1px solid transparent;
     border-radius: 14px;
@@ -179,7 +172,6 @@ body {
         transform: translateY(-1px);
     }
 
-/* ✅ select (make it look like the screenshot, not native ugly) */
 .bo-selectWrap {
     position: relative;
 }
@@ -227,7 +219,6 @@ body {
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
-/* ✅ filters drawer */
 .bo-filters {
     margin-top: 14px;
     padding-top: 16px;
@@ -260,7 +251,6 @@ body {
     letter-spacing: 0.02em;
 }
 
-/* ✅ results count */
 .bo-resultsRow {
     display: flex;
     align-items: center;
@@ -278,14 +268,12 @@ body {
     font-weight: 800;
 }
 
-/* list */
 .bo-list {
     display: grid;
     grid-template-columns: 1fr;
     gap: 14px;
 }
 
-/* ✅ opportunity card hover */
 .bo-cardHover {
     box-shadow: var(--shadow);
     transition: box-shadow 150ms ease, border-color 150ms ease, transform 150ms ease;
@@ -297,7 +285,7 @@ body {
         transform: translateY(-2px);
     }
 
-/* row layout */
+
 .bo-row {
     display: grid;
     grid-template-columns: 1fr;
@@ -390,7 +378,6 @@ body {
     color: #cbd5e1;
 }
 
-/* badges */
 .bo-badge {
     display: inline-flex;
     align-items: center;
@@ -461,7 +448,6 @@ body {
     font-weight: 800;
 }
 
-/* right column */
 .bo-right {
     display: flex;
     gap: 12px;
@@ -479,7 +465,6 @@ body {
     }
 }
 
-/* match card (more like screenshot) */
 .bo-match {
     border: 1px solid rgba(37, 99, 235, 0.20);
     background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(37,99,235,0.14));
@@ -555,7 +540,6 @@ body {
         fill: var(--blue);
     }
 
-/* load more */
 .bo-loadMore {
     display: flex;
     justify-content: center;

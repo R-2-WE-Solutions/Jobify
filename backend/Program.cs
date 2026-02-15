@@ -1,6 +1,4 @@
-// =======================
-// Imports
-// =======================
+
 // App DB + services
 using Jobify.Api.Data;
 using Jobify.Api.Services;
@@ -75,6 +73,8 @@ builder.Services.AddCors(options =>
 // Custom services
 // Service that creates JWT tokens on login
 builder.Services.AddScoped<JwtTokenService>();
+
+builder.Services.AddHttpClient();
 
 // Authentication
 builder.Services

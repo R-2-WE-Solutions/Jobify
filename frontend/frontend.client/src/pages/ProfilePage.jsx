@@ -22,7 +22,6 @@ const ProfilePage = () => {
             setError(null);
             const data = await getProfile();
 
-            // ✅ API returns { role, profile }
             setProfile(data.profile);
             setFormData(data.profile);
             setUserRole(data.role);
@@ -50,7 +49,6 @@ const ProfilePage = () => {
 
             const result = await updateProfile(formData);
 
-            // ✅ API returns { role, profile }
             setProfile(result.profile);
             setFormData(result.profile);
             setUserRole(result.role);
@@ -72,7 +70,6 @@ const ProfilePage = () => {
         setError(null);
     };
 
-    // ✅ FIX 1: ONLY block on loading
     if (loading) {
         return (
             <div className="profile-container">
@@ -81,7 +78,6 @@ const ProfilePage = () => {
         );
     }
 
-    // ✅ FIX 2: if API returned nothing, show error instead of infinite loading
     if (!profile) {
         return (
             <div className="profile-container">
@@ -92,7 +88,6 @@ const ProfilePage = () => {
         );
     }
 
-    // ✅ FIX 3: if role missing, show error instead of infinite loading
     if (!userRole) {
         return (
             <div className="profile-container">

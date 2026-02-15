@@ -4,6 +4,7 @@ using Jobify.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Jobify.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260213175616_AddAssesments")]
+    partial class AddAssesments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,9 +40,6 @@ namespace Jobify.Migrations
                     b.Property<int>("ApplicationId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ChallengeCountSnapshot")
-                        .HasColumnType("int");
-
                     b.Property<int>("CopyPasteCount")
                         .HasColumnType("int");
 
@@ -51,9 +51,6 @@ namespace Jobify.Migrations
 
                     b.Property<bool>("Flagged")
                         .HasColumnType("bit");
-
-                    b.Property<int>("McqCountSnapshot")
-                        .HasColumnType("int");
 
                     b.Property<string>("QuestionOrderJson")
                         .IsRequired()
@@ -130,17 +127,8 @@ namespace Jobify.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AssessmentChallengeCount")
-                        .HasColumnType("int");
-
                     b.Property<string>("AssessmentJson")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("AssessmentMcqCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AssessmentTimeLimitSeconds")
-                        .HasColumnType("int");
 
                     b.Property<string>("BenefitsJson")
                         .HasColumnType("nvarchar(max)");

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
+//loginpages
 import LoginPage from "./pages/LoginPage/LoginPage";
 import SignupPage from "./pages/LoginPage/SignupPage";
 import ForgotPasswordPage from "./pages/LoginPage/ForgotPasswordPage";
@@ -8,7 +9,14 @@ import ResetPasswordPage from "./pages/LoginPage/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/LoginPage/OAuthCallbackPage";
 import EmailConfirmed from "./pages/LoginPage/EmailConfirmed";
 
-import ProfileReviewPage from "./pages/ProfileReviewPage";
+//job details pages
+import ProfileReviewPage from "./pages/JobDetails/ProfileReviewPage";
+import ApplicationReviewPage from "./pages/JobDetails/ApplicationReviewPage";
+import AssessmentPage from "./pages/JobDetails/AssesmentsPage";
+import ApplicationResultPage from "./pages/JobDetails/ApplicationResultPage";
+import JobDetailsPage from "./pages/JobDetails/JobDetailsPage";
+import AssessmentRulesPage from "./pages/JobDetails/AssesmentRulesPage";
+
 
 
 import AppLayout from "./layout/AppLayout";
@@ -16,8 +24,7 @@ import AppLayout from "./layout/AppLayout";
 import { BrowseOpportunities } from "./pages/BrowseOpportunities";
 import ProfilePage from "./pages/ProfilePage";
 
-//Opportunity Details page
-import JobDetailsPage from "./pages/JobDetailsPage";
+
 
 // placeholder pages 
 const Dashboard = () => <div>Dashboard</div>;
@@ -44,6 +51,13 @@ export default function App() {
 
                 <Route path="/matches" element={<Matches />} />
                 <Route path="/profile" element={<ProfilePage />} />
+
+                <Route path="/application/:applicationId/review" element={<ApplicationReviewPage />} />
+                <Route path="/application/:applicationId/assessment/rules" element={<AssessmentRulesPage />} />
+
+                <Route path="/application/:applicationId/assessment" element={<AssessmentPage />} />
+                <Route path="/application/:applicationId/result" element={<ApplicationResultPage />} />
+
             </Route>
 
 

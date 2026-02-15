@@ -10,7 +10,6 @@
     --shadow2: 0 16px 40px rgba(15, 23, 42, 0.10);
     --radius: 16px;
     --header-h: 72px;
-    /* ✅ a bit bigger sidebar */
     --sidebar-w: 240px;
 }
 
@@ -33,7 +32,6 @@ body {
     min-height: 100vh;
 }
 
-/* HEADER full width */
 .al-header {
     position: sticky;
     top: 0;
@@ -44,7 +42,6 @@ body {
     transition: background 180ms ease, box-shadow 180ms ease, backdrop-filter 180ms ease;
 }
 
-    /* ✅ MORE transparency on scroll */
     .al-header.isScrolled {
         background: rgba(255, 255, 255, 0.40);
         backdrop-filter: blur(14px);
@@ -75,7 +72,7 @@ body {
 
 .al-headerCenter {
     display: flex;
-    justify-content: center; /* ✅ center search */
+    justify-content: center; 
     align-items: center;
 }
 
@@ -86,7 +83,6 @@ body {
     letter-spacing: -0.02em;
 }
 
-/* SEARCH */
 .al-search {
     position: relative;
     width: min(720px, 60vw);
@@ -133,7 +129,6 @@ body {
     font-weight: 800;
 }
 
-/* header buttons */
 .al-iconBtn {
     width: 42px;
     height: 42px;
@@ -153,7 +148,6 @@ body {
         border-color: rgba(37, 99, 235, 0.25);
     }
 
-/* BODY */
 .al-body {
     display: grid;
     grid-template-columns: var(--sidebar-w) 1fr;
@@ -161,7 +155,6 @@ body {
     min-height: calc(100vh - var(--header-h));
 }
 
-/* SIDEBAR */
 .al-sidebar {
     position: sticky;
     top: var(--header-h);
@@ -228,7 +221,6 @@ body {
         color: #fff;
     }
 
-/* Sidebar bottom user card */
 .al-sidebarBottom {
     margin-top: auto;
     padding: 6px;
@@ -266,7 +258,6 @@ body {
     font-weight: 800;
 }
 
-/* MAIN + CONNECTED FOOTER */
 .al-main {
     min-width: 0;
     display: flex;
@@ -275,10 +266,9 @@ body {
 
 .al-content {
     padding: 22px;
-    flex: 1; /* ✅ keeps footer attached with no gap */
+    flex: 1;
 }
 
-/* FOOTER (full width in layout) */
 .al-footer {
     background: #fff;
     border-top: 1px solid var(--border);
@@ -318,7 +308,6 @@ body {
     margin-bottom: 10px;
 }
 
-/* ✅ HOVERING LINKS EFFECT */
 .al-footerList {
     list-style: none;
     padding: 0;
