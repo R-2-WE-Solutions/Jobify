@@ -7,7 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
-//application and assesment controller -> the assesment isnt fully finished yet lol 
+//application and assesment controller -> the assesment is finished, but needs some work with the snapshots
 
 namespace Jobify.Api.Controllers;
 
@@ -28,7 +28,6 @@ public class ApplicationsController : ControllerBase
         _env = env;
     }
 
-    // Helpers
     private string? CurrentUserId()
         => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -173,7 +172,7 @@ public class ApplicationsController : ControllerBase
         return Math.Round((decimal)correct * 100m / totalMcq, 2);
     }
 
-    // DTOs
+    //DTOs
     public class MyApplicationDto
     {
         public int ApplicationId { get; set; }
@@ -321,22 +320,28 @@ public class ApplicationsController : ControllerBase
         if (string.IsNullOrWhiteSpace(app.Opportunity.AssessmentJson))
             return BadRequest("This opportunity has no assessment.");
 
-        var existing = await _db.ApplicationAssessments.FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
+        var existing = await _db.ApplicationAssessments
+            .FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
+
         if (existing != null)
         {
-            // don't restart after submit
             if (existing.SubmittedAtUtc != null)
                 return Ok(new { attemptId = existing.Id, alreadySubmitted = true, expiresAtUtc = existing.ExpiresAtUtc });
+            if (IsExpired(existing))
+            {
+                _db.ApplicationAssessments.Remove(existing);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                app.Status = ApplicationStatus.InAssessment;
+                existing.WebcamConsent = dto.WebcamConsent;
+                await _db.SaveChangesAsync();
 
-            // ensure in assessment
-            app.Status = ApplicationStatus.InAssessment;
-            existing.WebcamConsent = dto.WebcamConsent;
-            await _db.SaveChangesAsync();
-
-            return Ok(new { attemptId = existing.Id, expiresAtUtc = existing.ExpiresAtUtc });
+                return Ok(new { attemptId = existing.Id, expiresAtUtc = existing.ExpiresAtUtc });
+            }
         }
 
-        // Parse assessment for time limit + question ids + counts
         int timeLimitSeconds = 1800;
         bool randomize = true;
         var questionIds = new List<string>();
@@ -364,6 +369,7 @@ public class ApplicationsController : ControllerBase
                         var id = idEl.GetString();
                         if (!string.IsNullOrWhiteSpace(id)) questionIds.Add(id!);
                     }
+
                     var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String
                         ? tEl.GetString()
                         : "mcq";
@@ -373,7 +379,6 @@ public class ApplicationsController : ControllerBase
                 }
             }
         }
-
 
         if (questionIds.Count == 0) return BadRequest("Assessment has no questions.");
 
@@ -402,12 +407,12 @@ public class ApplicationsController : ControllerBase
             Flagged = false
         };
 
-
         _db.ApplicationAssessments.Add(attempt);
         await _db.SaveChangesAsync();
 
         return Ok(new { attemptId = attempt.Id, expiresAtUtc = attempt.ExpiresAtUtc });
     }
+
 
     // Save answers
     [Authorize(Roles = "Student")]
@@ -432,6 +437,7 @@ public class ApplicationsController : ControllerBase
     }
 
     // Proctor event (copy/paste/tab switching)
+    // Proctor event (copy/paste/tab switching)
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/proctor-event")]
     public async Task<IActionResult> ProctorEvent(int applicationId, [FromBody] ProctorEventDto dto)
@@ -446,7 +452,6 @@ public class ApplicationsController : ControllerBase
         if (attempt == null) return NotFound("Assessment not started.");
         if (attempt.SubmittedAtUtc != null) return NoContent();
 
-        // log
         _db.ProctorEvents.Add(new ProctorEvent
         {
             ApplicationAssessmentId = attempt.Id,
@@ -455,39 +460,75 @@ public class ApplicationsController : ControllerBase
             CreatedAtUtc = DateTime.UtcNow
         });
 
-        // update counters + flag rules
         var t = (dto.Type ?? "").Trim().ToUpperInvariant();
-        if (t is "COPY" or "PASTE" or "CUT")
-            attempt.CopyPasteCount++;
 
-        if (t is "TAB_BLUR" or "VISIBILITY_HIDDEN" or "WINDOW_BLUR")
-            attempt.TabSwitchCount++;
+        bool isTabEvent = t is "TAB_BLUR" or "VISIBILITY_HIDDEN" or "WINDOW_BLUR";
+        bool isCopyEvent = t is "COPY" or "PASTE" or "CUT";
+        bool isSuspicious = t is "DEVTOOLS" or "UNUSUAL_BEHAVIOR";
 
-        if (t is "DEVTOOLS" or "UNUSUAL_BEHAVIOR")
-            attempt.SuspiciousCount++;
+        if (isCopyEvent) attempt.CopyPasteCount++;
+        if (isTabEvent) attempt.TabSwitchCount++;
+        if (isSuspicious) attempt.SuspiciousCount++;
 
-        // thresholds (adjust)
+        // Soft warning thresholds
+        var warnTabAt = 1;   // first tab switch -> warn
+        var flagTabAt = 3;   // your current flag threshold
+
+        string? message = null;
+
+        if (isTabEvent && !attempt.Flagged)
+        {
+            if (attempt.TabSwitchCount >= warnTabAt && attempt.TabSwitchCount < flagTabAt)
+            {
+                message = $"Please avoid switching tabs. ({attempt.TabSwitchCount}/{flagTabAt}) — you may be flagged.";
+            }
+        }
+
         if (!attempt.Flagged)
         {
-            if (attempt.TabSwitchCount >= 3)
+            if (attempt.TabSwitchCount >= flagTabAt)
             {
                 attempt.Flagged = true;
                 attempt.FlagReason = "Too many tab switches.";
+                message = "You have been flagged due to too many tab switches. Please stay on the assessment page.";
             }
             else if (attempt.CopyPasteCount >= 5)
             {
                 attempt.Flagged = true;
                 attempt.FlagReason = "Too many copy/paste events.";
+                message = "You have been flagged due to excessive copy/paste activity.";
             }
             else if (attempt.SuspiciousCount >= 2)
             {
                 attempt.Flagged = true;
                 attempt.FlagReason = "Suspicious behavior detected.";
+                message = "You have been flagged due to suspicious behavior.";
             }
         }
 
         await _db.SaveChangesAsync();
-        return Ok(new { attempt.Flagged, attempt.FlagReason, attempt.TabSwitchCount, attempt.CopyPasteCount });
+
+        // If you want it to feel like an "error" once flagged:
+        if (attempt.Flagged)
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                flagged = attempt.Flagged,
+                flagReason = attempt.FlagReason,
+                tabSwitchCount = attempt.TabSwitchCount,
+                copyPasteCount = attempt.CopyPasteCount,
+                message
+            });
+        }
+
+        return Ok(new
+        {
+            flagged = attempt.Flagged,
+            flagReason = attempt.FlagReason,
+            tabSwitchCount = attempt.TabSwitchCount,
+            copyPasteCount = attempt.CopyPasteCount,
+            message
+        });
     }
 
     // Webcam snapshot upload 
@@ -537,7 +578,6 @@ public class ApplicationsController : ControllerBase
 
         return Ok(new { saved = true });
     }
-
     // Judge0: RUN code against PUBLIC tests only
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/run")]
@@ -558,11 +598,12 @@ public class ApplicationsController : ControllerBase
         var assessmentJson = attempt.Application.Opportunity.AssessmentJson;
         if (string.IsNullOrWhiteSpace(assessmentJson)) return BadRequest("No assessment.");
 
-        // Find the code question + its public tests
         JsonElement? codeQuestion = null;
+
         using (var doc = JsonDocument.Parse(assessmentJson))
         {
             var root = doc.RootElement;
+
             if (root.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array)
             {
                 foreach (var q in qs.EnumerateArray())
@@ -573,7 +614,7 @@ public class ApplicationsController : ControllerBase
                     if (string.Equals(type, "code", StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(id, dto.QuestionId, StringComparison.OrdinalIgnoreCase))
                     {
-                        codeQuestion = q;
+                        codeQuestion = q.Clone();
                         break;
                     }
                 }
@@ -584,32 +625,68 @@ public class ApplicationsController : ControllerBase
 
         var qEl = codeQuestion.Value;
 
-        // Validate allowed languages
         var allowed = new HashSet<int>();
         if (qEl.TryGetProperty("languageIdsAllowed", out var langs) && langs.ValueKind == JsonValueKind.Array)
+        {
             foreach (var l in langs.EnumerateArray())
                 if (l.ValueKind == JsonValueKind.Number) allowed.Add(l.GetInt32());
+        }
 
         if (allowed.Count > 0 && !allowed.Contains(dto.LanguageId))
             return BadRequest("Language not allowed for this question.");
 
-        // pick stdin: first public test or override
-        string stdin = "";
-        string expected = "";
-        if (qEl.TryGetProperty("publicTests", out var pts) && pts.ValueKind == JsonValueKind.Array && pts.GetArrayLength() > 0)
+        if (!string.IsNullOrWhiteSpace(dto.StdinOverride))
         {
-            var first = pts[0];
-            stdin = first.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
-            expected = first.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+            var res = await Judge0Submit(dto.SourceCode, dto.LanguageId, dto.StdinOverride!, expectedOutput: "");
+            return Ok(new
+            {
+                mode = "custom",
+                results = new[]
+                {
+            new {
+                stdin = dto.StdinOverride,
+                expected = (string?)null,
+                stdout = res["stdout"],
+                stderr = res["stderr"],
+                compile_output = res["compile_output"],
+                message = res["message"],
+                status = res["status"]
+            }
+        }
+            });
+        }
+        var results = new List<object>();
+
+        if (qEl.TryGetProperty("publicTests", out var pts) && pts.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var pt in pts.EnumerateArray())
+            {
+                var stdin = pt.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+                var expected = pt.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+
+                var res = await Judge0Submit(dto.SourceCode, dto.LanguageId, stdin, expected);
+
+                results.Add(new
+                {
+                    stdin,
+                    expected,
+                    stdout = res["stdout"],
+                    stderr = res["stderr"],
+                    compile_output = res["compile_output"],
+                    message = res["message"],
+                    status = res["status"]
+                });
+            }
         }
 
-        if (!string.IsNullOrWhiteSpace(dto.StdinOverride))
-            stdin = dto.StdinOverride!;
+        return Ok(new
+        {
+            mode = "public",
+            results
+        });
 
-        var result = await Judge0Submit(dto.SourceCode, dto.LanguageId, stdin, expected);
-
-        return Ok(result);
     }
+
 
     // Submit assessment:
     // - enforce time
@@ -636,7 +713,6 @@ public class ApplicationsController : ControllerBase
         var assessmentJson = attempt.Application.Opportunity.AssessmentJson;
         if (string.IsNullOrWhiteSpace(assessmentJson)) return BadRequest("No assessment.");
 
-        // Parse answers
         JsonElement answersRoot;
         try
         {
@@ -647,15 +723,8 @@ public class ApplicationsController : ControllerBase
         {
             answersRoot = JsonDocument.Parse("{}").RootElement.Clone();
         }
-
-        // MCQ score (0..100 of MCQs)
         var mcqScore = ComputeMcqScore(assessmentJson, attempt.AnswersJson);
-
-        // Code score: run hidden tests for each code question and compute percent pass
         var (codeScore, codeDetails) = await GradeCodeQuestions(assessmentJson, answersRoot);
-
-        // Combine scores (simple weighting: 50% mcq, 50% code if both exist)
-        // If only one type exists, that one is 100%.
         var hasMcq = HasQuestionType(assessmentJson, "mcq");
         var hasCode = HasQuestionType(assessmentJson, "code");
 
@@ -734,8 +803,6 @@ public class ApplicationsController : ControllerBase
                 perQuestion.Add(new { questionId = qid, passed = 0, total = 0, error = "No code submitted." });
                 continue;
             }
-
-            // Hidden tests
             int qTotal = 0;
             int qPassed = 0;
 
@@ -757,7 +824,6 @@ public class ApplicationsController : ControllerBase
                     var ok = false;
                     if (res.TryGetValue("status", out var stObj) && stObj is string st)
                     {
-                        // "Accepted" typical
                         ok = st.Equals("Accepted", StringComparison.OrdinalIgnoreCase);
                     }
 
@@ -772,28 +838,34 @@ public class ApplicationsController : ControllerBase
             perQuestion.Add(new { questionId = qid, passed = qPassed, total = qTotal });
         }
 
-        // score is percent of hidden tests passed
         if (totalHiddenTests == 0) return (0, new { perQuestion });
 
         var score = Math.Round((decimal)passedHiddenTests * 100m / totalHiddenTests, 2);
         return (score, new { perQuestion, passedHiddenTests, totalHiddenTests });
     }
+    private static string Norm(string? s)
+    {
+        if (s == null) return "";
+        return s.Replace("\r\n", "\n").TrimEnd();
+    }
 
-    // Judge0 call (wait=true)
-    private async Task<Dictionary<string, object?>> Judge0Submit(string sourceCode, int languageId, string stdin, string expectedOutput)
+    private async Task<Dictionary<string, object?>> Judge0Submit(
+        string sourceCode,
+        int languageId,
+        string stdin,
+        string expectedOutput
+    )
     {
         var baseUrl = _config["Judge0:BaseUrl"]?.Trim();
         if (string.IsNullOrWhiteSpace(baseUrl))
             throw new InvalidOperationException("Judge0:BaseUrl is not configured.");
 
         var client = _http.CreateClient();
-
         var payload = new
         {
             source_code = sourceCode,
             language_id = languageId,
-            stdin = stdin,
-            expected_output = expectedOutput
+            stdin = stdin
         };
 
         var json = JsonSerializer.Serialize(payload);
@@ -817,14 +889,57 @@ public class ApplicationsController : ControllerBase
         string? stderr = root.TryGetProperty("stderr", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null;
         string? compile = root.TryGetProperty("compile_output", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
         string? message = root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
+        var normExp = Norm(expectedOutput);
+        var normOut = Norm(stdout);
+
+        var finalStatus = status;
+
+        var isError =
+            !string.IsNullOrWhiteSpace(compile) ||
+            !string.IsNullOrWhiteSpace(stderr) ||
+            status.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
+            status.Contains("Time Limit", StringComparison.OrdinalIgnoreCase);
+
+        if (!isError && !string.IsNullOrEmpty(normExp))
+        {
+            finalStatus = (normOut == normExp) ? "Accepted" : "Wrong Answer";
+        }
 
         return new Dictionary<string, object?>
         {
-            ["status"] = status,
+            ["status"] = finalStatus,
             ["stdout"] = stdout,
             ["stderr"] = stderr,
             ["compile_output"] = compile,
-            ["message"] = message
+            ["message"] = message,
+            ["expected"] = expectedOutput 
         };
     }
+
+
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/assessment/reset")]
+    public async Task<IActionResult> ResetAssessment(int applicationId)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var app = await _db.Applications
+            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+
+        if (app == null) return NotFound();
+
+        var attempt = await _db.ApplicationAssessments
+            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId);
+
+        if (attempt != null)
+            _db.ApplicationAssessments.Remove(attempt);
+
+        app.Status = ApplicationStatus.Draft;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { reset = true });
+    }
+
+
 }
