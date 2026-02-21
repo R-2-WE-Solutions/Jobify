@@ -23,14 +23,6 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
 
     public DbSet<RecruiterProfile> RecruiterProfiles => Set<RecruiterProfile>();
 
-    public DbSet<Application> Applications => Set<Application>();
-
-    public DbSet<ApplicationAssessment> ApplicationAssessments => Set<ApplicationAssessment>();
-
-    public DbSet<ProctorEvent> ProctorEvents => Set<ProctorEvent>();
-
-
-
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,5 +62,10 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .WithMany()
             .HasForeignKey(os => os.SkillId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Application -> StudentUserID + OpporunityId 
+        modelBuilder.Entity<Application>()
+        .HasIndex(a => new { a.StudentUserId, a.OpportunityId })
+        .IsUnique();
     }
 }

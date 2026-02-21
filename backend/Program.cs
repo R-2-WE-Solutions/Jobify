@@ -2,6 +2,7 @@
 // App DB + services
 using Jobify.Api.Data;
 using Jobify.Api.Services;
+using Jobify.Api.Services.SkillServices;
 using Jobify.Api.Swagger;
 
 
@@ -73,6 +74,13 @@ builder.Services.AddCors(options =>
 // Custom services
 // Service that creates JWT tokens on login
 builder.Services.AddScoped<JwtTokenService>();
+
+// Skill extraction services
+builder.Services.AddScoped<SkillService>();
+builder.Services.AddHttpClient<MlSkillClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["MlService:BaseUrl"]!);
+});
 
 builder.Services.AddHttpClient();
 
