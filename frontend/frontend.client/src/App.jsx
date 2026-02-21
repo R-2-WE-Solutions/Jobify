@@ -9,6 +9,7 @@ import ResetPasswordPage from "./pages/LoginPage/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/LoginPage/OAuthCallbackPage";
 import EmailConfirmed from "./pages/LoginPage/EmailConfirmed";
 
+
 //job details pages
 import ProfileReviewPage from "./pages/JobDetails/ProfileReviewPage";
 import ApplicationReviewPage from "./pages/JobDetails/ApplicationReviewPage";
@@ -17,14 +18,16 @@ import ApplicationResultPage from "./pages/JobDetails/ApplicationResultPage";
 import JobDetailsPage from "./pages/JobDetails/JobDetailsPage";
 import AssessmentRulesPage from "./pages/JobDetails/AssesmentRulesPage";
 
-
+// organization page 
+import OrganizationDashboard from "./pages/OrganizationDashboard";
 
 import AppLayout from "./layout/AppLayout";
 
 import { BrowseOpportunities } from "./pages/BrowseOpportunities";
 import ProfilePage from "./pages/ProfilePage";
 
-
+// Match page + added match route below
+import Match from "./pages/Match";
 
 // placeholder pages 
 const Dashboard = () => <div>Dashboard</div>;
@@ -40,10 +43,16 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/oauth-confirm" element={<OAuthCallbackPage />} />
             <Route path="/email-confirmed" element={<EmailConfirmed />} />
+            
+            
 
             <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/browse" element={<BrowseOpportunities />} />
+                
+                <Route path="/match" element={<Match />} />
+
+                <Route path="/organization" element={<OrganizationDashboard />} />
 
                 <Route path="/opportunities/:id" element={<JobDetailsPage />} />
 
