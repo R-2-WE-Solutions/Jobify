@@ -48,6 +48,8 @@ public class OpportunitiesController : ControllerBase
                 .ThenInclude(os => os.Skill)
             .AsQueryable();
 
+        query = query.Where(o => !o.IsClosed);
+
         if (!string.IsNullOrWhiteSpace(q)) // filter by search bar
         {
             var s = q.Trim().ToLower();
@@ -268,9 +270,7 @@ public class OpportunitiesController : ControllerBase
         var candidates = await _db.Opportunities
             .Include(o => o.OpportunitySkills)
                 .ThenInclude(os => os.Skill)
-            .Where(o =>
-                o.Id != id &&
-                o.Type == baseOpp.Type)  // strong filter
+            .Where(o => o.Id != id && o.Type == baseOpp.Type && !o.IsClosed)  // strong filter
             .Take(150)
             .ToListAsync();
 
@@ -594,5 +594,33 @@ public class OpportunitiesController : ControllerBase
             .ToList();
 
         return cleaned.Count == 0 ? null : JsonSerializer.Serialize(cleaned);
+    }
+    [Authorize(Roles = "Recruiter")]
+    [HttpPatch("{id:int}/close")]
+    public async Task<IActionResult> Close(int id)
+    {
+        var opportunity = await _db.Opportunities.FirstOrDefaultAsync(o => o.Id == id);
+        if (opportunity == null) return NotFound();
+
+        if (opportunity.IsClosed) return BadRequest("Opportunity already closed.");
+
+        opportunity.IsClosed = true;
+        opportunity.ClosedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+    [Authorize(Roles = "Recruiter")]
+    [HttpPatch("{id:int}/reopen")]
+    public async Task<IActionResult> Reopen(int id)
+    {
+        var opportunity = await _db.Opportunities.FirstOrDefaultAsync(o => o.Id == id);
+        if (opportunity == null) return NotFound();
+
+        opportunity.IsClosed = false;
+        opportunity.ClosedAtUtc = null;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 }
