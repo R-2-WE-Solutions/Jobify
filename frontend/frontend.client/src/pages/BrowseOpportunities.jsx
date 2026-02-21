@@ -7,8 +7,7 @@ import {
     Clock,
     Bookmark,
     TrendingUp,
-    ArrowUpDown,
-    RefreshCw,
+    ArrowUpDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -46,9 +45,6 @@ export function BrowseOpportunities() {
     // backend data
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    // ✅ manual refresh trigger
-    const [refreshKey, setRefreshKey] = useState(0);
 
     const toggleSaved = (id) => {
         setSavedItems((prev) =>
@@ -152,7 +148,7 @@ export function BrowseOpportunities() {
 
         fetchOpportunities();
         return () => controller.abort();
-    }, [searchQuery, typeFilter, levelFilter, locationFilter, sortBy, refreshKey]);
+    }, [searchQuery, typeFilter, levelFilter, locationFilter, sortBy]);
 
     const filtered = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -248,18 +244,6 @@ export function BrowseOpportunities() {
                         >
                             <SlidersHorizontal className="bo-btnIcon" />
                             Filters
-                        </button>
-
-                        {/* ✅ Manual Refresh */}
-                        <button
-                            className="bo-btn bo-btnOutline"
-                            type="button"
-                            onClick={() => setRefreshKey((x) => x + 1)}
-                            title="Refresh"
-                            aria-label="Refresh"
-                        >
-                            <RefreshCw className="bo-btnIcon" />
-                            Refresh
                         </button>
 
                         {/* Sort */}
