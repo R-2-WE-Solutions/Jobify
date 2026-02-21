@@ -8,6 +8,7 @@ import {
     Bookmark,
     TrendingUp,
     ArrowUpDown,
+    RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -46,6 +47,9 @@ export function BrowseOpportunities() {
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    // ✅ manual refresh trigger
+    const [refreshKey, setRefreshKey] = useState(0);
+
     const toggleSaved = (id) => {
         setSavedItems((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -72,7 +76,6 @@ export function BrowseOpportunities() {
                 if (locationFilter === "onsite") params.set("remote", "false");
                 if (locationFilter === "hybrid") params.set("location", "hybrid");
 
-
                 const backendSort =
                     sortBy === "salary"
                         ? "salaryhigh"
@@ -84,12 +87,16 @@ export function BrowseOpportunities() {
                 params.set("page", "1");
                 params.set("pageSize", "50");
 
-                const res = await fetch(`${API_URL}/api/opportunities?${params.toString()}`, {
-                    signal: controller.signal,
-                    headers: { "Content-Type": "application/json" },
-                });
+                const res = await fetch(
+                    `${API_URL}/api/opportunities?${params.toString()}`,
+                    {
+                        signal: controller.signal,
+                        headers: { "Content-Type": "application/json" },
+                    }
+                );
 
-                if (!res.ok) throw new Error(`Failed to fetch opportunities (${res.status})`);
+                if (!res.ok)
+                    throw new Error(`Failed to fetch opportunities (${res.status})`);
 
                 const data = await res.json();
 
@@ -103,12 +110,17 @@ export function BrowseOpportunities() {
                                     ? `From $${o.minPay}`
                                     : `Up to $${o.maxPay}`;
 
-                    const locationText = o.isRemote ? "Remote" : (o.isHybrid ? "Hybrid" : "On-site");
+                    const locationText = o.isRemote
+                        ? "Remote"
+                        : o.isHybrid
+                            ? "Hybrid"
+                            : "On-site";
 
                     const postedText = o.createdAtUtc ? timeAgoFromUtc(o.createdAtUtc) : "—";
                     const deadlineText = o.deadlineUtc ? daysLeftFromUtc(o.deadlineUtc) : "—";
 
-                    const match = typeof o.matchPercent === "number" ? Math.round(o.matchPercent) : 0;
+                    const match =
+                        typeof o.matchPercent === "number" ? Math.round(o.matchPercent) : 0;
 
                     return {
                         id: o.id,
@@ -140,7 +152,7 @@ export function BrowseOpportunities() {
 
         fetchOpportunities();
         return () => controller.abort();
-    }, [searchQuery, typeFilter, levelFilter, locationFilter, sortBy]);
+    }, [searchQuery, typeFilter, levelFilter, locationFilter, sortBy, refreshKey]);
 
     const filtered = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -192,14 +204,24 @@ export function BrowseOpportunities() {
         });
 
         return list;
-    }, [opportunities, searchQuery, typeFilter, levelFilter, locationFilter, matchFilter, sortBy]);
+    }, [
+        opportunities,
+        searchQuery,
+        typeFilter,
+        levelFilter,
+        locationFilter,
+        matchFilter,
+        sortBy,
+    ]);
 
     return (
         <div className="bo-root bo-space">
             {/* Header */}
             <div className="bo-header">
                 <h1 className="bo-title">Browse Opportunities</h1>
-                <p className="bo-subtitle">Discover opportunities that match your skills and interests</p>
+                <p className="bo-subtitle">
+                    Discover opportunities that match your skills and interests
+                </p>
             </div>
 
             {/* Search & Filters */}
@@ -226,6 +248,18 @@ export function BrowseOpportunities() {
                         >
                             <SlidersHorizontal className="bo-btnIcon" />
                             Filters
+                        </button>
+
+                        {/* ✅ Manual Refresh */}
+                        <button
+                            className="bo-btn bo-btnOutline"
+                            type="button"
+                            onClick={() => setRefreshKey((x) => x + 1)}
+                            title="Refresh"
+                            aria-label="Refresh"
+                        >
+                            <RefreshCw className="bo-btnIcon" />
+                            Refresh
                         </button>
 
                         {/* Sort */}
@@ -326,7 +360,8 @@ export function BrowseOpportunities() {
                         <>Loading…</>
                     ) : (
                         <>
-                            Showing <span className="bo-resultsStrong">{filtered.length}</span> opportunities
+                            Showing <span className="bo-resultsStrong">{filtered.length}</span>{" "}
+                            opportunities
                         </>
                     )}
                 </p>
@@ -380,7 +415,6 @@ export function BrowseOpportunities() {
                                                     <span>{opp.salary}</span>
                                                 </div>
 
-
                                                 <div className="bo-skills">
                                                     {opp.skills.map((skill) => (
                                                         <span key={skill} className="bo-badge bo-badgeSkill">
@@ -421,12 +455,15 @@ export function BrowseOpportunities() {
 
                                                 <button
                                                     type="button"
-                                                    className={`bo-btn bo-btnOutline bo-saveBtn ${isSaved ? "isSaved" : ""}`}
+                                                    className={`bo-btn bo-btnOutline bo-saveBtn ${isSaved ? "isSaved" : ""
+                                                        }`}
                                                     onClick={() => toggleSaved(opp.id)}
                                                     aria-label={isSaved ? "Unsave" : "Save"}
                                                     title={isSaved ? "Unsave" : "Save"}
                                                 >
-                                                    <Bookmark className={`bo-saveIcon ${isSaved ? "isSaved" : ""}`} />
+                                                    <Bookmark
+                                                        className={`bo-saveIcon ${isSaved ? "isSaved" : ""}`}
+                                                    />
                                                 </button>
                                             </div>
                                         </div>

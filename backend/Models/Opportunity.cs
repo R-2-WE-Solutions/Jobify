@@ -56,6 +56,8 @@ public class Opportunity
     public int AssessmentMcqCount { get; set; } = 5;
     public int AssessmentChallengeCount { get; set; } = 2;
 
+    public bool IsClosed { get; set; } = false;
+    public DateTime? ClosedAtUtc { get; set; }
 
     public ICollection<OpportunitySkill> OpportunitySkills { get; set; } = new List<OpportunitySkill>();
 }
