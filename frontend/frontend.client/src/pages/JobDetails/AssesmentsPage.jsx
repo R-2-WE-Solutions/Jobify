@@ -85,13 +85,13 @@ export default function AssessmentPage() {
 
 
     const fetchApp = useCallback(async () => {
-        const res = await api.get(`/api/Applications/${applicationId}?t=${Date.now()}`);
+        const res = await api.get(`/api/Application/${applicationId}?t=${Date.now()}`);
         return res.data;
     }, [applicationId]);
 
     const startAttempt = useCallback(
         async (webcamConsent = false) => {
-            const res = await api.post(`/api/Applications/${applicationId}/assessment/start`, {
+            const res = await api.post(`/api/Application/${applicationId}/assessment/start`, {
                 webcamConsent,
             });
             return res.data;
@@ -150,7 +150,7 @@ export default function AssessmentPage() {
         saveRef.current = setInterval(async () => {
             try {
                 setSaving(true);
-                await api.put(`/api/Applications/${applicationId}/assessment`, { answers });
+                await api.put(`/api/Application/${applicationId}/assessment`, { answers });
             } catch {
                 // ignore
             }
@@ -163,7 +163,7 @@ export default function AssessmentPage() {
     const sendProctor = useCallback(
         async (type) => {
             try {
-                const res = await api.post(`/api/Applications/${applicationId}/assessment/proctor-event`, {
+                const res = await api.post(`/api/Application/${applicationId}/assessment/proctor-event`, {
                     type,
                     details: { at: new Date().toISOString() },
                 });
@@ -248,7 +248,7 @@ export default function AssessmentPage() {
 
         setRunOutputByQid((o) => ({ ...o, [qid]: null }));
 
-        const res = await api.post(`/api/Applications/${applicationId}/assessment/run`, {
+        const res = await api.post(`/api/Application/${applicationId}/assessment/run`, {
             questionId: qid,
             languageId: a.languageId ?? 71,
             sourceCode: code,
@@ -262,8 +262,8 @@ export default function AssessmentPage() {
         if (submitting) return;
         try {
             setSubmitting(true);
-            await api.put(`/api/Applications/${applicationId}/assessment`, { answers });
-            const res = await api.post(`/api/Applications/${applicationId}/assessment/submit`);
+            await api.put(`/api/Application/${applicationId}/assessment`, { answers });
+            const res = await api.post(`/api/Application/${applicationId}/assessment/submit`);
             nav(`/application/${applicationId}/result`, { state: res.data });
         } finally {
             setSubmitting(false);
