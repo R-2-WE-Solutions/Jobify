@@ -1,4 +1,4 @@
-﻿using Jobify.Api.Data;
+using Jobify.Api.Data;
 using Jobify.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -141,6 +141,8 @@ public class ProfileController : ControllerBase
                     major = studentProfile.Major,
                     bio = studentProfile.Bio,
                     portfolioUrl = studentProfile.PortfolioUrl,
+                    location = studentProfile.Location,
+                    phoneNumber = studentProfile.PhoneNumber,
                     educationText = studentProfile.EducationText,
                     experienceText = studentProfile.ExperienceText,
                     projectsText = studentProfile.ProjectsText,
@@ -228,6 +230,8 @@ public class ProfileController : ControllerBase
             studentProfile.Major = request.Major;
             studentProfile.Bio = request.Bio;
             studentProfile.PortfolioUrl = request.PortfolioUrl;
+            studentProfile.Location = request.Location;
+            studentProfile.PhoneNumber = request.PhoneNumber;
             studentProfile.EducationText = request.EducationText;
             studentProfile.ExperienceText = request.ExperienceText;
             studentProfile.ProjectsText = request.ProjectsText;
@@ -249,6 +253,8 @@ public class ProfileController : ControllerBase
                     major = studentProfile.Major,
                     bio = studentProfile.Bio,
                     portfolioUrl = studentProfile.PortfolioUrl,
+                    location = studentProfile.Location,
+                    phoneNumber = studentProfile.PhoneNumber,
                     educationText = studentProfile.EducationText,
                     experienceText = studentProfile.ExperienceText,
                     projectsText = studentProfile.ProjectsText,
@@ -256,7 +262,6 @@ public class ProfileController : ControllerBase
                     certificationsText = studentProfile.CertificationsText,
                     awardsText = studentProfile.AwardsText,
                     updatedAt = studentProfile.UpdatedAt,
-
                     hasResume = !string.IsNullOrEmpty(studentProfile.ResumeFileName),
                     hasUniversityProof = !string.IsNullOrEmpty(studentProfile.UniversityProofFileName),
                     resumeUploadedAtUtc = studentProfile.ResumeUploadedAtUtc,
@@ -564,6 +569,8 @@ public class UpdateProfileRequest
     public string? Major { get; set; }
     public string? Bio { get; set; }
     public string? PortfolioUrl { get; set; }
+    public string? Location { get; set; }
+    public string? PhoneNumber { get; set; }
     public string? EducationText { get; set; }
     public string? ExperienceText { get; set; }
     public string? ProjectsText { get; set; }
