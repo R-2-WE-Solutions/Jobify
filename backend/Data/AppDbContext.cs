@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Jobify.Api.Models;
 
 namespace Jobify.Api.Data;
@@ -16,13 +16,14 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
 
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<OpportunitySkill> OpportunitySkills => Set<OpportunitySkill>();
-
     public DbSet<OpportunityQuestion> OpportunityQuestions => Set<OpportunityQuestion>();
 
+    public DbSet<Application> Applications => Set<Application>();
+    public DbSet<ApplicationAssessment> ApplicationAssessments => Set<ApplicationAssessment>();
+    public DbSet<ProctorEvent> ProctorEvents => Set<ProctorEvent>();
+
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
-
     public DbSet<RecruiterProfile> RecruiterProfiles => Set<RecruiterProfile>();
-
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,9 +64,23 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(os => os.SkillId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Application -> StudentUserID + OpporunityId 
+        // Application: prevent duplicate apply (StudentUserId + OpportunityId)
         modelBuilder.Entity<Application>()
-        .HasIndex(a => new { a.StudentUserId, a.OpportunityId })
-        .IsUnique();
+            .HasIndex(a => new { a.StudentUserId, a.OpportunityId })
+            .IsUnique();
+
+        // ApplicationAssessment -> Application (usually 1:1)
+        modelBuilder.Entity<ApplicationAssessment>()
+            .HasOne(a => a.Application)
+            .WithOne(app => app.Assessment)   
+            .HasForeignKey<ApplicationAssessment>(a => a.ApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ProctorEvent -> ApplicationAssessment (many-to-one)
+        modelBuilder.Entity<ProctorEvent>()
+            .HasOne(e => e.Assessment)
+            .WithMany() 
+            .HasForeignKey(e => e.ApplicationAssessmentId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
-}
+} 
