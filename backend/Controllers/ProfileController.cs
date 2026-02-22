@@ -1,4 +1,4 @@
-﻿using Jobify.Api.Data;
+using Jobify.Api.Data;
 using Jobify.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -141,6 +141,8 @@ public class ProfileController : ControllerBase
                     major = studentProfile.Major,
                     bio = studentProfile.Bio,
                     portfolioUrl = studentProfile.PortfolioUrl,
+                    location = studentProfile.Location,
+                    phoneNumber = studentProfile.PhoneNumber,
                     educationText = studentProfile.EducationText,
                     experienceText = studentProfile.ExperienceText,
                     projectsText = studentProfile.ProjectsText,
@@ -228,6 +230,8 @@ public class ProfileController : ControllerBase
             studentProfile.Major = request.Major;
             studentProfile.Bio = request.Bio;
             studentProfile.PortfolioUrl = request.PortfolioUrl;
+            studentProfile.Location = request.Location;
+            studentProfile.PhoneNumber = request.PhoneNumber;
             studentProfile.EducationText = request.EducationText;
             studentProfile.ExperienceText = request.ExperienceText;
             studentProfile.ProjectsText = request.ProjectsText;
@@ -249,6 +253,8 @@ public class ProfileController : ControllerBase
                     major = studentProfile.Major,
                     bio = studentProfile.Bio,
                     portfolioUrl = studentProfile.PortfolioUrl,
+                    location = studentProfile.Location,
+                    phoneNumber = studentProfile.PhoneNumber,
                     educationText = studentProfile.EducationText,
                     experienceText = studentProfile.ExperienceText,
                     projectsText = studentProfile.ProjectsText,
@@ -256,7 +262,6 @@ public class ProfileController : ControllerBase
                     certificationsText = studentProfile.CertificationsText,
                     awardsText = studentProfile.AwardsText,
                     updatedAt = studentProfile.UpdatedAt,
-
                     hasResume = !string.IsNullOrEmpty(studentProfile.ResumeFileName),
                     hasUniversityProof = !string.IsNullOrEmpty(studentProfile.UniversityProofFileName),
                     resumeUploadedAtUtc = studentProfile.ResumeUploadedAtUtc,
@@ -554,6 +559,352 @@ public class ProfileController : ControllerBase
 
         return Ok(new { message = "University proof deleted successfully" });
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // SKILLS
+    // ─────────────────────────────────────────────────────────────
+
+    [HttpGet("student/skills")]
+    public async Task<IActionResult> GetSkills()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var skills = await _context.StudentSkills
+            .Where(s => s.StudentUserId == userId)
+            .Join(_context.Skills, ss => ss.SkillId, sk => sk.Id, (ss, sk) => new
+            {
+                id = ss.Id,
+                name = sk.Name,
+                isVerified = ss.IsVerified,
+                source = ss.Source,
+                createdAt = ss.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(skills);
+    }
+
+    [HttpPost("student/skills")]
+    public async Task<IActionResult> AddSkill([FromBody] AddSkillRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+        if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Skill name required.");
+
+        var skill = await _context.Skills.FirstOrDefaultAsync(s => s.Name.ToLower() == request.Name.ToLower().Trim());
+        if (skill == null)
+        {
+            skill = new Skill { Name = request.Name.Trim() };
+            _context.Skills.Add(skill);
+            await _context.SaveChangesAsync();
+        }
+
+        var existing = await _context.StudentSkills.FirstOrDefaultAsync(ss => ss.StudentUserId == userId && ss.SkillId == skill.Id);
+        if (existing != null) return Conflict("Skill already added.");
+
+        var studentSkill = new StudentSkill
+        {
+            StudentUserId = userId,
+            SkillId = skill.Id,
+            Source = "Manual",
+            IsVerified = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.StudentSkills.Add(studentSkill);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { id = studentSkill.Id, name = skill.Name, isVerified = false, source = "Manual" });
+    }
+
+    [HttpDelete("student/skills/{id}")]
+    public async Task<IActionResult> DeleteSkill(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var skill = await _context.StudentSkills.FirstOrDefaultAsync(s => s.Id == id && s.StudentUserId == userId);
+        if (skill == null) return NotFound();
+
+        _context.StudentSkills.Remove(skill);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Skill removed." });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // EDUCATION
+    // ─────────────────────────────────────────────────────────────
+
+    [HttpGet("student/education")]
+    public async Task<IActionResult> GetEducation()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var items = await _context.StudentEducations
+            .Where(e => e.StudentUserId == userId)
+            .OrderByDescending(e => e.CreatedAt)
+            .Select(e => new { e.Id, e.University, e.Degree, e.Major, e.Gpa, e.GraduationYear, e.CreatedAt })
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
+    [HttpPost("student/education")]
+    public async Task<IActionResult> AddEducation([FromBody] EducationRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = new StudentEducation
+        {
+            StudentUserId = userId,
+            University = request.University,
+            Degree = request.Degree,
+            Major = request.Major,
+            Gpa = request.Gpa,
+            GraduationYear = request.GraduationYear,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.StudentEducations.Add(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.University, item.Degree, item.Major, item.Gpa, item.GraduationYear, item.CreatedAt });
+    }
+
+    [HttpPut("student/education/{id}")]
+    public async Task<IActionResult> UpdateEducation(int id, [FromBody] EducationRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentEducations.FirstOrDefaultAsync(e => e.Id == id && e.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        item.University = request.University;
+        item.Degree = request.Degree;
+        item.Major = request.Major;
+        item.Gpa = request.Gpa;
+        item.GraduationYear = request.GraduationYear;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.University, item.Degree, item.Major, item.Gpa, item.GraduationYear });
+    }
+
+    [HttpDelete("student/education/{id}")]
+    public async Task<IActionResult> DeleteEducation(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentEducations.FirstOrDefaultAsync(e => e.Id == id && e.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        _context.StudentEducations.Remove(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Education removed." });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // EXPERIENCE
+    // ─────────────────────────────────────────────────────────────
+
+    [HttpGet("student/experience")]
+    public async Task<IActionResult> GetExperience()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var items = await _context.StudentExperiences
+            .Where(e => e.StudentUserId == userId)
+            .OrderByDescending(e => e.CreatedAt)
+            .Select(e => new { e.Id, e.Role, e.Company, e.Duration, e.Description, e.CreatedAt })
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
+    [HttpPost("student/experience")]
+    public async Task<IActionResult> AddExperience([FromBody] ExperienceRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = new StudentExperience
+        {
+            StudentUserId = userId,
+            Role = request.Role,
+            Company = request.Company,
+            Duration = request.Duration,
+            Description = request.Description,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.StudentExperiences.Add(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.Role, item.Company, item.Duration, item.Description, item.CreatedAt });
+    }
+
+    [HttpPut("student/experience/{id}")]
+    public async Task<IActionResult> UpdateExperience(int id, [FromBody] ExperienceRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentExperiences.FirstOrDefaultAsync(e => e.Id == id && e.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        item.Role = request.Role;
+        item.Company = request.Company;
+        item.Duration = request.Duration;
+        item.Description = request.Description;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.Role, item.Company, item.Duration, item.Description });
+    }
+
+    [HttpDelete("student/experience/{id}")]
+    public async Task<IActionResult> DeleteExperience(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentExperiences.FirstOrDefaultAsync(e => e.Id == id && e.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        _context.StudentExperiences.Remove(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Experience removed." });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // PROJECTS
+    // ─────────────────────────────────────────────────────────────
+
+    [HttpGet("student/projects")]
+    public async Task<IActionResult> GetProjects()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var items = await _context.StudentProjects
+            .Where(p => p.StudentUserId == userId)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new { p.Id, p.Title, p.Description, p.TechStack, p.Links, p.CreatedAt })
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
+    [HttpPost("student/projects")]
+    public async Task<IActionResult> AddProject([FromBody] ProjectRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = new StudentProject
+        {
+            StudentUserId = userId,
+            Title = request.Title,
+            Description = request.Description,
+            TechStack = string.Join(",", request.TechStack ?? new List<string>()),
+            Links = request.Links,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.StudentProjects.Add(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.Title, item.Description, item.TechStack, item.Links, item.CreatedAt });
+    }
+
+    [HttpPut("student/projects/{id}")]
+    public async Task<IActionResult> UpdateProject(int id, [FromBody] ProjectRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentProjects.FirstOrDefaultAsync(p => p.Id == id && p.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        item.Title = request.Title;
+        item.Description = request.Description;
+        item.TechStack = string.Join(",", request.TechStack ?? new List<string>());
+        item.Links = request.Links;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.Title, item.Description, item.TechStack, item.Links });
+    }
+
+    [HttpDelete("student/projects/{id}")]
+    public async Task<IActionResult> DeleteProject(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentProjects.FirstOrDefaultAsync(p => p.Id == id && p.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        _context.StudentProjects.Remove(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Project removed." });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // INTERESTS
+    // ─────────────────────────────────────────────────────────────
+
+    [HttpGet("student/interests")]
+    public async Task<IActionResult> GetInterests()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var items = await _context.StudentInterests
+            .Where(i => i.StudentUserId == userId)
+            .OrderBy(i => i.Interest)
+            .Select(i => new { i.Id, i.Interest, i.CreatedAt })
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
+    [HttpPost("student/interests")]
+    public async Task<IActionResult> AddInterest([FromBody] InterestRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+        if (string.IsNullOrWhiteSpace(request.Interest)) return BadRequest("Interest name required.");
+
+        var existing = await _context.StudentInterests
+            .FirstOrDefaultAsync(i => i.StudentUserId == userId && i.Interest.ToLower() == request.Interest.ToLower().Trim());
+        if (existing != null) return Conflict("Interest already added.");
+
+        var item = new StudentInterest
+        {
+            StudentUserId = userId,
+            Interest = request.Interest.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.StudentInterests.Add(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { item.Id, item.Interest, item.CreatedAt });
+    }
+
+    [HttpDelete("student/interests/{id}")]
+    public async Task<IActionResult> DeleteInterest(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var item = await _context.StudentInterests.FirstOrDefaultAsync(i => i.Id == id && i.StudentUserId == userId);
+        if (item == null) return NotFound();
+
+        _context.StudentInterests.Remove(item);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Interest removed." });
+    }
 }
 
 // Request DTO for updating profile
@@ -564,6 +915,8 @@ public class UpdateProfileRequest
     public string? Major { get; set; }
     public string? Bio { get; set; }
     public string? PortfolioUrl { get; set; }
+    public string? Location { get; set; }
+    public string? PhoneNumber { get; set; }
     public string? EducationText { get; set; }
     public string? ExperienceText { get; set; }
     public string? ProjectsText { get; set; }
@@ -583,4 +936,41 @@ public class UpdateProfileRequest
 public class UploadResumeRequest
 {
     public IFormFile File { get; set; } = default!;
+}
+
+// ─── Student section DTOs ──────────────────────────────────────
+
+public class AddSkillRequest
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+public class EducationRequest
+{
+    public string University { get; set; } = string.Empty;
+    public string Degree { get; set; } = string.Empty;
+    public string Major { get; set; } = string.Empty;
+    public string? Gpa { get; set; }
+    public string GraduationYear { get; set; } = string.Empty;
+}
+
+public class ExperienceRequest
+{
+    public string Role { get; set; } = string.Empty;
+    public string Company { get; set; } = string.Empty;
+    public string Duration { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+}
+
+public class ProjectRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public List<string>? TechStack { get; set; }
+    public string? Links { get; set; }
+}
+
+public class InterestRequest
+{
+    public string Interest { get; set; } = string.Empty;
 }
