@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jobify.Api.Models;
 
@@ -13,6 +13,8 @@ public class StudentProfile
     public string? Major { get; set; }
     public string? Bio { get; set; }
     public string? PortfolioUrl { get; set; }
+    public string? Location { get; set; }
+    public string? PhoneNumber { get; set; }
 
     public string? EducationText { get; set; }
     public string? ExperienceText { get; set; }
