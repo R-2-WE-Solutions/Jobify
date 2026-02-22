@@ -1,16 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Jobify.Api.Data;
 using Jobify.Api.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Jobify.Api.Models;
-<<<<<<< HEAD
-using System.Text.Json;
-using System.Security.Claims;
-
-=======
 using Jobify.Api.Services.SkillServices;
->>>>>>> 6aaf18a (skills extraction pipeline connected to backend and database)
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
+
+using Jobify.Api.Services.SkillServices;
 
 namespace Jobify.Api.Controllers;
 
@@ -29,11 +27,9 @@ public class OpportunitiesController : ControllerBase
         _mlSkillClient = mlSkillClient;
     }
 
-<<<<<<< HEAD
-=======
+
 
     // =========================
->>>>>>> 6aaf18a (skills extraction pipeline connected to backend and database)
     // GET LIST (PUBLIC)
     // GET: /api/opportunities?q=&type=&level=&remote=&location=&skills=&minPay=&maxPay=&sort=&page=&pageSize=
     [HttpGet]
