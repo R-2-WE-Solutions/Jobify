@@ -643,4 +643,23 @@ public class OpportunitiesController : ControllerBase
         await _db.SaveChangesAsync();
         return NoContent();
     }
+     [Authorize(Roles = "Recruiter")]
+    [HttpGet("mine")]
+    public async Task<IActionResult> GetMine()
+    {
+        var opps = await _db.Opportunities
+            .AsNoTracking()
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Select(o => new
+            {
+                o.Id,
+                o.Title,
+                o.CompanyName,
+                o.IsClosed,
+                o.CreatedAtUtc
+            })
+            .ToListAsync();
+
+        return Ok(opps);
+    }
 }
