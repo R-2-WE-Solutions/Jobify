@@ -22,7 +22,6 @@ namespace Jobify.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-<<<<<<< HEAD
             modelBuilder.Entity("ApplicationAssessment", b =>
                 {
                     b.Property<int>("Id")
@@ -92,8 +91,6 @@ namespace Jobify.Migrations
                     b.ToTable("ApplicationAssessments");
                 });
 
-=======
->>>>>>> 6aaf18a (skills extraction pipeline connected to backend and database)
             modelBuilder.Entity("Jobify.Api.Models.Application", b =>
                 {
                     b.Property<int>("Id")
@@ -102,28 +99,18 @@ namespace Jobify.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-<<<<<<< HEAD
                     b.Property<string>("AssessmentJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-=======
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
->>>>>>> 6aaf18a (skills extraction pipeline connected to backend and database)
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-<<<<<<< HEAD
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -131,19 +118,6 @@ namespace Jobify.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OpportunityId");
-=======
-                    b.Property<string>("StudentUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StudentUserId", "OpportunityId")
-                        .IsUnique();
->>>>>>> 6aaf18a (skills extraction pipeline connected to backend and database)
 
                     b.ToTable("Applications");
                 });
@@ -422,7 +396,13 @@ namespace Jobify.Migrations
                     b.Property<string>("InterestsText")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Major")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PortfolioUrl")
