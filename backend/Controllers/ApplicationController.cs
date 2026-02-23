@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Jobify.Api.Data;
@@ -6,7 +6,6 @@ using Jobify.Api.Models;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Jobify.Api.DTOs.Applications;
 
 //application and assesment controller -> the assesment is finished, but needs some work with the snapshots
 
@@ -14,14 +13,14 @@ namespace Jobify.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ApplicationController : ControllerBase
+public class ApplicationsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _http;
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
 
-    public ApplicationController(AppDbContext db, IHttpClientFactory http, IConfiguration config, IWebHostEnvironment env)
+    public ApplicationsController(AppDbContext db, IHttpClientFactory http, IConfiguration config, IWebHostEnvironment env)
     {
         _db = db;
         _http = http;
@@ -192,12 +191,12 @@ public class ApplicationController : ControllerBase
 
     public class SaveAssessmentDto
     {
-        public object? Answers { get; set; }
+        public object? Answers { get; set; } 
     }
 
     public class ProctorEventDto
     {
-        public string Type { get; set; } = "";
+        public string Type { get; set; } = ""; 
         public object? Details { get; set; }
     }
 
@@ -206,12 +205,12 @@ public class ApplicationController : ControllerBase
         public string QuestionId { get; set; } = "";
         public int LanguageId { get; set; }
         public string SourceCode { get; set; } = "";
-        public string? StdinOverride { get; set; }
+        public string? StdinOverride { get; set; } 
     }
 
     public class SnapshotDto
     {
-        public string Base64Jpeg { get; set; } = "";
+        public string Base64Jpeg { get; set; } = ""; 
     }
 
     // GET my applications
@@ -913,7 +912,7 @@ public class ApplicationController : ControllerBase
             ["stderr"] = stderr,
             ["compile_output"] = compile,
             ["message"] = message,
-            ["expected"] = expectedOutput
+            ["expected"] = expectedOutput 
         };
     }
 
@@ -943,19 +942,35 @@ public class ApplicationController : ControllerBase
     }
 
 
-   
+    public class UpdateStatusDto
+    {
+        /// <summary>Any ApplicationStatus enum name, e.g. "Accepted", "Rejected", "InReview"</summary>
+        public string Status { get; set; } = "";
+
+        /// <summary>Internal recruiter note saved on the application.</summary>
+        public string? Note { get; set; }
+
+        /// <summary>
+        /// When Status = "Rejected": send a rejection email to the candidate?
+        /// Defaults to true. Set false to skip email (e.g. SMTP not configured).
+        /// </summary>
+        public bool SendEmail { get; set; } = true;
+
+        /// <summary>Custom reason shown in the email body. Falls back to a generic message.</summary>
+        public string? RejectionReason { get; set; }
+    }
 
     public class RecruiterAppListDto
     {
-        public int ApplicationId { get; set; }
-        public string CandidateName { get; set; } = "";
-        public string CandidateEmail { get; set; } = "";
-        public string Status { get; set; } = "";
-        public DateTime CreatedAtUtc { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public bool HasAssessment { get; set; }
+        public int    ApplicationId   { get; set; }
+        public string CandidateName   { get; set; } = "";
+        public string CandidateEmail  { get; set; } = "";
+        public string Status          { get; set; } = "";
+        public DateTime CreatedAtUtc  { get; set; }
+        public DateTime UpdatedAt     { get; set; }
+        public bool   HasAssessment   { get; set; }
         public decimal? AssessmentScore { get; set; }
-        public string? Note { get; set; }
+        public string? Note           { get; set; }
     }
 
     public class ResendRejectionDto
@@ -992,15 +1007,15 @@ public class ApplicationController : ControllerBase
 
             result.Add(new RecruiterAppListDto
             {
-                ApplicationId = app.Id,
-                CandidateName = user?.UserName ?? "Unknown",
-                CandidateEmail = user?.Email ?? "",
-                Status = app.Status.ToString(),
-                CreatedAtUtc = app.CreatedAtUtc,
-                UpdatedAt = app.UpdatedAt,
-                HasAssessment = !string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson),
+                ApplicationId   = app.Id,
+                CandidateName   = user?.UserName ?? "Unknown",
+                CandidateEmail  = user?.Email    ?? "",
+                Status          = app.Status.ToString(),
+                CreatedAtUtc    = app.CreatedAtUtc,
+                UpdatedAt       = app.UpdatedAt,
+                HasAssessment   = !string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson),
                 AssessmentScore = assessment?.Score,
-                Note = app.Note
+                Note            = app.Note
             });
         }
 
@@ -1013,9 +1028,9 @@ public class ApplicationController : ControllerBase
     [Authorize(Roles = "Recruiter")]
     [HttpPatch("{applicationId:int}/status")]
     public async Task<IActionResult> UpdateApplicationStatus(
-    int applicationId,
-    [FromBody] UpdateApplicationStatusDto dto)
-    { 
+        int applicationId,
+        [FromBody] UpdateStatusDto dto)
+    {
         if (string.IsNullOrWhiteSpace(dto.Status))
             return BadRequest("Status is required.");
 
@@ -1032,7 +1047,7 @@ public class ApplicationController : ControllerBase
         if (app == null) return NotFound("Application not found.");
 
         var previousStatus = app.Status;
-        app.Status = newStatus;
+        app.Status    = newStatus;
         app.UpdatedAt = DateTime.UtcNow;
 
         if (dto.Note != null)
@@ -1042,7 +1057,7 @@ public class ApplicationController : ControllerBase
 
         // ── PB_24 rejection email ─────────────────────────────────────────────
         string? emailError = null;
-        bool emailSent = false;
+        bool    emailSent  = false;
 
         if (newStatus == ApplicationStatus.Rejected && dto.SendEmail)
         {
@@ -1051,9 +1066,9 @@ public class ApplicationController : ControllerBase
             {
                 try
                 {
-                    var oppTitle = app.Opportunity?.Title ?? "the position";
+                    var oppTitle    = app.Opportunity?.Title       ?? "the position";
                     var companyName = app.Opportunity?.CompanyName ?? "our company";
-                    var reason = string.IsNullOrWhiteSpace(dto.RejectionReason)
+                    var reason      = string.IsNullOrWhiteSpace(dto.RejectionReason)
                                       ? null : dto.RejectionReason.Trim();
 
                     var htmlBody = BuildRejectionEmail(
@@ -1077,7 +1092,7 @@ public class ApplicationController : ControllerBase
         {
             applicationId,
             previousStatus = previousStatus.ToString(),
-            newStatus = newStatus.ToString(),
+            newStatus      = newStatus.ToString(),
             emailSent,
             emailError
         });
@@ -1101,9 +1116,9 @@ public class ApplicationController : ControllerBase
         if (user?.Email == null)
             return BadRequest("Candidate has no email address on file.");
 
-        var oppTitle = app.Opportunity?.Title ?? "the position";
+        var oppTitle    = app.Opportunity?.Title       ?? "the position";
         var companyName = app.Opportunity?.CompanyName ?? "our company";
-        var reason = string.IsNullOrWhiteSpace(dto?.RejectionReason)
+        var reason      = string.IsNullOrWhiteSpace(dto?.RejectionReason)
                           ? null : dto!.RejectionReason!.Trim();
 
         var htmlBody = BuildRejectionEmail(
@@ -1124,23 +1139,23 @@ public class ApplicationController : ControllerBase
 
     private async Task SendEmailAsync(string to, string subject, string htmlBody)
     {
-        var smtpHost = _config["Smtp:Host"];
-        var smtpPort = int.Parse(_config["Smtp:Port"] ?? "587");
-        var smtpUser = _config["Smtp:User"];
-        var smtpPass = _config["Smtp:Pass"];
+        var smtpHost  = _config["Smtp:Host"];
+        var smtpPort  = int.Parse(_config["Smtp:Port"] ?? "587");
+        var smtpUser  = _config["Smtp:User"];
+        var smtpPass  = _config["Smtp:Pass"];
         var fromEmail = _config["Smtp:From"] ?? smtpUser;
 
         using var client = new System.Net.Mail.SmtpClient(smtpHost, smtpPort)
         {
             Credentials = new System.Net.NetworkCredential(smtpUser, smtpPass),
-            EnableSsl = true
+            EnableSsl   = true
         };
 
         var mail = new System.Net.Mail.MailMessage
         {
-            From = new System.Net.Mail.MailAddress(fromEmail!),
-            Subject = subject,
-            Body = htmlBody,
+            From       = new System.Net.Mail.MailAddress(fromEmail!),
+            Subject    = subject,
+            Body       = htmlBody,
             IsBodyHtml = true
         };
         mail.To.Add(to);
@@ -1154,10 +1169,10 @@ public class ApplicationController : ControllerBase
         string companyName,
         string? reason)
     {
-        var encodedName = System.Web.HttpUtility.HtmlEncode(candidateName);
-        var encodedTitle = System.Web.HttpUtility.HtmlEncode(opportunityTitle);
+        var encodedName    = System.Web.HttpUtility.HtmlEncode(candidateName);
+        var encodedTitle   = System.Web.HttpUtility.HtmlEncode(opportunityTitle);
         var encodedCompany = System.Web.HttpUtility.HtmlEncode(companyName);
-        var year = DateTime.UtcNow.Year;
+        var year           = DateTime.UtcNow.Year;
 
         var reasonBlock = reason != null
             ? $@"<tr><td style='padding:0 24px 18px;'>
