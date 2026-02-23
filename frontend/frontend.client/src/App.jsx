@@ -17,8 +17,6 @@ import ApplicationResultPage from "./pages/JobDetails/ApplicationResultPage";
 import JobDetailsPage from "./pages/JobDetails/JobDetailsPage";
 import AssessmentRulesPage from "./pages/JobDetails/AssesmentRulesPage";
 
-import Match from "./pages/Match";
-import QAPage from "./pages/QAPage";
 
 
 import AppLayout from "./layout/AppLayout";
@@ -26,10 +24,11 @@ import AppLayout from "./layout/AppLayout";
 import { BrowseOpportunities } from "./pages/BrowseOpportunities";
 import ProfilePage from "./pages/ProfilePage";
 
-import RecruiterPosting from "./pages/RecruiterPosting";
+
 
 // placeholder pages 
 const Dashboard = () => <div>Dashboard</div>;
+const Matches = () => <div>Matches</div>;
 
 export default function App() {
     return (
@@ -50,17 +49,14 @@ export default function App() {
 
                 <Route path="/apply/:applicationId/review" element={<ProfileReviewPage />} />
 
-                <Route path="/matches" element={<Match />} />
+                <Route path="/matches" element={<Matches />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/posting" element={<RecruiterPosting />} />
 
                 <Route path="/application/:applicationId/review" element={<ApplicationReviewPage />} />
                 <Route path="/application/:applicationId/assessment/rules" element={<AssessmentRulesPage />} />
 
                 <Route path="/application/:applicationId/assessment" element={<AssessmentPage />} />
                 <Route path="/application/:applicationId/result" element={<ApplicationResultPage />} />
-
-                <Route path="/qa" element={<QAPage />} />
 
             </Route>
 
