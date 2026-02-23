@@ -1,0 +1,613 @@
+/* ╔═══════════════════════════════════════════════╗
+   ║  Jobify · Candidate Q&A Page · Styles         ║
+   ╚═══════════════════════════════════════════════╝ */
+
+/* ─── Variables (inherits from layout.css / profile.css) ─── */
+.qa-page {
+    min-height: 100vh;
+    background: var(--bg, #f6f7fb);
+    padding: 28px 22px 48px;
+}
+
+.qa-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* ─── Page header ─── */
+.qa-page-header {
+    margin-bottom: 28px;
+}
+
+.qa-page-header__title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.qa-page-header__icon {
+    width: 20px;
+    height: 20px;
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+.qa-page-header__title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+    color: #1d4ed8;
+    letter-spacing: -0.3px;
+}
+
+.qa-page-header__sub {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* ─── Layout ─── */
+.qa-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+@media (max-width: 1024px) {
+    .qa-layout {
+        flex-direction: column;
+    }
+}
+
+/* ─── Error banner ─── */
+.qa-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #dc2626;
+    margin-bottom: 16px;
+}
+
+/* ─── Skeleton loader ─── */
+.qa-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.qa-skeleton__item {
+    height: 56px;
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    animation: qa-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qa-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
+
+/* ─── Posting Sidebar ─── */
+.qa-sidebar {
+    width: 230px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 96px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    padding: 10px 10px 14px;
+}
+
+@media (max-width: 1024px) {
+    .qa-sidebar {
+        width: 100%;
+        position: static;
+    }
+}
+
+.qa-sidebar__label {
+    padding: 0 8px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+
+.qa-sidebar__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.qa-sidebar__item {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+
+.qa-sidebar__item:hover {
+    background: #eff6ff;
+}
+
+.qa-sidebar__item--active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.qa-sidebar__item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.3;
+}
+
+.qa-sidebar__item--active .qa-sidebar__item-title {
+    color: #ffffff;
+}
+
+.qa-sidebar__item-company {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.qa-sidebar__item--active .qa-sidebar__item-company {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.qa-sidebar__empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* ─── Main panel ─── */
+.qa-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ─── Opportunity Strip ─── */
+.qa-strip {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.qa-strip__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.qa-strip__company {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.qa-strip__stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.qa-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 9999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.qa-pill--pending {
+    background: #fef9c3;
+    color: #a16207;
+}
+
+.qa-pill--answered {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.qa-pill svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+.qa-refresh-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.qa-refresh-btn:hover {
+    background: #f8fafc;
+}
+
+.qa-refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.qa-refresh-btn svg {
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+}
+
+.qa-refresh-btn--spinning svg {
+    animation: qa-spin 0.8s linear infinite;
+}
+
+@keyframes qa-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ─── Filter tabs ─── */
+.qa-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.qa-filter-btn {
+    position: relative;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #64748b;
+}
+
+.qa-filter-btn:hover {
+    background: #f8fafc;
+}
+
+.qa-filter-btn--active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22);
+}
+
+.qa-filter-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 18px;
+    height: 18px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ─── Question Card ─── */
+.qa-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+}
+
+.qa-card__header {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.qa-card__header:hover {
+    background: #fafbfc;
+}
+
+.qa-card__header-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.qa-card__header-content {
+    flex: 1;
+}
+
+.qa-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.qa-status-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+.qa-status-badge--answered {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.qa-status-badge--pending {
+    background: #fef9c3;
+    color: #a16207;
+}
+
+.qa-card__question {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.5;
+}
+
+.qa-card__time {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.qa-card__time svg {
+    width: 12px;
+    height: 12px;
+}
+
+.qa-card__chevron {
+    padding-top: 2px;
+    flex-shrink: 0;
+    color: #94a3b8;
+}
+
+.qa-card__chevron svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Answer preview (collapsed answered card) */
+.qa-card__preview {
+    border-top: 1px solid #f1f5f9;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #64748b;
+    font-style: italic;
+}
+
+.qa-card__preview-label {
+    color: #15803d;
+    font-weight: 600;
+    font-style: normal;
+}
+
+/* Expanded editor */
+.qa-card__editor {
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    padding: 14px 16px;
+}
+
+.qa-card__editor-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.qa-card__textarea {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #0f172a;
+    resize: none;
+    font-family: inherit;
+    transition: border 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+
+.qa-card__textarea::placeholder {
+    color: #94a3b8;
+}
+
+.qa-card__textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.qa-card__error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+.qa-card__error svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.qa-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.qa-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+    transition: box-shadow 0.15s, opacity 0.15s;
+}
+
+.qa-btn-primary:hover {
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+}
+
+.qa-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.qa-btn-primary svg {
+    width: 14px;
+    height: 14px;
+}
+
+.qa-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: #ffffff;
+    color: #64748b;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.qa-btn-secondary:hover {
+    background: #f8fafc;
+}
+
+.qa-btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─── Empty state ─── */
+.qa-empty {
+    background: #ffffff;
+    border: 1px dashed #e5e7eb;
+    border-radius: 14px;
+    padding: 64px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.qa-empty svg {
+    width: 40px;
+    height: 40px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+}
+
+.qa-empty__title {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.qa-empty__sub {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* ─── Question list skeleton ─── */
+.qa-questions-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.qa-questions-skeleton__item {
+    height: 88px;
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    animation: qa-pulse 1.4s ease-in-out infinite;
+}
+
+.qa-questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
