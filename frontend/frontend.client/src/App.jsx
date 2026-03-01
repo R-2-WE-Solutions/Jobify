@@ -9,6 +9,7 @@ import ResetPasswordPage from "./pages/LoginPage/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/LoginPage/OAuthCallbackPage";
 import EmailConfirmed from "./pages/LoginPage/EmailConfirmed";
 
+
 //job details pages
 import ProfileReviewPage from "./pages/JobDetails/ProfileReviewPage";
 import ApplicationReviewPage from "./pages/JobDetails/ApplicationReviewPage";
@@ -18,8 +19,9 @@ import JobDetailsPage from "./pages/JobDetails/JobDetailsPage";
 import AssessmentRulesPage from "./pages/JobDetails/AssesmentRulesPage";
 
 import Match from "./pages/Match";
-import QAPage from "./pages/QAPage";
 
+// organization page 
+import OrganizationDashboard from "./pages/OrganizationDashboard";
 
 import AppLayout from "./layout/AppLayout";
 
@@ -41,10 +43,16 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/oauth-confirm" element={<OAuthCallbackPage />} />
             <Route path="/email-confirmed" element={<EmailConfirmed />} />
+            
+            
 
             <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/browse" element={<BrowseOpportunities />} />
+                
+                <Route path="/match" element={<Match />} />
+
+                <Route path="/organization" element={<OrganizationDashboard />} />
 
                 <Route path="/opportunities/:id" element={<JobDetailsPage />} />
 

@@ -38,6 +38,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+// Register RecommendationService for recommendation system
+builder.Services.AddScoped<Jobify.Api.Services.RecommendationService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevCors", p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
 // ASP.NET Identity
 // Handles users, roles, passwords, hashing, tokens, etc.
 builder.Services
@@ -240,6 +247,8 @@ app.UseCors("AllowFrontend");
 // Authentication must come before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseCors("DevCors");
 
 // Map controller endpoints
 app.MapControllers();
