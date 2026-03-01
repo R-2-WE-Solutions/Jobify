@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Jobify.Api.Data;
 using Jobify.Api.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Jobify.Api.Models;
-using System.Text.Json;
+using Jobify.Api.Services.SkillServices;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
+using Jobify.Api.Services.SkillServices;
 
 namespace Jobify.Api.Controllers;
 
@@ -15,12 +17,19 @@ namespace Jobify.Api.Controllers;
 public class OpportunitiesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly SkillService _skillService;
+    private readonly MlSkillClient _mlSkillClient;
 
-    public OpportunitiesController(AppDbContext db)
+    public OpportunitiesController(AppDbContext db, SkillService skillService, MlSkillClient mlSkillClient)
     {
         _db = db;
+        _skillService = skillService;
+        _mlSkillClient = mlSkillClient;
     }
 
+
+
+    // =========================
     // GET LIST (PUBLIC)
     // GET: /api/opportunities?q=&type=&level=&remote=&location=&skills=&minPay=&maxPay=&sort=&page=&pageSize=
     [HttpGet]
@@ -430,7 +439,13 @@ public class OpportunitiesController : ControllerBase
         _db.Opportunities.Add(opportunity);
         await _db.SaveChangesAsync();
 
-        await ReplaceSkills(opportunity.Id, dto.Skills);
+        var extracted = await _mlSkillClient.ExtractOpportunitySkillsAsync(
+            opportunity.Description ?? "",
+            null
+        );
+
+        await _skillService.SaveOpportunitySkillsAsync(opportunity.Id, extracted);
+
 
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, new { opportunity.Id });
     }
@@ -479,7 +494,12 @@ public class OpportunitiesController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        await ReplaceSkills(opportunity.Id, dto.Skills);
+        var extracted = await _mlSkillClient.ExtractOpportunitySkillsAsync(
+            opportunity.Description ?? "",
+            null
+        );
+
+        await _skillService.SaveOpportunitySkillsAsync(opportunity.Id, extracted);
 
         return NoContent();
     }

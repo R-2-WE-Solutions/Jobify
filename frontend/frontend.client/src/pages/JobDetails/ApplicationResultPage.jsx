@@ -10,7 +10,7 @@ export default function ApplicationResultPage() {
     useEffect(() => {
         if (!data) {
             (async () => {
-                const res = await api.get(`/api/Applications/${applicationId}`);
+                const res = await api.get(`/api/Application/${applicationId}`);
                 setData(res.data?.attempt ? {
                     finalScore: res.data.attempt.score,
                     flagged: res.data.attempt.flagged,

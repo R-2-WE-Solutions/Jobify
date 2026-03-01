@@ -1,36 +1,72 @@
 from src.models.skillner import load_skillner
-from src.services.skills_extraction import extract_skills
+from src.services.skills_extraction import build_skill_pipeline, extract_skills
+from src.services.esco import search_skill_esco
 from src.utils.input_to_text import extract_text
-# from db.db_client import send_to_db
 
-def run_main_pipeline(filepath, userID, userType):
+from fastapi import FastAPI, UploadFile, File
+import os, tempfile
+
+
+CONF_THRESHOLD = 0.3
+
+# load model
+_loaded = load_skillner()
+_skillner = _loaded['model']
+_tokenizer = _loaded['tokenizer']
+
+# Building skill extraction pipeline
+pipeline = build_skill_pipeline(model=_skillner, tokenizer=_tokenizer)
+
+def run_main_pipeline(filepath, conf_threshold=CONF_THRESHOLD):
+    
     # Convert file to text for input
     input = extract_text(filepath=filepath)
 
-    # load model
-    loaded = load_skillner()
-    skillner = loaded['model']
-    tokenizer = loaded['tokenizer']
-
-    # Extract skills from input
-    extracted_skills = extract_skills(input, model=skillner, tokenizer=tokenizer)
-
-    # check if the user is a JobSeeker or a Company
-    if userType == 'company':
-        isJobSeeker = False
-    else:
-        isJobSeeker = True
-
-    # send skills to db
-    # send_to_db(extracted_skills, userID, isJobSeeker=isJobSeeker)
-
-    # print skills extracted
-    for i, skill in enumerate(extracted_skills):
-        print(f"{i}. skill: {skill['word']}, confidence: {skill['score']}")
     
+    # Extract skills from input
+    extracted_skills = extract_skills(input, pipeline, _tokenizer)
 
-if __name__ == '__main__':
-    path = ""
-    userID = 0000000
-    userType = "admin"
-    run_main_pipeline(path, userID, userType)
+    print("EXTRACTED_SKILLS_LEN =", len(extracted_skills))
+    print("EXTRACTED_SKILLS_SAMPLE =", extracted_skills[:10])
+
+    # Validate skills
+    skills = []
+
+    for skill in extracted_skills:
+
+        if skill['score']>=conf_threshold:
+            skills.append(skill['skill'])
+        else:
+            esco_skill = search_skill_esco(skill['skill'])
+            if esco_skill:
+                skills.append(esco_skill["normalized_name"])
+
+
+    # Noramlize and Deduplicate Skills
+    existing_skills = set()
+
+    skills = [skill for skill in skills if not (skill.lower() in existing_skills or existing_skills.add(skill.lower()))]
+
+    
+    return skills
+
+
+###########################################################################
+
+# API
+
+app = FastAPI()
+
+@app.post("/extract/cv-file")
+async def extract_cv_file(file: UploadFile = File(...)):
+    suffix = os.path.splitext(file.filename)[1].lower()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+
+    skills = run_main_pipeline(tmp_path)
+
+    os.remove(tmp_path)
+
+    return {"skills": skills}

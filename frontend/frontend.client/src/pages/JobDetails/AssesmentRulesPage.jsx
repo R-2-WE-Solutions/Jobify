@@ -32,7 +32,7 @@ export default function AssessmentRulesPage() {
                 setRulesDataLoading(true);
                 setRulesDataError("");
 
-                const res = await fetch(`${API_URL}/api/Applications/${applicationId}`, {
+                const res = await fetch(`${API_URL}/api/Application/${applicationId}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -131,7 +131,7 @@ export default function AssessmentRulesPage() {
             setLoading(true);
 
             const res = await fetch(
-                `${API_URL}/api/Applications/${applicationId}/assessment/start`,
+                `${API_URL}/api/Application/${applicationId}/assessment/start`,
                 {
                     method: "POST",
                     headers: {

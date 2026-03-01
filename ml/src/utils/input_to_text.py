@@ -8,8 +8,9 @@ def clean_cv_text(text):
     # Replace multiple consecutive newlines with a single newline
     text = re.sub(r'\n+', '\n', text)  
     
-    # Replace multiple spaces, tabs, or newlines with a single space
-    text = re.sub(r'\s+', ' ', text)  
+    # Keep line breaks, only normalize spaces/tabs
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{2,}", "\n", text) 
 
     # Remove page number artifacts commonly found in CV footers
     text = re.sub(r'page \d+ of \d+', '', text)  
@@ -24,8 +25,18 @@ def clean_cv_text(text):
 
 # transform input from docx to text
 def docx_to_text(filepath):
-    text = pypandoc.convert_file(filepath, to='plain')
-    return text
+    try:
+        # if pandoc isn't installed/visible, this will raise
+        _ = pypandoc.get_pandoc_path()
+        return pypandoc.convert_file(filepath, to="plain")
+    except OSError as e:
+        # pandoc not installed / not in PATH
+        raise RuntimeError(
+            "Pandoc executable not found. Install pandoc or run pypandoc.download_pandoc()."
+        ) from e
+    except RuntimeError as e:
+        # pandoc ran but failed (bad file, exit code, etc.)
+        raise RuntimeError(f"Pandoc conversion failed for: {filepath}. Error: {e}") from e
 
 # transform input from pdf to text
 def pdf_to_text(filepath):

@@ -11,7 +11,7 @@ export default function ApplicationReviewPage() {
 
     useEffect(() => {
         (async () => {
-            const res = await api.get(`/api/Applications/${applicationId}`);
+            const res = await api.get(`/api/Application/${applicationId}`);
             setData(res.data);
             setLoading(false);
         })();
@@ -23,7 +23,7 @@ export default function ApplicationReviewPage() {
     const hasAssessment = data.hasAssessment;
 
     const start = async () => {
-        const res = await api.post(`/api/Applications/${applicationId}/assessment/start`, {
+        const res = await api.post(`/api/Application/${applicationId}/assessment/start`, {
             webcamConsent,
         });
         nav(`/application/${applicationId}/assessment`);

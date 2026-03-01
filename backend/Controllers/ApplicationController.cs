@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Jobify.Api.Data;
@@ -6,6 +6,7 @@ using Jobify.Api.Models;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using Jobify.Api.DTOs.Applications;
 
 //application and assesment controller -> the assesment is finished, but needs some work with the snapshots
 
@@ -13,14 +14,14 @@ namespace Jobify.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ApplicationsController : ControllerBase
+public class ApplicationController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _http;
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
 
-    public ApplicationsController(AppDbContext db, IHttpClientFactory http, IConfiguration config, IWebHostEnvironment env)
+    public ApplicationController(AppDbContext db, IHttpClientFactory http, IConfiguration config, IWebHostEnvironment env)
     {
         _db = db;
         _http = http;
@@ -191,12 +192,12 @@ public class ApplicationsController : ControllerBase
 
     public class SaveAssessmentDto
     {
-        public object? Answers { get; set; } 
+        public object? Answers { get; set; }
     }
 
     public class ProctorEventDto
     {
-        public string Type { get; set; } = ""; 
+        public string Type { get; set; } = "";
         public object? Details { get; set; }
     }
 
@@ -205,12 +206,12 @@ public class ApplicationsController : ControllerBase
         public string QuestionId { get; set; } = "";
         public int LanguageId { get; set; }
         public string SourceCode { get; set; } = "";
-        public string? StdinOverride { get; set; } 
+        public string? StdinOverride { get; set; }
     }
 
     public class SnapshotDto
     {
-        public string Base64Jpeg { get; set; } = ""; 
+        public string Base64Jpeg { get; set; } = "";
     }
 
     // GET my applications
@@ -912,7 +913,7 @@ public class ApplicationsController : ControllerBase
             ["stderr"] = stderr,
             ["compile_output"] = compile,
             ["message"] = message,
-            ["expected"] = expectedOutput 
+            ["expected"] = expectedOutput
         };
     }
 
@@ -939,6 +940,301 @@ public class ApplicationsController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { reset = true });
+    }
+
+
+   
+
+    public class RecruiterAppListDto
+    {
+        public int ApplicationId { get; set; }
+        public string CandidateName { get; set; } = "";
+        public string CandidateEmail { get; set; } = "";
+        public string Status { get; set; } = "";
+        public DateTime CreatedAtUtc { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public bool HasAssessment { get; set; }
+        public decimal? AssessmentScore { get; set; }
+        public string? Note { get; set; }
+    }
+
+    public class ResendRejectionDto
+    {
+        public string? RejectionReason { get; set; }
+    }
+
+    // ── GET /api/applications/recruiter/{opportunityId} ───────────────────────
+    // PB_19: see all applicants + their current status for a given opportunity
+    [Authorize(Roles = "Recruiter")]
+    [HttpGet("recruiter/{opportunityId:int}")]
+    public async Task<ActionResult<List<RecruiterAppListDto>>> GetApplicationsForOpportunity(int opportunityId)
+    {
+        var oppExists = await _db.Opportunities.AnyAsync(o => o.Id == opportunityId);
+        if (!oppExists) return NotFound("Opportunity not found.");
+
+        var apps = await _db.Applications
+            .AsNoTracking()
+            .Include(a => a.Opportunity)
+            .Where(a => a.OpportunityId == opportunityId && a.Status != ApplicationStatus.Withdrawn)
+            .OrderByDescending(a => a.CreatedAtUtc)
+            .ToListAsync();
+
+        var result = new List<RecruiterAppListDto>();
+
+        foreach (var app in apps)
+        {
+            var user = await _db.Users.AsNoTracking()
+                           .FirstOrDefaultAsync(u => u.Id == app.UserId);
+
+            var assessment = await _db.ApplicationAssessments
+                                 .AsNoTracking()
+                                 .FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
+
+            result.Add(new RecruiterAppListDto
+            {
+                ApplicationId = app.Id,
+                CandidateName = user?.UserName ?? "Unknown",
+                CandidateEmail = user?.Email ?? "",
+                Status = app.Status.ToString(),
+                CreatedAtUtc = app.CreatedAtUtc,
+                UpdatedAt = app.UpdatedAt,
+                HasAssessment = !string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson),
+                AssessmentScore = assessment?.Score,
+                Note = app.Note
+            });
+        }
+
+        return Ok(result);
+    }
+
+    // ── PATCH /api/applications/{applicationId}/status ────────────────────────
+    // PB_19: update application status
+    // PB_24: auto-send rejection email when status = Rejected + SendEmail = true
+    [Authorize(Roles = "Recruiter")]
+    [HttpPatch("{applicationId:int}/status")]
+    public async Task<IActionResult> UpdateApplicationStatus(
+    int applicationId,
+    [FromBody] UpdateApplicationStatusDto dto)
+    { 
+        if (string.IsNullOrWhiteSpace(dto.Status))
+            return BadRequest("Status is required.");
+
+        if (!Enum.TryParse<ApplicationStatus>(dto.Status, ignoreCase: true, out var newStatus))
+        {
+            var valid = string.Join(", ", Enum.GetNames<ApplicationStatus>());
+            return BadRequest($"Invalid status. Valid values: {valid}");
+        }
+
+        var app = await _db.Applications
+            .Include(a => a.Opportunity)
+            .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+        if (app == null) return NotFound("Application not found.");
+
+        var previousStatus = app.Status;
+        app.Status = newStatus;
+        app.UpdatedAt = DateTime.UtcNow;
+
+        if (dto.Note != null)
+            app.Note = dto.Note.Trim();
+
+        await _db.SaveChangesAsync();
+
+        // ── PB_24 rejection email ─────────────────────────────────────────────
+        string? emailError = null;
+        bool emailSent = false;
+
+        if (newStatus == ApplicationStatus.Rejected && dto.SendEmail)
+        {
+            var user = await _db.Users.FindAsync(app.UserId);
+            if (user?.Email != null)
+            {
+                try
+                {
+                    var oppTitle = app.Opportunity?.Title ?? "the position";
+                    var companyName = app.Opportunity?.CompanyName ?? "our company";
+                    var reason = string.IsNullOrWhiteSpace(dto.RejectionReason)
+                                      ? null : dto.RejectionReason.Trim();
+
+                    var htmlBody = BuildRejectionEmail(
+                        user.UserName ?? "Candidate", oppTitle, companyName, reason);
+
+                    await SendEmailAsync(
+                        user.Email,
+                        $"Update on your application – {oppTitle}",
+                        htmlBody);
+
+                    emailSent = true;
+                }
+                catch (Exception ex)
+                {
+                    emailError = ex.Message;   // status update succeeds even if email fails
+                }
+            }
+        }
+
+        return Ok(new
+        {
+            applicationId,
+            previousStatus = previousStatus.ToString(),
+            newStatus = newStatus.ToString(),
+            emailSent,
+            emailError
+        });
+    }
+
+    // ── POST /api/applications/{applicationId}/rejection-email ────────────────
+    // PB_24: manually (re)send a rejection email at any time
+    [Authorize(Roles = "Recruiter")]
+    [HttpPost("{applicationId:int}/rejection-email")]
+    public async Task<IActionResult> ResendRejectionEmail(
+        int applicationId,
+        [FromBody] ResendRejectionDto? dto)
+    {
+        var app = await _db.Applications
+            .Include(a => a.Opportunity)
+            .FirstOrDefaultAsync(a => a.Id == applicationId);
+
+        if (app == null) return NotFound("Application not found.");
+
+        var user = await _db.Users.FindAsync(app.UserId);
+        if (user?.Email == null)
+            return BadRequest("Candidate has no email address on file.");
+
+        var oppTitle = app.Opportunity?.Title ?? "the position";
+        var companyName = app.Opportunity?.CompanyName ?? "our company";
+        var reason = string.IsNullOrWhiteSpace(dto?.RejectionReason)
+                          ? null : dto!.RejectionReason!.Trim();
+
+        var htmlBody = BuildRejectionEmail(
+            user.UserName ?? "Candidate", oppTitle, companyName, reason);
+
+        try
+        {
+            await SendEmailAsync(user.Email, $"Update on your application – {oppTitle}", htmlBody);
+            return Ok(new { sent = true, to = user.Email });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { sent = false, error = ex.Message });
+        }
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private async Task SendEmailAsync(string to, string subject, string htmlBody)
+    {
+        var smtpHost = _config["Smtp:Host"];
+        var smtpPort = int.Parse(_config["Smtp:Port"] ?? "587");
+        var smtpUser = _config["Smtp:User"];
+        var smtpPass = _config["Smtp:Pass"];
+        var fromEmail = _config["Smtp:From"] ?? smtpUser;
+
+        using var client = new System.Net.Mail.SmtpClient(smtpHost, smtpPort)
+        {
+            Credentials = new System.Net.NetworkCredential(smtpUser, smtpPass),
+            EnableSsl = true
+        };
+
+        var mail = new System.Net.Mail.MailMessage
+        {
+            From = new System.Net.Mail.MailAddress(fromEmail!),
+            Subject = subject,
+            Body = htmlBody,
+            IsBodyHtml = true
+        };
+        mail.To.Add(to);
+
+        await client.SendMailAsync(mail);
+    }
+
+    private static string BuildRejectionEmail(
+        string candidateName,
+        string opportunityTitle,
+        string companyName,
+        string? reason)
+    {
+        var encodedName = System.Web.HttpUtility.HtmlEncode(candidateName);
+        var encodedTitle = System.Web.HttpUtility.HtmlEncode(opportunityTitle);
+        var encodedCompany = System.Web.HttpUtility.HtmlEncode(companyName);
+        var year = DateTime.UtcNow.Year;
+
+        var reasonBlock = reason != null
+            ? $@"<tr><td style='padding:0 24px 18px;'>
+                   <div style='background:#fef2f2;border-left:3px solid #ef4444;
+                               border-radius:0 8px 8px 0;padding:12px 16px;'>
+                     <p style='margin:0;font-size:13px;color:#374151;line-height:1.6;'>
+                       <strong style='color:#991b1b;'>Feedback:</strong>
+                       {System.Web.HttpUtility.HtmlEncode(reason)}
+                     </p>
+                   </div>
+                 </td></tr>"
+            : "";
+
+        return $@"<!doctype html>
+<html lang='en'>
+<head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
+<title>Application Update</title></head>
+<body style='margin:0;padding:0;background:#f4f6fb;font-family:Arial,Helvetica,sans-serif;'>
+  <table role='presentation' cellpadding='0' cellspacing='0' width='100%'
+         style='background:#f4f6fb;padding:24px 0;'>
+    <tr><td align='center'>
+      <table role='presentation' cellpadding='0' cellspacing='0' width='600'
+             style='width:600px;max-width:92%;background:#fff;border-radius:16px;
+                    overflow:hidden;box-shadow:0 10px 30px rgba(16,24,40,.12);'>
+
+        <tr>
+          <td style='background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:22px 24px;'>
+            <div style='font-size:18px;color:#fff;font-weight:700;'>Jobify</div>
+            <div style='font-size:13px;color:rgba(255,255,255,.9);margin-top:4px;'>
+              Application Status Update
+            </div>
+          </td>
+        </tr>
+
+        <tr><td style='padding:28px 24px 8px;'>
+          <p style='margin:0 0 12px;font-size:15px;font-weight:700;color:#111827;'>
+            Dear {encodedName},
+          </p>
+          <p style='margin:0 0 16px;font-size:14px;line-height:1.7;color:#374151;'>
+            Thank you for your interest in the
+            <strong>{encodedTitle}</strong> position at
+            <strong>{encodedCompany}</strong>.
+          </p>
+          <p style='margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;'>
+            After careful consideration, we regret to inform you that we will not be
+            moving forward with your application at this time. We appreciate the time
+            and effort you invested and encourage you to apply for future opportunities
+            that match your profile.
+          </p>
+        </td></tr>
+
+        {reasonBlock}
+
+        <tr><td style='padding:0 24px 24px;'>
+          <p style='margin:0;font-size:14px;line-height:1.7;color:#374151;'>
+            We wish you the very best in your job search.
+          </p>
+          <p style='margin:16px 0 0;font-size:14px;color:#374151;'>
+            Kind regards,<br/>
+            <strong>The {encodedCompany} Team</strong>
+          </p>
+        </td></tr>
+
+        <tr><td style='padding:16px 24px;background:#fafafa;border-top:1px solid #f0f0f0;'>
+          <div style='font-size:12px;color:#9ca3af;'>
+            © {year} Jobify. All rights reserved.
+          </div>
+          <div style='font-size:12px;color:#9ca3af;margin-top:4px;'>
+            This is an automated message — please do not reply.
+          </div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
     }
 
 

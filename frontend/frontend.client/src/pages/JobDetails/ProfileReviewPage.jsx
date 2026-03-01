@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/Reviewpage.css";
-
 import { FileText, BadgeCheck, XCircle } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL;
+import { getProfile } from "../../api/profile";
+import {
+    getSkills,
+    getEducation,
+    getExperience,
+    getProjects,
+    getInterests,
+} from "../../api/studentData";
 
 export default function ProfileReviewPage() {
     const { applicationId } = useParams();
@@ -12,68 +18,146 @@ export default function ProfileReviewPage() {
 
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
-    const [data, setData] = useState(null);
+
+    const [profileData, setProfileData] = useState(null);
+
+    const [skills, setSkills] = useState([]);
+    const [education, setEducation] = useState([]);
+    const [experience, setExperience] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [interests, setInterests] = useState([]);
 
     useEffect(() => {
-        const token = localStorage.getItem("jobify_token");
-        if (!token) {
-            navigate("/login");
-            return;
-        }
-
-        const controller = new AbortController();
+        let mounted = true;
 
         (async () => {
             try {
                 setLoading(true);
                 setErr("");
 
-                const res = await fetch(`${API_URL}/api/profile`, {
-                    signal: controller.signal,
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const [profRes, skillsRes, eduRes, expRes, projRes, intRes] =
+                    await Promise.all([
+                        getProfile(),
+                        getSkills(),
+                        getEducation(),
+                        getExperience(),
+                        getProjects(),
+                        getInterests(),
+                    ]);
 
-                if (!res.ok) {
-                    const t = await res.text().catch(() => "");
-                    throw new Error(t || `Failed to load profile (${res.status})`);
-                }
+                if (!mounted) return;
 
-                const json = await res.json();
-                setData(json);
+                setProfileData(profRes);
+                setSkills(Array.isArray(skillsRes) ? skillsRes : []);
+                setEducation(Array.isArray(eduRes) ? eduRes : []);
+                setExperience(Array.isArray(expRes) ? expRes : []);
+                setProjects(Array.isArray(projRes) ? projRes : []);
+                setInterests(Array.isArray(intRes) ? intRes : []);
             } catch (e) {
-                if (e?.name !== "AbortError") setErr(e?.message || "Failed to load profile");
+                const msg = e?.message || "Failed to load review data";
+                if (mounted) setErr(msg);
+
+                if (
+                    String(msg).toLowerCase().includes("unauthorized") ||
+                    String(msg).includes("401") ||
+                    String(msg).toLowerCase().includes("no token")
+                ) {
+                    navigate("/login");
+                }
             } finally {
-                setLoading(false);
+                if (mounted) setLoading(false);
             }
         })();
 
-        return () => controller.abort();
+        return () => {
+            mounted = false;
+        };
     }, [navigate]);
 
-    const p = data?.profile || {};
+    const p = profileData?.profile || {};
+    const email = profileData?.email || p.email || "";
 
-    const chips = useMemo(() => {
-        if (Array.isArray(p.skills) && p.skills.length) return p.skills;
-        const guess = [];
-        if (p.major) guess.push(p.major);
-        if (p.university) guess.push(p.university);
-        if (p.portfolioUrl) guess.push("Portfolio");
-        return guess;
-    }, [p.skills, p.major, p.university, p.portfolioUrl]);
+    const skillChips = useMemo(() => {
+        return (skills || [])
+            .map((s) => (typeof s === "string" ? s : s?.name))
+            .filter(Boolean);
+    }, [skills]);
+
+    const educationText = useMemo(() => {
+        if (!education?.length) return p.educationText || "";
+        return education
+            .map((e) => {
+                const uni = e?.university || "University";
+                const degree = e?.degree ? `${e.degree}` : "";
+                const major = e?.major ? ` in ${e.major}` : "";
+                const year = e?.graduationYear ? ` • Class of ${e.graduationYear}` : "";
+                const gpa = e?.gpa ? ` • GPA ${e.gpa}` : "";
+                return `${uni}\n${degree}${major}${year}${gpa}`.trim();
+            })
+            .join("\n\n");
+    }, [education, p.educationText]);
+
+    const experienceText = useMemo(() => {
+        if (!experience?.length) return p.experienceText || "";
+        return experience
+            .map((e) => {
+                const role = e?.role || "Role";
+                const company = e?.company ? ` @ ${e.company}` : "";
+                const duration = e?.duration ? `\n${e.duration}` : "";
+                const desc = e?.description ? `\n${e.description}` : "";
+                return `${role}${company}${duration}${desc}`.trim();
+            })
+            .join("\n\n");
+    }, [experience, p.experienceText]);
+
+    const projectsText = useMemo(() => {
+        if (!projects?.length) return p.projectsText || "";
+        return projects
+            .map((pr) => {
+                const title = pr?.title || "Project";
+                const desc = pr?.description ? `\n${pr.description}` : "";
+                const tech =
+                    Array.isArray(pr?.techStack) && pr.techStack.length
+                        ? `\nTech: ${pr.techStack.join(", ")}`
+                        : "";
+                const links = pr?.links ? `\nLink: ${pr.links}` : "";
+                return `${title}${desc}${tech}${links}`.trim();
+            })
+            .join("\n\n");
+    }, [projects, p.projectsText]);
+
+    const interestsText = useMemo(() => {
+        if (!interests?.length) return p.interestsText || "";
+        const names = interests.map((i) => i?.interest).filter(Boolean);
+        return names.join(", ");
+    }, [interests, p.interestsText]);
 
     const startAssessment = () => {
         navigate(`/application/${applicationId}/assessment/rules`);
     };
 
-    if (loading) return <div className="reviewPage"><div className="reviewShell">Loading…</div></div>;
-    if (err) return <div className="reviewPage"><div className="reviewShell">{err}</div></div>;
+    if (loading) {
+        return (
+            <div className="reviewPage">
+                <div className="reviewShell">Loading…</div>
+            </div>
+        );
+    }
+
+    if (err) {
+        return (
+            <div className="reviewPage">
+                <div className="reviewShell">{err}</div>
+            </div>
+        );
+    }
 
     return (
         <div className="reviewPage">
             <div className="reviewShell">
                 <div className="reviewHeader">
                     <h1>Review Application</h1>
-                    <p></p>
+                    <p />
                 </div>
 
                 <section className="card">
@@ -94,12 +178,12 @@ export default function ProfileReviewPage() {
 
                             <div className="kv">
                                 <div className="k">EMAIL</div>
-                                <div className="v">{p.email || p.userEmail || "—"}</div>
+                                <div className="v">{email || "—"}</div>
                             </div>
 
                             <div className="kv">
                                 <div className="k">PHONE</div>
-                                <div className="v">{p.phone || "—"}</div>
+                                <div className="v">{p.phone || p.phoneNumber || "—"}</div>
                             </div>
 
                             <div className="kv">
@@ -109,6 +193,7 @@ export default function ProfileReviewPage() {
                         </div>
                     </div>
                 </section>
+
                 <section className="card">
                     <div className="cardTitle">Education & Skills</div>
 
@@ -117,7 +202,9 @@ export default function ProfileReviewPage() {
                         <div className="vBig">{p.university || "—"}</div>
                         <div className="muted">
                             {p.major ? `${p.major}` : "—"}
-                            {p.gradYear ? ` • Graduated ${p.gradYear}` : ""}
+                            {p.gradYear || p.graduationYear
+                                ? ` • Graduated ${p.gradYear || p.graduationYear}`
+                                : ""}
                         </div>
                     </div>
 
@@ -125,9 +212,11 @@ export default function ProfileReviewPage() {
 
                     <div className="k">SKILLS</div>
                     <div className="chips">
-                        {chips?.length ? (
-                            chips.map((s, idx) => (
-                                <span className="chip" key={`${s}-${idx}`}>{s}</span>
+                        {skillChips?.length ? (
+                            skillChips.map((s, idx) => (
+                                <span className="chip" key={`${s}-${idx}`}>
+                                    {s}
+                                </span>
                             ))
                         ) : (
                             <span className="muted">—</span>
@@ -135,12 +224,10 @@ export default function ProfileReviewPage() {
                     </div>
 
                     <div className="detailGrid">
-                        <Detail label="Education" value={p.educationText} />
-                        <Detail label="Experience" value={p.experienceText} />
-                        <Detail label="Projects" value={p.projectsText} />
-                        <Detail label="Interests" value={p.interestsText} />
-                        <Detail label="Certifications" value={p.certificationsText} />
-                        <Detail label="Awards" value={p.awardsText} />
+                        <Detail label="Education" value={educationText} />
+                        <Detail label="Experience" value={experienceText} />
+                        <Detail label="Projects" value={projectsText} />
+                        <Detail label="Interests" value={interestsText} />
                     </div>
                 </section>
 
@@ -167,7 +254,10 @@ export default function ProfileReviewPage() {
 
                     <DocRow
                         title="University Proof"
-                        subtitle={p.universityProofName || (p.hasUniversityProof ? "Verified" : "Missing")}
+                        subtitle={
+                            p.universityProofName ||
+                            (p.hasUniversityProof ? "Verified" : "Missing")
+                        }
                         status={p.hasUniversityProof ? "VERIFIED" : "MISSING"}
                         ok={!!p.hasUniversityProof}
                     />
@@ -193,7 +283,9 @@ function Detail({ label, value }) {
     return (
         <div className="detail">
             <div className="k">{label.toUpperCase()}</div>
-            <div className="v">{value?.trim() ? value : "Not set"}</div>
+            <div className="v" style={{ whiteSpace: "pre-wrap" }}>
+                {value?.trim() ? value : "Not set"}
+            </div>
         </div>
     );
 }
