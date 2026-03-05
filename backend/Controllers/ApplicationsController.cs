@@ -990,4 +990,30 @@ public class ApplicationsController : ControllerBase
     }
 
 
+    [Authorize(Roles = "Student")]
+    [HttpGet("{applicationId:int}/summary")]
+    public async Task<IActionResult> GetMyApplicationSummary(int applicationId)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var app = await _db.Applications
+            .AsNoTracking()
+            .Include(a => a.Opportunity)
+            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+
+        if (app == null) return NotFound();
+
+        return Ok(new
+        {
+            applicationId = app.Id,
+            status = app.Status.ToString(),
+            note = app.Note,                 // remove this line if students must NOT see recruiter note
+            updatedAtUtc = app.UpdatedAtUtc,
+            companyName = app.Opportunity?.CompanyName,
+            opportunityTitle = app.Opportunity?.Title
+        });
+    }
+
+
 }
