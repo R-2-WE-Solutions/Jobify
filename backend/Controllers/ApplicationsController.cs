@@ -1052,4 +1052,46 @@ public class ApplicationsController : ControllerBase
         return Ok(apps);
     }
 
+
+    // GET all applications for a specific opportunity (recruiter)
+    [Authorize(Roles = "Recruiter")]
+    [HttpGet("opportunity/{opportunityId:int}")]
+    public async Task<IActionResult> GetApplicationsForOpportunity(int opportunityId)
+    {
+        var recruiterId = CurrentUserId();
+        if (string.IsNullOrEmpty(recruiterId)) return Unauthorized();
+
+        var recruiter = await _db.RecruiterProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.UserId == recruiterId);
+
+        if (recruiter == null) return Forbid();
+
+        var opportunity = await _db.Opportunities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == opportunityId);
+
+        if (opportunity == null) return NotFound();
+
+        if (!string.Equals(opportunity.CompanyName, recruiter.CompanyName, StringComparison.OrdinalIgnoreCase))
+            return Forbid();
+
+        var apps = await _db.Applications
+            .AsNoTracking()
+            .Where(a => a.OpportunityId == opportunityId)
+            .Select(a => new
+            {
+                applicationId = a.Id,
+                studentUserId = a.UserId,
+                status = a.Status.ToString(),
+                note = a.Note,
+                createdAtUtc = a.CreatedAtUtc,
+                updatedAtUtc = a.UpdatedAtUtc
+            })
+            .OrderByDescending(a => a.createdAtUtc)
+            .ToListAsync();
+
+        return Ok(apps);
+    }
+
 }
