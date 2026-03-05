@@ -1141,4 +1141,35 @@ public class ApplicationsController : ControllerBase
         });
     }
 
+
+    // Withdraw application (student)
+    [Authorize(Roles = "Student")]
+    [HttpPost("{applicationId:int}/withdraw")]
+    public async Task<IActionResult> WithdrawApplication(int applicationId)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var app = await _db.Applications
+            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+
+        if (app == null) return NotFound();
+
+        if (app.Status == ApplicationStatus.Withdrawn)
+            return BadRequest("Application already withdrawn.");
+
+        app.Status = ApplicationStatus.Withdrawn;
+        app.WithdrawndAt = DateTime.UtcNow;
+        app.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            applicationId = app.Id,
+            status = app.Status.ToString(),
+            withdrawnAtUtc = app.WithdrawndAt
+        });
+    }
+
 }
