@@ -428,6 +428,42 @@ export default function OrganizationDashboard() {
     }
   }
 
+  // Recruiter updates application status and note
+  async function updateApplication(applicationId: number) {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/applications/${applicationId}/recruiter`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          note: recruiterNote
+        })
+      });
+
+      if(!res.ok) {
+        throw new Error("Failed to update application.");
+      }
+      
+      await fetchApplicationDetails(applicationId);
+      
+      if(selectedOpportunityId!==null)
+        await fetchApplicationsForOpportunity(selectedOpportunityId!);
+
+      alert(`Application of ID: ${applicationId} was updated successfully.`);
+    }
+    catch (error: any) {
+      alert(error.message || "Updating the application went wrong.");
+    }
+    finally {
+      setNewStatus("");
+    }
+  }
+
 
   const count = useMemo(() => listings.length, [listings]);
 

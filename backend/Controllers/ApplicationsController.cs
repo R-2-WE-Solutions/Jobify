@@ -945,6 +945,7 @@ public class ApplicationsController : ControllerBase
     }
 
 
+    // Recruiter updates application status and add note (optional)
     [Authorize(Roles = "Recruiter")]
     [HttpPatch("{applicationId:int}/recruiter")]
     public async Task<IActionResult> RecruiterUpdateApplication(int applicationId, [FromBody] UpdateApplicationStatusDto dto)
