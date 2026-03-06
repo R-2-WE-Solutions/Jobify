@@ -6,7 +6,8 @@ using Jobify.Api.Models;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Jobify.Api.DTOs.Applications;
+using Jobify.Api.DTOs;
+using Jobify.DTOs;
 
 //application and assesment controller -> the assesment is finished, but needs some work with the snapshots
 
