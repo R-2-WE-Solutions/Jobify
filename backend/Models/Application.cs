@@ -41,7 +41,7 @@ public class Application
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
-    public DateTime? WithdrawndAt { get; set; };
+    public DateTime? WithdrawndAt { get; set; }
 
     public string? Note { get; set; }
 

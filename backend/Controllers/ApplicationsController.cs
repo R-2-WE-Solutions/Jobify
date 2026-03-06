@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Jobify.Api.Data;
 using Jobify.Api.Models;
+using Jobify.Api.DTOs;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -182,6 +183,7 @@ public class ApplicationsController : ControllerBase
         public string Status { get; set; } = "";
         public DateTime CreatedAtUtc { get; set; }
         public bool HasAssessment { get; set; }
+        public string? Note { get; set; }
     }
 
     public class StartAssessmentDto
@@ -234,7 +236,7 @@ public class ApplicationsController : ControllerBase
                 CompanyName = a.Opportunity.CompanyName,
                 Status = a.Status.ToString(),
                 CreatedAtUtc = a.CreatedAtUtc,
-                HasAssessment = a.Opportunity.AssessmentJson != null && a.Opportunity.AssessmentJson != ""
+                HasAssessment = a.Opportunity.AssessmentJson != null && a.Opportunity.AssessmentJson != "",
                 Note = a.Note
             })
             .ToListAsync();
@@ -965,6 +967,7 @@ public class ApplicationsController : ControllerBase
 
         if (app == null)
             return NotFound();
+
         if (app.Opportunity == null)
             return BadRequest("Opportunity not found for this application.");
 
@@ -975,7 +978,10 @@ public class ApplicationsController : ControllerBase
         if (app.Status == ApplicationStatus.Withdrawn)
             return BadRequest("Cannot update a withdrawn application.");
 
-        app.Status = dto.Status;
+        if(!Enum.TryParse<ApplicationStatus>(dto.Status, true, out var newStatus))
+            return BadRequest("Invalid status value.");
+        
+        app.Status = newStatus;
         app.Note = dto.Note;
         app.UpdatedAtUtc = DateTime.UtcNow;
 
