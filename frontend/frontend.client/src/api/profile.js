@@ -4,10 +4,7 @@ const API_BASE =
 
 function getToken() {
     const direct =
-        localStorage.getItem("jobify_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("jwt") ||
-        localStorage.getItem("authToken");
+        localStorage.getItem("jobify_token")
 
     if (direct && direct.trim().length > 0) return direct.trim();
 
