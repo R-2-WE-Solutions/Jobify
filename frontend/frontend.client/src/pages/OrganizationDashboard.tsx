@@ -293,10 +293,6 @@ export default function OrganizationDashboard() {
   const [loadingApplicationDetails, setLoadingApplicationDetails] = useState(false);
   const [applicationDetailsError, setApplicationDetailsError] = useState("");
 
-  // Recruiter Notes
-  const [recruiterNote, setRecruiterNote] = useState("");
-  const [newStatus, setNewStatus] = useState("");
-
   // Application Notes
   const [applicationNotes, setApplicationNotes] = useState<Record<number, string>>({});
 
@@ -438,8 +434,7 @@ export default function OrganizationDashboard() {
 
       const data = await res.json();
       setSelectedApplication(data);
-      setRecruiterNote(data.note || "");
-      setNewStatus(data.status || "");
+      
     }
     catch(err: any) {
       setApplicationDetailsError(err.message || "Something went wrong.");
@@ -479,9 +474,6 @@ export default function OrganizationDashboard() {
     }
     catch (error: any) {
       alert(error.message || "Updating the application went wrong.");
-    }
-    finally {
-      setNewStatus("");
     }
   }
 
@@ -663,6 +655,14 @@ export default function OrganizationDashboard() {
           >
             My Listings ({count})
           </button>
+
+            <button
+              type="button"
+              style={{ ...styles.tabBtn, ...(activeTab === "applications" ? styles.tabBtnActive : null) }}
+              onClick={() => setActiveTab("applications")}
+            >
+              Applications
+            </button>
         </div>
       </div>
 
