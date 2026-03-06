@@ -347,7 +347,7 @@ export default function OrganizationDashboard() {
         status: o.isClosed ? "closed" : "active",
         postedDate: o.createdAtUtc ? o.createdAtUtc.slice(0, 10) : "",
         deadline: o.deadlineUtc ? o.deadlineUtc.slice(0, 10) : "",
-        applicants: 0,
+        applicants: o.applicantsCount ?? 0,
         location: o.locationName || o.location || "—",
         type: String(o.type ?? ""),
         workMode: String(o.workMode ?? ""),

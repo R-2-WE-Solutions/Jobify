@@ -1094,6 +1094,7 @@ public class ApplicationsController : ControllerBase
                 note = a.Note,
                 createdAtUtc = a.CreatedAtUtc,
                 updatedAtUtc = a.UpdatedAtUtc
+                applicantsCount = _db.Applications.Count(a => a.OpportunityId == o.Id)
             })
             .OrderByDescending(a => a.createdAtUtc)
             .ToListAsync();
