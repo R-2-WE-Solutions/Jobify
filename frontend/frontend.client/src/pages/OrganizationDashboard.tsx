@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Briefcase,
@@ -13,7 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-type Tab = "post" | "listings";
+type Tab = "post" | "listings" | "applications";
 type JobStatus = "active" | "draft" | "closed";
 
 type Listing = {
@@ -37,59 +37,7 @@ type Listing = {
   longitude: string;
 };
 
-const initialListings: Listing[] = [
-  {
-    id: 1,
-    title: "Senior Frontend Developer",
-    status: "active",
-    postedDate: "2024-02-15",
-    deadline: "2024-03-15",
-    applicants: 24,
-    location: "Beirut, Lebanon",
-    type: "Full-time",
-    workMode: "Hybrid",
-    description: "Build UI features for Jobify, collaborate with backend team.",
-    benefitsPerks: "Health insurance, remote days, learning budget.",
-    skillsRequired: ["React", "JavaScript"],
-    skillsPreferred: ["TypeScript", "UI/UX"],
-    latitude: "33.8938",
-    longitude: "35.5018",
-  },
-  {
-    id: 2,
-    title: "Marketing Intern",
-    status: "draft",
-    postedDate: "2024-02-18",
-    deadline: "2024-03-20",
-    applicants: 0,
-    location: "Remote",
-    type: "Internship",
-    workMode: "Remote",
-    description: "Support content creation and social media campaigns.",
-    benefitsPerks: "Certificate, mentorship, flexible schedule.",
-    skillsRequired: ["Communication"],
-    skillsPreferred: ["Canva"],
-    latitude: "",
-    longitude: "",
-  },
-  {
-    id: 3,
-    title: "Backend Engineer",
-    status: "closed",
-    postedDate: "2024-01-20",
-    deadline: "2024-02-20",
-    applicants: 42,
-    location: "Tripoli, Lebanon",
-    type: "Full-time",
-    workMode: "On-site",
-    description: "Design APIs and services for the platform.",
-    benefitsPerks: "Annual bonus, paid leave, health coverage.",
-    skillsRequired: ["C#", ".NET"],
-    skillsPreferred: ["SQL Server", "Docker"],
-    latitude: "34.4367",
-    longitude: "35.8497",
-  },
-];
+const API_BASE = "https://localhost:7167/api";
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
@@ -322,9 +270,31 @@ function mapWorkType(v: string) {
   return "—";
 }
 
+
+
 export default function OrganizationDashboard() {
+  // Tabs
   const [activeTab, setActiveTab] = useState<Tab>("post");
-  const [listings, setListings] = useState<Listing[]>(initialListings);
+
+  // Listings
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(false);
+  const [listingsError, setListingsError] = useState("");
+
+  // Applications
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [applicationsError, setApplicationsError] = useState("");
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
+
+  // Selected Application
+  const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+  const [loadingApplicationDetails, setLoadingApplicationDetails] = useState(false);
+  const [applicationDetailsError, setApplicationDetailsError] = useState("");
+
+  // Recruiter Notes
+  const [recruiterNote, setRecruiterNote] = useState("");
+  const [newStatus, setNewStatus] = useState("");
 
   // Required skills
   const [skillsRequired, setSkillsRequired] = useState<string[]>(["React", "JavaScript"]);
@@ -346,7 +316,93 @@ export default function OrganizationDashboard() {
     longitude: "",
   });
 
+  // Recruiter listings fetch function
+  async function fetchListings() {
+    try {
+      setLoadingListings(true);
+      setListingsError("");
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/opportunities/recruiter`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch recruiter listings.");
+      }
+
+      const data = await res.json();
+
+      const mapped: Listing[] = data.map((o: any) => ({
+        id: o.id,
+        title: o.title,
+        status: o.isClosed ? "closed" : "active",
+        postedDate: o.createdAtUtc ? o.createdAtUtc.slice(0, 10) : "",
+        deadline: o.deadlineUtc ? o.deadlineUtc.slice(0, 10) : "",
+        applicants: 0,
+        location: o.locationName || o.location || "—",
+        type: String(o.type ?? ""),
+        workMode: String(o.workMode ?? ""),
+        description: o.description || "",
+        benefitsPerks: o.benefitsJson || "",
+        skillsRequired: [],
+        skillsPreferred: [],
+        latitude: o.latitude?.toString() || "",
+        longitude: o.longitude?.toString() || "",
+      }));
+
+      setListings(mapped);
+    } 
+    catch (err: any) {
+      setListingsError(err.message || "Something went wrong.");
+    } 
+    finally {
+      setLoadingListings(false);
+    }
+  }
+
+  // All applications for a selected opportunity fetch function
+  async function fetchApplicationsForOpportunity(opportunityId: number) {
+    try {
+      setLoadingApplications(true);
+      setApplicationsError("");
+      setSelectedOpportunityId(opportunityId);
+      setSelectedApplication(null);
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/applications/opportunity/${opportunityId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch applications.");
+      }
+
+      const data = await res.json();
+      setApplications(data);
+      setActiveTab("applications");
+    }
+    catch (err: any) {
+      setApplicationsError(err.message || "Something went wrong.");
+    } 
+    finally {
+      setLoadingApplications(false);
+    }
+  }
+
+
   const count = useMemo(() => listings.length, [listings]);
+
+  // Fetch listings when dashboard loads
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   function setField<K extends keyof typeof formData>(k: K, v: string) {
     setFormData((p) => ({ ...p, [k]: v }));
