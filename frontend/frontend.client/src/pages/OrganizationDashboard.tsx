@@ -961,6 +961,15 @@ export default function OrganizationDashboard() {
                     )}
                   </div>
                 </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{fontWeight: 700}}>
+                    Applicants: {job.applicants}
+                  </span>
+                  
+                  <button type="button" style={styles.outileBtn} onClick={() => fetchApplicationsForOpportunity(job.id)}>
+                      View Applicants
+                  </button>
+                </div>
               </div>
             ))}
           </div>
