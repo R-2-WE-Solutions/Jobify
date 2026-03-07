@@ -7,5 +7,5 @@ public class User
     public string HashedPassword { get; set; } = ""; //encrypted password
     public string Role { get; set; } = "Student"; //student or organization- defualt is student
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow; //when was the acc created
-    public DateTime? UpdatedAt { get; set; } //last time info changed
+    public DateTime? UpdatedAtUtc { get; set; } //last time info changed
 }

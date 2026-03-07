@@ -160,7 +160,7 @@ public class ProfileController : ControllerBase
                     certificationsText = studentProfile.CertificationsText,
                     awardsText = studentProfile.AwardsText,
                     createdAt = studentProfile.CreatedAt,
-                    updatedAt = studentProfile.UpdatedAt,
+                    UpdatedAtUtc = studentProfile.UpdatedAtUtc,
                     hasResume = !string.IsNullOrEmpty(studentProfile.ResumeFileName),
                     hasUniversityProof = !string.IsNullOrEmpty(studentProfile.UniversityProofFileName),
                     resumeUploadedAtUtc = studentProfile.ResumeUploadedAtUtc,
@@ -248,7 +248,7 @@ public class ProfileController : ControllerBase
             studentProfile.InterestsText = request.InterestsText;
             studentProfile.CertificationsText = request.CertificationsText;
             studentProfile.AwardsText = request.AwardsText;
-            studentProfile.UpdatedAt = DateTime.UtcNow;
+            studentProfile.UpdatedAtUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -271,7 +271,7 @@ public class ProfileController : ControllerBase
                     interestsText = studentProfile.InterestsText,
                     certificationsText = studentProfile.CertificationsText,
                     awardsText = studentProfile.AwardsText,
-                    updatedAt = studentProfile.UpdatedAt,
+                    UpdatedAtUtc = studentProfile.UpdatedAtUtc,
                     hasResume = !string.IsNullOrEmpty(studentProfile.ResumeFileName),
                     hasUniversityProof = !string.IsNullOrEmpty(studentProfile.UniversityProofFileName),
                     resumeUploadedAtUtc = studentProfile.ResumeUploadedAtUtc,

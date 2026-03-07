@@ -393,7 +393,7 @@ public class OpportunitiesController : ControllerBase
     }
 
 
-    [Authorize(Roles = "Recruiter")]
+    //[Authorize(Roles = "Recruiter")]
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreateOpportunityDto dto)
     {

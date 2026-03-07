@@ -38,7 +38,7 @@ type Listing = {
   longitude: string;
 };
 
-const API_BASE = "https://localhost:7167/api";
+const API_BASE = "http://localhost:5159/api";
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
@@ -327,9 +327,9 @@ export default function OrganizationDashboard() {
       setLoadingListings(true);
       setListingsError("");
       
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("jobify_token");
 
-      const res = await fetch(`${API_BASE}/opportunities/recruiter`, {
+      const res = await fetch(`${API_BASE}/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -377,7 +377,7 @@ export default function OrganizationDashboard() {
       setSelectedOpportunityId(opportunityId);
       setSelectedApplication(null);
 
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("jobify_token");
 
       const res = await fetch(`${API_BASE}/applications/opportunity/${opportunityId}`, {
         headers: {
@@ -420,7 +420,7 @@ export default function OrganizationDashboard() {
       setLoadingApplicationDetails(true);
       setApplicationDetailsError("");
 
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("jobify_token");
 
       const res = await fetch(`${API_BASE}/applications/recruiter/${applicationId}`, {
         headers: {
@@ -447,7 +447,7 @@ export default function OrganizationDashboard() {
   // Recruiter updates application status and note
   async function updateApplication(applicationId: number) {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("jobify_token");
 
       const res = await fetch(`${API_BASE}/applications/${applicationId}/recruiter`, {
         method: "PATCH",
@@ -541,35 +541,70 @@ export default function OrganizationDashboard() {
     return null;
   }
 
-  function publish() {
-    const err = validateStrict();
-    if (err) {
-      alert(err);
-      return;
+    async function publish() {
+      const err = validateStrict();
+      if(err) {
+        alert(err);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("jobify_token");
+
+        const res = await fetch(`${API_BASE}/opportunities`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: formData.title,
+            companyName: "TechCorp Inc.",
+
+            location: formData.location || null,
+
+            type: formData.employmentType,   
+            level: "Entry",                  
+            workMode: formData.workType,
+
+            description: formData.description || null,
+            deadlineUtc: formData.deadline || null,
+
+            responsibilities: [],
+            preferredSkills: skillsPreferred || [],
+            benefits: formData.benefitsPerks ? [formData.benefitsPerks] : [],
+
+            latitude: formData.latitude ? Number(formData.latitude) : null,
+            longitude: formData.longitude ? Number(formData.longitude) : null,
+
+            minPay: null,
+            maxPay: null
+          })
+        });
+
+      if(!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+
+      alert("Opportunity published successfully!");
+      console.log("Created opportunity:", data);
+
+      await fetchListings();
+
+      resetForm();
+      setActiveTab("listings");
+
+    } catch(err) {
+      console.error(err);
+      if(err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Failed to publish opportunity");
+      }
     }
-
-    const newJob: Listing = {
-      id: Date.now(),
-      title: formData.title.trim(),
-      status: "active",
-      postedDate: new Date().toISOString().slice(0, 10),
-      deadline: formData.deadline,
-      applicants: 0,
-      location: formData.location.trim(),
-      type: mapEmployment(formData.employmentType),
-      workMode: mapWorkType(formData.workType),
-      description: formData.description.trim(),
-      benefitsPerks: formData.benefitsPerks.trim(),
-      skillsRequired: [...skillsRequired],
-      skillsPreferred: [...skillsPreferred],
-      latitude: formData.latitude.trim(),
-      longitude: formData.longitude.trim(),
-    };
-
-    setListings((p) => [newJob, ...p]);
-    resetForm();
-    setActiveTab("listings");
-    console.log("Publish (frontend-only):", newJob);
   }
 
   function saveDraft() {

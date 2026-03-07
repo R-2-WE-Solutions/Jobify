@@ -1,14 +1,5 @@
-
-<<<<<<< HEAD
-const API_BASE = import.meta.env.VITE_API_URL;
-
-function authHeaders() {
-  const token = localStorage.getItem("jobify_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-=======
 import { rawRequest } from "./profile";
->>>>>>> origin/master
+
 
 export async function uploadResume(file) {
     const form = new FormData();

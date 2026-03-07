@@ -6,7 +6,7 @@ using Jobify.Api.Models;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Jobify.DTOs;
+using Jobify.Api.DTOs;
 // using Jobify.Api.DTOs.Applications;
 
 //application and assesment controller -> the assesment is finished, but needs some work with the snapshots
@@ -953,7 +953,7 @@ public class ApplicationController : ControllerBase
         public string CandidateEmail { get; set; } = "";
         public string Status { get; set; } = "";
         public DateTime CreatedAtUtc { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime UpdatedAtUtc { get; set; }
         public bool HasAssessment { get; set; }
         public decimal? AssessmentScore { get; set; }
         public string? Note { get; set; }
@@ -998,7 +998,7 @@ public class ApplicationController : ControllerBase
                 CandidateEmail = user?.Email ?? "",
                 Status = app.Status.ToString(),
                 CreatedAtUtc = app.CreatedAtUtc,
-                UpdatedAt = app.UpdatedAt,
+                UpdatedAtUtc = app.UpdatedAtUtc,
                 HasAssessment = !string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson),
                 AssessmentScore = assessment?.Score,
                 Note = app.Note
@@ -1034,7 +1034,7 @@ public class ApplicationController : ControllerBase
 
         var previousStatus = app.Status;
         app.Status = newStatus;
-        app.UpdatedAt = DateTime.UtcNow;
+        app.UpdatedAtUtc = DateTime.UtcNow;
 
         if (dto.Note != null)
             app.Note = dto.Note.Trim();
@@ -1169,7 +1169,7 @@ public class ApplicationController : ControllerBase
             applicationId = app.Id,
             status = app.Status.ToString(),
             note = app.Note,
-            updatedAtUtc = app.UpdatedAtUtc
+            UpdatedAtUtc = app.UpdatedAtUtc
         });
     }
 
@@ -1193,7 +1193,7 @@ public class ApplicationController : ControllerBase
             applicationId = app.Id,
             status = app.Status.ToString(),
             note = app.Note,
-            updatedAtUtc = app.UpdatedAtUtc,
+            UpdatedAtUtc = app.UpdatedAtUtc,
             companyName = app.Opportunity?.CompanyName,
             opportunityTitle = app.Opportunity?.Title
         });
@@ -1228,51 +1228,8 @@ public class ApplicationController : ControllerBase
                 studentUserId = a.UserId,
                 status = a.Status.ToString(),
                 note = a.Note,
-                updatedAtUtc = a.UpdatedAtUtc
+                UpdatedAtUtc = a.UpdatedAtUtc
             })
-            .ToListAsync();
-
-        return Ok(apps);
-    }
-
-
-    // GET all applications for a specific opportunity (recruiter)
-    [Authorize(Roles = "Recruiter")]
-    [HttpGet("opportunity/{opportunityId:int}")]
-    public async Task<IActionResult> GetApplicationsForOpportunity(int opportunityId)
-    {
-        var recruiterId = CurrentUserId();
-        if (string.IsNullOrEmpty(recruiterId)) return Unauthorized();
-
-        var recruiter = await _db.RecruiterProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.UserId == recruiterId);
-
-        if (recruiter == null) return Forbid();
-
-        var opportunity = await _db.Opportunities
-            .AsNoTracking()
-            .FirstOrDefaultAsync(o => o.Id == opportunityId);
-
-        if (opportunity == null) return NotFound();
-
-        if (!string.Equals(opportunity.CompanyName, recruiter.CompanyName, StringComparison.OrdinalIgnoreCase))
-            return Forbid();
-
-        var apps = await _db.Applications
-            .AsNoTracking()
-            .Where(a => a.OpportunityId == opportunityId)
-            .Select(a => new
-            {
-                applicationId = a.Id,
-                studentUserId = a.UserId,
-                status = a.Status.ToString(),
-                note = a.Note,
-                createdAtUtc = a.CreatedAtUtc,
-                updatedAtUtc = a.UpdatedAtUtc,
-                applicantsCount = _db.Applications.Count(o => o.OpportunityId == opportunityId)
-            })
-            .OrderByDescending(a => a.createdAtUtc)
             .ToListAsync();
 
         return Ok(apps);
@@ -1312,7 +1269,7 @@ public class ApplicationController : ControllerBase
             status = app.Status.ToString(),
             note = app.Note,
             createdAtUtc = app.CreatedAtUtc,
-            updatedAtUtc = app.UpdatedAtUtc,
+            UpdatedAtUtc = app.UpdatedAtUtc,
 
             assessment = app.Assessment == null ? null : new
             {

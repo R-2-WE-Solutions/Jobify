@@ -240,7 +240,7 @@ namespace Jobify.Migrations
                     CertificationsText = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     AwardsText = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
