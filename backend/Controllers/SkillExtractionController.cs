@@ -23,7 +23,8 @@ namespace Jobify.Api.Controllers
 
         [Authorize]
         [HttpPost("extract-and-save")]
-        public async Task<IActionResult> ExtractAndSaveSkills([FromForm] IFormFile file)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> ExtractAndSaveSkills(IFormFile file)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("No file uploaded.");
