@@ -1078,7 +1078,7 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
                     <div className="pf-dropzone" onClick={() => fileRef.current?.click()}>
                         {uploading ? <div className="pf-spinner pf-spinner--sm" /> : <GraduationCap size={36} className="pf-dropzone__icon" />}
                         <p className="pf-dropzone__label">{uploading ? 'Uploading…' : 'Upload university proof'}</p>
-                        <p className="pf-dropzone__sub">Proof of enrollment or university ID — Image or PDF</p>
+                        <p className="pf-dropzone__sub">Upload a clear, cropped image showing the document text only</p>
                     </div>
                     <button className="pf-btn pf-btn--primary pf-btn--full" onClick={() => fileRef.current?.click()} disabled={uploading}>
                         <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload Proof'}
