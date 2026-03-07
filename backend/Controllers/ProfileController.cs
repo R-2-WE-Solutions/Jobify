@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using Jobify.Api.Services;
 namespace Jobify.Api.Controllers;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -486,44 +488,55 @@ public class ProfileController : ControllerBase
         try
         {
             var text = _ocrService.ExtractText(fullPath);
-            var t = text.ToLower();
+            var normalizedText = NormalizeText(text);
+            var extractedUniversityName = ExtractUniversityName(text);
 
-            var keywords = new[]
-{
-    "university",
-    "student",
-    "faculty",
-    "registrar",
-    "campus",
-    "college",
-    "school",
-    "academic",
-    "department",
-    "office",
-    "beirut",
-    "aub"
-};
+            var institutionKeywords = new[]
+            {
+        "university",
+        "college",
+        "institute",
+        "school"
+    };
 
-            int score = keywords.Count(k => t.Contains(k));
+            var proofKeywords = new[]
+            {
+        "student",
+        "student id",
+        "faculty",
+        "registrar",
+        "campus",
+        "academic",
+        "department",
+        "registration",
+        "enrollment",
+        "office of the registrar",
+        "currently registered",
+        "classes",
+        "major",
+        "semester",
+        "term",
+        "admissions"
+    };
 
-            if (score < 2)
+            int institutionScore = institutionKeywords.Count(k => normalizedText.Contains(k));
+            int proofScore = proofKeywords.Count(k => normalizedText.Contains(k));
+            int totalScore = institutionScore + proofScore;
+
+            bool nameMatched = false;
+            if (!string.IsNullOrWhiteSpace(studentProfile.FullName))
+            {
+                nameMatched = NameLooksPresent(text, studentProfile.FullName);
+            }
+
+            bool looksLikeUniversityName = !string.IsNullOrWhiteSpace(extractedUniversityName);
+
+            if (institutionScore < 1 || (proofScore < 2 && !looksLikeUniversityName))
             {
                 if (System.IO.File.Exists(fullPath))
                     System.IO.File.Delete(fullPath);
 
-                return BadRequest("Uploaded document does not appear to be university proof.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(studentProfile.FullName))
-            {
-                var fullName = studentProfile.FullName.ToLower();
-                if (!t.Contains(fullName))
-                {
-                    if (System.IO.File.Exists(fullPath))
-                        System.IO.File.Delete(fullPath);
-
-                    return BadRequest("Student name was not detected in the uploaded proof.");
-                }
+                return BadRequest("Uploaded document does not appear to be valid university proof.");
             }
 
             if (!string.IsNullOrEmpty(studentProfile.UniversityProofFileName))
@@ -548,7 +561,21 @@ public class ProfileController : ControllerBase
                     hasUniversityProof = true,
                     universityProofUploadedAtUtc = studentProfile.UniversityProofUploadedAtUtc
                 },
-                extractedText = text
+                debug = new
+                {
+                    extractedText = text,
+                    normalizedText = normalizedText,
+                    extractedUniversityName = extractedUniversityName,
+                    institutionScore = institutionScore,
+                    proofScore = proofScore,
+                    totalScore = totalScore,
+                    nameMatched = nameMatched,
+                    firstName = string.IsNullOrWhiteSpace(studentProfile.FullName)
+                        ? null
+                        : NormalizeText(studentProfile.FullName)
+                            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                            .FirstOrDefault()
+                }
             });
         }
         catch (Exception ex)
@@ -972,6 +999,67 @@ public class ProfileController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Interest removed." });
     }
+
+    private static string NormalizeText(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        input = input.ToLowerInvariant();
+        input = Regex.Replace(input, @"[^\w\s]", " ");
+        input = Regex.Replace(input, @"\s+", " ").Trim();
+
+        return input;
+    }
+
+    private static bool NameLooksPresent(string ocrText, string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(ocrText) || string.IsNullOrWhiteSpace(fullName))
+            return false;
+
+        var text = NormalizeText(ocrText);
+
+        var firstName = NormalizeText(fullName)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(firstName) || firstName.Length < 3)
+            return false;
+
+        return text.Contains(firstName);
+    }
+
+    private static string? ExtractUniversityName(string ocrText)
+    {
+        if (string.IsNullOrWhiteSpace(ocrText))
+            return null;
+
+        var lines = ocrText
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToList();
+
+        var patterns = new[]
+        {
+        @"\b[A-Z][A-Za-z&,\-\s]+University[A-Za-z&,\-\s]*\b",
+        @"\b[A-Z][A-Za-z&,\-\s]+College[A-Za-z&,\-\s]*\b",
+        @"\b[A-Z][A-Za-z&,\-\s]+Institute[A-Za-z&,\-\s]*\b",
+        @"\b[A-Z][A-Za-z&,\-\s]+School[A-Za-z&,\-\s]*\b"
+    };
+
+        foreach (var line in lines)
+        {
+            foreach (var pattern in patterns)
+            {
+                var match = Regex.Match(line, pattern);
+                if (match.Success)
+                    return match.Value.Trim();
+            }
+        }
+
+        return null;
+    }
 }
 
 // Request DTO for updating profile
@@ -1040,4 +1128,4 @@ public class ProjectRequest
 public class InterestRequest
 {
     public string Interest { get; set; } = string.Empty;
-}
+}   
