@@ -37,15 +37,21 @@ export default function AssessmentPage() {
   const { applicationId } = useParams();
   const nav = useNavigate();
 
-  const [data, setData] = useState(null);
-  const [answers, setAnswers] = useState({});
-  const [runOutputByQid, setRunOutputByQid] = useState({});
-  const [stdinByQid, setStdinByQid] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [proctorMsg, setProctorMsg] = useState(null); // { type: "warn"|"error", text: string }
-  const [isFlagged, setIsFlagged] = useState(false);
+    const [data, setData] = useState(null);
+    const [answers, setAnswers] = useState({});
+    const [runOutputByQid, setRunOutputByQid] = useState({});
+    const [stdinByQid, setStdinByQid] = useState({}); 
+    const [saving, setSaving] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [starting, setStarting] = useState(false);
+    const [proctorMsg, setProctorMsg] = useState(null);   // { type: "warn"|"error", text: string }
+    const [isFlagged, setIsFlagged] = useState(false);
+
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
+    const snapTimerRef = useRef(null);
+
 
   const tickRef = useRef(null);
   const saveRef = useRef(null);
@@ -78,11 +84,38 @@ export default function AssessmentPage() {
     setAnswers(patched);
   }, []);
 
-  // Use Swagger naming: /api/Applications/...
-  const fetchApp = useCallback(async () => {
-    const res = await api.get(`/api/Applications/${applicationId}?t=${Date.now()}`);
-    return res.data;
-  }, [applicationId]);
+    const takeSnapshotBase64 = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas) return null;
+
+        const w = video.videoWidth || 640;
+        const h = video.videoHeight || 480;
+
+        canvas.width = w;
+        canvas.height = h;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, w, h);
+
+        return canvas.toDataURL("image/jpeg", 0.7);
+    };
+
+    const uploadSnapshot = useCallback(async (base64Jpeg) => {
+        try {
+            await api.post(`/api/Application/${applicationId}/assessment/snapshot`, {
+                base64Jpeg,
+            });
+        } catch {
+            // ignore snapshot errors (don’t break assessment)
+        }
+    }, [applicationId]);
+
+
+    const fetchApp = useCallback(async () => {
+        const res = await api.get(`/api/Application/${applicationId}?t=${Date.now()}`);
+        return res.data;
+    }, [applicationId]);
 
   const startAttempt = useCallback(
     async (webcamConsent = false) => {
@@ -109,19 +142,6 @@ export default function AssessmentPage() {
 
       const exp = parseUtcDate(loaded?.attempt?.expiresAtUtc);
       const expired = exp !== null && exp <= Date.now();
-
-      if (hasAssessment && (!attemptExists || expired)) {
-        const startRes = await startAttempt(false);
-
-        if (startRes?.alreadySubmitted) {
-          loaded = await fetchApp();
-          setData(loaded);
-          patchAnswersWithStarter(loaded);
-          return;
-        }
-
-        loaded = await fetchApp();
-      }
 
       setData(loaded);
       patchAnswersWithStarter(loaded);
@@ -184,11 +204,76 @@ export default function AssessmentPage() {
     [applicationId]
   );
 
-  useEffect(() => {
-    if (!proctorMsg) return;
-    const t = setTimeout(() => setProctorMsg(null), 4000);
-    return () => clearTimeout(t);
-  }, [proctorMsg]);
+    useEffect(() => {
+        if (!proctorMsg) return;
+        const t = setTimeout(() => setProctorMsg(null), 4000);
+        return () => clearTimeout(t);
+    }, [proctorMsg]);
+
+    useEffect(() => {
+        const attemptId = data?.attempt?.attemptId;
+        const consent = !!data?.attempt?.webcamConsent;
+        const isSubmitted = data?.status === "Submitted" || !!data?.attempt?.submittedAtUtc;
+
+        if (!attemptId || isSubmitted) return;
+        if (!consent) return;
+
+        let cancelled = false;
+
+        const start = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false,
+                });
+
+                if (cancelled) {
+                    stream.getTracks().forEach(t => t.stop());
+                    return;
+                }
+
+                streamRef.current = stream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    await videoRef.current.play();
+                }
+
+                // take 1 snapshot immediately (optional but recommended)
+                const first = takeSnapshotBase64();
+                if (first) uploadSnapshot(first);
+
+                // every 5 mins = 300000 ms
+                snapTimerRef.current = setInterval(() => {
+                    const shot = takeSnapshotBase64();
+                    if (shot) uploadSnapshot(shot);
+                }, 300000);
+
+            } catch (e) {
+                // user blocked camera or no camera
+            }
+        };
+
+        start();
+
+        return () => {
+            cancelled = true;
+
+            if (snapTimerRef.current) clearInterval(snapTimerRef.current);
+
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(t => t.stop());
+                streamRef.current = null;
+            }
+        };
+    }, [
+        data?.attempt?.attemptId,
+        data?.attempt?.webcamConsent,
+        data?.attempt?.submittedAtUtc,
+        data?.status,
+        uploadSnapshot
+    ]);
+
 
   useEffect(() => {
     const onVis = () => {
@@ -252,22 +337,25 @@ export default function AssessmentPage() {
     setRunOutputByQid((o) => ({ ...o, [qid]: res.data }));
   };
 
-  const submit = async () => {
-    if (submitting) return;
-    try {
-      setSubmitting(true);
-      await api.put(`/api/Applications/${applicationId}/assessment`, { answers });
-      const res = await api.post(`/api/Applications/${applicationId}/assessment/submit`);
+const submit = useCallback(async () => {
+  if (submitting) return;
 
-      // IMPORTANT: frontend route is plural + lowercase
-      nav(`/applications/${applicationId}/result`, { state: res.data });
-    } catch (e) {
-      console.error("Submit failed:", e);
-      alert(e?.response?.data?.message || e?.message || "Submit failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  try {
+    setSubmitting(true);
+
+    await api.put(`/api/Applications/${applicationId}/assessment`, { answers });
+
+    const res = await api.post(`/api/Applications/${applicationId}/assessment/submit`);
+
+    nav(`/applications/${applicationId}/result`, { state: res.data });
+
+  } catch (e) {
+    console.error("Submit failed:", e);
+    alert(e?.response?.data?.message || e?.message || "Submit failed");
+  } finally {
+    setSubmitting(false);
+  }
+}, [submitting, applicationId, answers, nav]);
 
   // Auto-submit on time end
   useEffect(() => {
@@ -279,29 +367,20 @@ export default function AssessmentPage() {
 
   if (!data) return <div style={{ padding: 20 }}>Loading…</div>;
 
-  if (!data.attempt?.attemptId && data.hasAssessment) {
-    return (
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
-        <h1>Assessment</h1>
-        <p>This assessment hasn’t started yet.</p>
-        <button
-          disabled={starting}
-          onClick={async () => {
-            setStarting(true);
-            try {
-              await startAttempt(false);
-              await loadAndEnsureAttempt();
-            } finally {
-              setStarting(false);
-            }
-          }}
-          style={{ padding: "12px 18px", fontWeight: 700 }}
-        >
-          {starting ? "Starting…" : "Start Assessment"}
-        </button>
-      </div>
-    );
-  }
+    if (!data.attempt?.attemptId && data.hasAssessment) {
+        return (
+            <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
+                <h1>Assessment</h1>
+                <p>This assessment hasn’t started yet. Please accept the rules & webcam consent first.</p>
+                <button
+                    onClick={() => nav(`/application/${applicationId}/assessment-rules`)}
+                    style={{ padding: "12px 18px", fontWeight: 700 }}
+                >
+                    Go to Rules Page
+                </button>
+            </div>
+        );
+    }
 
   if (data.status === "Submitted" || data.attempt?.submittedAtUtc) {
     return (
@@ -320,14 +399,16 @@ export default function AssessmentPage() {
 
   const questions = assessment.questions || [];
 
-  return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Assessment</h1>
-        <div style={{ fontFamily: "monospace" }}>
-          Time left: {remainingMs === null ? "—" : msToClock(remainingMs)} {saving ? " • saving…" : ""}
-        </div>
-      </div>
+    return (
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1>Assessment</h1>
+                <div style={{ fontFamily: "monospace" }}>
+                    Time left: {remainingMs === null ? "—" : msToClock(remainingMs)} {saving ? " • saving…" : ""}
+                </div>
+            </div>
+            <video ref={videoRef} style={{ display: "none" }} playsInline muted />
+            <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {proctorMsg && (
         <div
