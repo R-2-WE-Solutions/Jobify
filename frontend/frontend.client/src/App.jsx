@@ -68,7 +68,7 @@ export default function App() {
                 <Route path="/application/:applicationId/assessment" element={<AssessmentPage />} />
                 <Route path="/application/:applicationId/result" element={<ApplicationResultPage />} />
 
-                <Route path="/qa" element={<QAPage />} />
+                 {/* <Route path="/qa" element={<QAPage />} />  */}
 
             </Route>
 
