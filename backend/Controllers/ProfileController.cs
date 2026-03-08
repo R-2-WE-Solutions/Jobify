@@ -15,18 +15,19 @@ namespace Jobify.Api.Controllers;
 public class ProfileController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _config;
 
-    public ProfileController(AppDbContext context, UserManager<IdentityUser> userManager, IConfiguration config)
+    public ProfileController(AppDbContext context, UserManager<ApplicationUser> userManager, IConfiguration config)
     {
         _context = context;
         _userManager = userManager;
         _config = config;
     }
+
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    private async Task<(IdentityUser user, IList<string> roles)?> GetUserAndRolesAsync(string userId)
+    private async Task<(ApplicationUser user, IList<string> roles)?> GetUserAndRolesAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return null;
@@ -101,6 +102,7 @@ public class ProfileController : ControllerBase
 
         return storedName;
     }
+
     [HttpGet]
     public async Task<IActionResult> GetProfile()
     {
@@ -197,6 +199,7 @@ public class ProfileController : ControllerBase
 
         return BadRequest("User has no valid role");
     }
+
     [HttpPut]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
     {
@@ -439,7 +442,7 @@ public class ProfileController : ControllerBase
 
     [HttpPost("student/university-proof")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadUniversityProof(FormFile file)
+    public async Task<IActionResult> UploadUniversityProof(IFormFile file)
     {
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId))
@@ -560,10 +563,6 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "University proof deleted successfully" });
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // SKILLS
-    // ─────────────────────────────────────────────────────────────
-
     [HttpGet("student/skills")]
     public async Task<IActionResult> GetSkills()
     {
@@ -631,10 +630,6 @@ public class ProfileController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Skill removed." });
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // EDUCATION
-    // ─────────────────────────────────────────────────────────────
 
     [HttpGet("student/education")]
     public async Task<IActionResult> GetEducation()
@@ -706,10 +701,6 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Education removed." });
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // EXPERIENCE
-    // ─────────────────────────────────────────────────────────────
-
     [HttpGet("student/experience")]
     public async Task<IActionResult> GetExperience()
     {
@@ -777,10 +768,6 @@ public class ProfileController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Experience removed." });
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // PROJECTS
-    // ─────────────────────────────────────────────────────────────
 
     [HttpGet("student/projects")]
     public async Task<IActionResult> GetProjects()
@@ -850,10 +837,6 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Project removed." });
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // INTERESTS
-    // ─────────────────────────────────────────────────────────────
-
     [HttpGet("student/interests")]
     public async Task<IActionResult> GetInterests()
     {
@@ -907,7 +890,6 @@ public class ProfileController : ControllerBase
     }
 }
 
-// Request DTO for updating profile
 public class UpdateProfileRequest
 {
     public string? FullName { get; set; }
@@ -932,13 +914,10 @@ public class UpdateProfileRequest
     public string? Notes { get; set; }
 }
 
-
 public class UploadResumeRequest
 {
     public IFormFile File { get; set; } = default!;
 }
-
-// ─── Student section DTOs ──────────────────────────────────────
 
 public class AddSkillRequest
 {
