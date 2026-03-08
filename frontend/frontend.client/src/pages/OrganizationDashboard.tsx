@@ -319,6 +319,10 @@ export default function OrganizationDashboard() {
     longitude: "",
   });
 
+
+  const user = JSON.parse(String(localStorage.getItem("jobify_signup")));
+  const companyName = user?.companyName;
+
   const navigate = useNavigate();
 
   // Recruiter listings fetch function
@@ -329,7 +333,7 @@ export default function OrganizationDashboard() {
       
       const token = localStorage.getItem("jobify_token");
 
-      const res = await fetch(`${API_BASE}/opportunities`, {
+      const res = await fetch(`${API_BASE}/opportunities/company/${companyName}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -379,7 +383,7 @@ export default function OrganizationDashboard() {
 
       const token = localStorage.getItem("jobify_token");
 
-      const res = await fetch(`${API_BASE}/applications/opportunity/${opportunityId}`, {
+      const res = await fetch(`${API_BASE}/applications/recruiter/${opportunityId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -559,7 +563,7 @@ export default function OrganizationDashboard() {
           },
           body: JSON.stringify({
             title: formData.title,
-            companyName: "TechCorp Inc.",
+            companyName: companyName,
 
             location: formData.location || null,
 
@@ -659,7 +663,7 @@ export default function OrganizationDashboard() {
           <div style={styles.orgLeft}>
             <div style={styles.orgAvatar}>TC</div>
             <div>
-              <h1 style={styles.h1}>TechCorp Inc.</h1>
+              <h1 style={styles.h1}>{companyName}</h1>
               <p style={styles.muted}>Post jobs • manage listings • close/reopen roles</p>
             </div>
           </div>
