@@ -1,4 +1,4 @@
-const API_BASE = "https://localhost:63303/api";
+const API_BASE = "http://localhost:5159/api";
 
 export async function getCandidateDashboard() {
   const token = localStorage.getItem("jobify_token");
