@@ -6,6 +6,7 @@ public class StudentSkill
     public string StudentUserId { get; set; } = string.Empty; //whcih student own this skill (fk) studentProfiles.UserId
     public int SkillId { get; set; } // fk to skills.id
 
+    public double score { get; set; } = 0;
     public string Source { get; set; } = "Manual"; // Manual | Extracted from the cv or not
     public bool IsVerified { get; set; } = false; //true if verifiied
     public string? VerifiedBy { get; set; } //how was it verified???

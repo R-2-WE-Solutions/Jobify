@@ -47,7 +47,7 @@ export default function AssessmentRulesPage() {
         setRulesDataError("");
 
         // Swagger shows /api/Applications/{applicationId}
-        const res = await fetch(`${API_URL}/api/Applications/${applicationId}`, {
+        const res = await fetch(`${API_URL}/api/Application/${applicationId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -148,7 +148,7 @@ export default function AssessmentRulesPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_URL}/api/Applications/${applicationId}/assessment/start`, {
+      const res = await fetch(`${API_URL}/api/Application/${applicationId}/assessment/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -163,7 +163,7 @@ export default function AssessmentRulesPage() {
       }
 
       // IMPORTANT: frontend route is plural + lowercase
-      navigate(`/applications/${applicationId}/assessment`);
+      navigate(`/application/${applicationId}/assessment`);
     } catch (e) {
       alert(e?.message || "Failed to start assessment");
     } finally {

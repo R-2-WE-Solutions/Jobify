@@ -59,15 +59,14 @@ export default function App() {
 
                 <Route path="/apply/:applicationId/review" element={<ProfileReviewPage />} />
 
-                <Route path="/matches" element={<Match />} />
                 <Route path="/profile" element={<ProfilePage />} />
 
                 <Route path="/application/:applicationId/review" element={<ApplicationReviewPage />} />
                 <Route path="/application/:applicationId/assessment/rules" element={<AssessmentRulesPage />} />
-                <Route path="/applications/:applicationId/assessment/start" element={<AssessmentPage />} />
+                <Route path="/application/:applicationId/assessment/start" element={<AssessmentPage />} />
 
 
-                <Route path="/applications/:applicationId/assessment" element={<AssessmentPage />} />
+                <Route path="/application/:applicationId/assessment" element={<AssessmentPage />} />
                 <Route path="/application/:applicationId/result" element={<ApplicationResultPage />} />
 
                 

@@ -119,7 +119,7 @@ export default function AssessmentPage() {
 
   const startAttempt = useCallback(
     async (webcamConsent = false) => {
-      const res = await api.post(`/api/Applications/${applicationId}/assessment/start`, { webcamConsent });
+      const res = await api.post(`/api/Application/${applicationId}/assessment/start`, { webcamConsent });
       return res.data;
     },
     [applicationId]
@@ -169,7 +169,7 @@ export default function AssessmentPage() {
     saveRef.current = setInterval(async () => {
       try {
         setSaving(true);
-        await api.put(`/api/Applications/${applicationId}/assessment`, { answers });
+        await api.put(`/api/Application/${applicationId}/assessment`, { answers });
       } catch (e) {
         // ignore (offline etc.)
       } finally {
@@ -183,7 +183,7 @@ export default function AssessmentPage() {
   const sendProctor = useCallback(
     async (type) => {
       try {
-        const res = await api.post(`/api/Applications/${applicationId}/assessment/proctor-event`, {
+        const res = await api.post(`/api/Application/${applicationId}/assessment/proctor-event`, {
           type,
           details: { at: new Date().toISOString() },
         });
@@ -327,7 +327,7 @@ export default function AssessmentPage() {
 
     setRunOutputByQid((o) => ({ ...o, [qid]: null }));
 
-    const res = await api.post(`/api/Applications/${applicationId}/assessment/run`, {
+    const res = await api.post(`/api/Application/${applicationId}/assessment/run`, {
       questionId: qid,
       languageId: a.languageId ?? 71,
       sourceCode: code,
@@ -343,11 +343,11 @@ const submit = useCallback(async () => {
   try {
     setSubmitting(true);
 
-    await api.put(`/api/Applications/${applicationId}/assessment`, { answers });
+    await api.put(`/api/Application/${applicationId}/assessment`, { answers });
 
-    const res = await api.post(`/api/Applications/${applicationId}/assessment/submit`);
+    const res = await api.post(`/api/Application/${applicationId}/assessment/submit`);
 
-    nav(`/applications/${applicationId}/result`, { state: res.data });
+    nav(`/application/${applicationId}/result`, { state: res.data });
 
   } catch (e) {
     console.error("Submit failed:", e);
@@ -387,7 +387,7 @@ const submit = useCallback(async () => {
       <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
         <h1>Assessment</h1>
         <p>This assessment was already submitted.</p>
-        <button onClick={() => nav(`/applications/${applicationId}/result`)} style={{ padding: "12px 18px", fontWeight: 700 }}>
+        <button onClick={() => nav(`/application/${applicationId}/result`)} style={{ padding: "12px 18px", fontWeight: 700 }}>
           View Result
         </button>
       </div>

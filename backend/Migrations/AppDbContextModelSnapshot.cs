@@ -632,6 +632,9 @@ namespace Jobify.Migrations
                     b.Property<string>("VerifiedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("score")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SkillId");

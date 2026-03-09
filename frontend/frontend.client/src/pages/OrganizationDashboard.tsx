@@ -453,7 +453,7 @@ export default function OrganizationDashboard() {
     try {
       const token = localStorage.getItem("jobify_token");
 
-      const res = await fetch(`${API_BASE}/applications/${applicationId}/recruiter`, {
+      const res = await fetch(`${API_BASE}/application/${applicationId}/recruiter`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
