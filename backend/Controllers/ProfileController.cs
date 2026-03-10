@@ -449,7 +449,7 @@ public class ProfileController : ControllerBase
 
     [HttpPost("student/university-proof")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadUniversityProof([FromForm] IFormFile file)
+    public async Task<IActionResult> UploadUniversityProof(IFormFile file)
     {
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId))
@@ -493,35 +493,64 @@ public class ProfileController : ControllerBase
 
             var institutionKeywords = new[]
             {
-        "university",
-        "college",
-        "institute",
-        "school"
-    };
+            "university",
+            "college",
+            "institute",
+            "school",
+            "faculty",
+            "campus",
+            "aub",
+            "american university of beirut",
+            "beirut"
+        };
 
-            var proofKeywords = new[]
+            var idKeywords = new[]
             {
-        "student",
-        "student id",
-        "faculty",
-        "registrar",
-        "campus",
-        "academic",
-        "department",
-        "registration",
-        "enrollment",
-        "office of the registrar",
-        "currently registered",
-        "classes",
-        "major",
-        "semester",
-        "term",
-        "admissions"
-    };
+            "student",
+            "student id",
+            "id",
+            "ug",
+            "undergraduate",
+            "graduate",
+            "spring",
+            "fall",
+            "summer",
+            "arts",
+            "sciences"
+        };
+
+            var enrollmentKeywords = new[]
+            {
+            "registration",
+            "enrollment",
+            "currently registered",
+            "registrar",
+            "office of the registrar",
+            "admissions",
+            "semester",
+            "term",
+            "major",
+            "department",
+            "academic",
+            "faculty"
+        };
+
+            var transcriptKeywords = new[]
+            {
+            "transcript",
+            "courses",
+            "credit hours",
+            "gpa",
+            "semester",
+            "term",
+            "academic record",
+            "grade"
+        };
 
             int institutionScore = institutionKeywords.Count(k => normalizedText.Contains(k));
-            int proofScore = proofKeywords.Count(k => normalizedText.Contains(k));
-            int totalScore = institutionScore + proofScore;
+            int idScore = idKeywords.Count(k => normalizedText.Contains(k));
+            int enrollmentScore = enrollmentKeywords.Count(k => normalizedText.Contains(k));
+            int transcriptScore = transcriptKeywords.Count(k => normalizedText.Contains(k));
 
             bool nameMatched = false;
             if (!string.IsNullOrWhiteSpace(studentProfile.FullName))
@@ -529,9 +558,43 @@ public class ProfileController : ControllerBase
                 nameMatched = NameLooksPresent(text, studentProfile.FullName);
             }
 
+            if (!nameMatched)
+            {
+                if (System.IO.File.Exists(fullPath))
+                    System.IO.File.Delete(fullPath);
+
+                return BadRequest("The name on the university proof does not match the name in your profile.");
+            }
+
             bool looksLikeUniversityName = !string.IsNullOrWhiteSpace(extractedUniversityName);
 
-            if (institutionScore < 1 || (proofScore < 2 && !looksLikeUniversityName))
+            bool hasStudentNumber = Regex.IsMatch(normalizedText, @"\b\d{7,10}\b");
+
+            bool directUniversityMatch =
+                normalizedText.Contains("american university of beirut") ||
+                normalizedText.Contains("aub");
+
+            bool isStudentId =
+                (institutionScore >= 1 || directUniversityMatch || looksLikeUniversityName) &&
+                (
+                    idScore >= 2 ||
+                    (normalizedText.Contains("student") && hasStudentNumber) ||
+                    (normalizedText.Contains("student") && looksLikeUniversityName) ||
+                    (normalizedText.Contains("student") && directUniversityMatch)
+                );
+
+            bool isEnrollmentProof =
+                (institutionScore >= 1 || directUniversityMatch || looksLikeUniversityName) &&
+                enrollmentScore >= 2;
+
+            bool isTranscript =
+                (institutionScore >= 1 || directUniversityMatch || looksLikeUniversityName) &&
+                transcriptScore >= 2;
+
+            bool isAcceptedUniversityProof =
+                isStudentId || isEnrollmentProof || isTranscript;
+
+            if (!isAcceptedUniversityProof)
             {
                 if (System.IO.File.Exists(fullPath))
                     System.IO.File.Delete(fullPath);
@@ -567,14 +630,16 @@ public class ProfileController : ControllerBase
                     normalizedText = normalizedText,
                     extractedUniversityName = extractedUniversityName,
                     institutionScore = institutionScore,
-                    proofScore = proofScore,
-                    totalScore = totalScore,
+                    idScore = idScore,
+                    enrollmentScore = enrollmentScore,
+                    transcriptScore = transcriptScore,
+                    hasStudentNumber = hasStudentNumber,
+                    looksLikeUniversityName = looksLikeUniversityName,
+                    directUniversityMatch = directUniversityMatch,
                     nameMatched = nameMatched,
-                    firstName = string.IsNullOrWhiteSpace(studentProfile.FullName)
-                        ? null
-                        : NormalizeText(studentProfile.FullName)
-                            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                            .FirstOrDefault()
+                    isStudentId = isStudentId,
+                    isEnrollmentProof = isEnrollmentProof,
+                    isTranscript = isTranscript
                 }
             });
         }
@@ -1129,3 +1194,7 @@ public class InterestRequest
 {
     public string Interest { get; set; } = string.Empty;
 }   
+public class UploadUniversityProofRequest
+{
+    public IFormFile File { get; set; } = default!;
+}
