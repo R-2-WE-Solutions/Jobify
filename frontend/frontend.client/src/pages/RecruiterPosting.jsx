@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { api } from "../../api/api";
 
 export default function RecruiterPosting() {
   const [form, setForm] = useState({
@@ -39,22 +40,15 @@ export default function RecruiterPosting() {
         throw new Error("You must be logged in as a recruiter.");
       }
 
-      const res = await fetch("http://localhost:5159/api/opportunities", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title: form.title,
-          companyName: form.companyName,
-          location: form.location,
-          type: form.type,
-          level: form.level,
-          workMode: form.workMode,
-          description: form.description
-        })
-      });
+      const res = await api.post("/opportunities", {
+  title: form.title,
+  companyName: form.companyName,
+  location: form.location,
+  type: form.type,
+  level: form.level,
+  workMode: form.workMode,
+  description: form.description
+});
 
       if (!res.ok) {
         const text = await res.text();
