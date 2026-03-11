@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Search,
   Moon,
@@ -12,7 +12,11 @@ import {
 import "../pages/styles/layout.css";
 
 export default function AppLayout() {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  
+  const user = JSON.parse(localStorage.getItem("jobify_user"));
+  const role = user?.userRole;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -43,7 +47,7 @@ export default function AppLayout() {
               <Moon size={18} />
             </button>
 
-            <button className="al-iconBtn" type="button" title="Account">
+            <button className="al-iconBtn" type="button" title="Account" onClick={() => navigate("/")}>
               <User size={18} />
             </button>
           </div>
@@ -86,15 +90,19 @@ export default function AppLayout() {
               <span className="al-linkText">Match</span>
             </NavLink>
 
-            <NavLink
-              to="/matches"
-              className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-            >
-              <span className="al-linkIcon">
-                <Star size={18} />
-              </span>
-              <span className="al-linkText">Matches</span>
-            </NavLink>
+            
+
+            {role === "recruiter" && (
+              <NavLink
+                to="/organization"
+                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+              >
+                <span className="al-linkIcon">
+                  <LayoutGrid size={18} />
+                </span>
+                <span className="al-linkText">Organization</span>
+              </NavLink>
+            )}
 
             <NavLink
               to="/profile"

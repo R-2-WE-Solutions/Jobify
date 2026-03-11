@@ -42,6 +42,7 @@ public class OpportunitiesController : ControllerBase
         [FromQuery] string? skills,
         [FromQuery] decimal? minPay,
         [FromQuery] decimal? maxPay,
+        [FromQuery] int applicantCount,
         [FromQuery] string? sort = "newest",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10
@@ -393,7 +394,7 @@ public class OpportunitiesController : ControllerBase
     }
 
 
-    [Authorize(Roles = "Recruiter")]
+    //[Authorize(Roles = "Recruiter")]
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreateOpportunityDto dto)
     {
@@ -642,5 +643,49 @@ public class OpportunitiesController : ControllerBase
 
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpGet("company/{companyName}")]
+    public async Task<ActionResult<List<OpportunityCardDto>>> GetByCompany(string companyName)
+    {
+        if (string.IsNullOrWhiteSpace(companyName))
+            return BadRequest("Company name required.");
+
+        var opportunities = await _db.Opportunities
+            .AsNoTracking()
+            .Include(o => o.OpportunitySkills)
+                .ThenInclude(os => os.Skill)
+            .Where(o => o.CompanyName == companyName && !o.IsClosed)
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Select(o => new OpportunityCardDto
+            {
+                Id = o.Id,
+                Title = o.Title,
+                CompanyName = o.CompanyName,
+                Location = o.Location,
+                IsRemote = o.IsRemote,
+                WorkMode = o.WorkMode.ToString(),
+                Type = o.Type.ToString(),
+                Level = o.Level.ToString(),
+                MinPay = o.MinPay,
+                MaxPay = o.MaxPay,
+                CreatedAtUtc = o.CreatedAtUtc,
+                DeadlineUtc = o.DeadlineUtc,
+                Skills = o.OpportunitySkills
+                    .Where(os => os.Skill != null)
+                    .Select(os => os.Skill!.Name)
+                    .ToList(),
+
+                AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
+                AssessmentMcqCount = o.AssessmentMcqCount,
+                AssessmentChallengeCount = o.AssessmentChallengeCount,
+
+                MatchPercent = null,
+
+                ApplicantCount = _db.Applications.Count(a => a.OpportunityId == o.Id && a.Status != ApplicationStatus.Withdrawn),
+            })
+            .ToListAsync();
+
+        return Ok(opportunities);
     }
 }

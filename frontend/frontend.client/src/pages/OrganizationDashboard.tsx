@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect} from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   Briefcase,
   MapPin,
@@ -13,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-type Tab = "post" | "listings";
+type Tab = "post" | "listings" | "applications";
 type JobStatus = "active" | "draft" | "closed";
 
 type Listing = {
@@ -37,59 +38,7 @@ type Listing = {
   longitude: string;
 };
 
-const initialListings: Listing[] = [
-  {
-    id: 1,
-    title: "Senior Frontend Developer",
-    status: "active",
-    postedDate: "2024-02-15",
-    deadline: "2024-03-15",
-    applicants: 24,
-    location: "Beirut, Lebanon",
-    type: "Full-time",
-    workMode: "Hybrid",
-    description: "Build UI features for Jobify, collaborate with backend team.",
-    benefitsPerks: "Health insurance, remote days, learning budget.",
-    skillsRequired: ["React", "JavaScript"],
-    skillsPreferred: ["TypeScript", "UI/UX"],
-    latitude: "33.8938",
-    longitude: "35.5018",
-  },
-  {
-    id: 2,
-    title: "Marketing Intern",
-    status: "draft",
-    postedDate: "2024-02-18",
-    deadline: "2024-03-20",
-    applicants: 0,
-    location: "Remote",
-    type: "Internship",
-    workMode: "Remote",
-    description: "Support content creation and social media campaigns.",
-    benefitsPerks: "Certificate, mentorship, flexible schedule.",
-    skillsRequired: ["Communication"],
-    skillsPreferred: ["Canva"],
-    latitude: "",
-    longitude: "",
-  },
-  {
-    id: 3,
-    title: "Backend Engineer",
-    status: "closed",
-    postedDate: "2024-01-20",
-    deadline: "2024-02-20",
-    applicants: 42,
-    location: "Tripoli, Lebanon",
-    type: "Full-time",
-    workMode: "On-site",
-    description: "Design APIs and services for the platform.",
-    benefitsPerks: "Annual bonus, paid leave, health coverage.",
-    skillsRequired: ["C#", ".NET"],
-    skillsPreferred: ["SQL Server", "Docker"],
-    latitude: "34.4367",
-    longitude: "35.8497",
-  },
-];
+const API_BASE = "http://localhost:5159/api";
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
@@ -322,9 +271,33 @@ function mapWorkType(v: string) {
   return "—";
 }
 
+
+
 export default function OrganizationDashboard() {
+  // Tabs
   const [activeTab, setActiveTab] = useState<Tab>("post");
-  const [listings, setListings] = useState<Listing[]>(initialListings);
+
+  // Listings
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(false);
+  const [listingsError, setListingsError] = useState("");
+
+  // Applications
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [applicationsError, setApplicationsError] = useState("");
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
+
+  // Selected Application
+  const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+  const [loadingApplicationDetails, setLoadingApplicationDetails] = useState(false);
+  const [applicationDetailsError, setApplicationDetailsError] = useState("");
+
+  // Application Notes
+  const [applicationNotes, setApplicationNotes] = useState<Record<number, string>>({});
+
+  // Application Statuses
+  const [applicationStatuses, setApplicationStatuses] = useState<Record<number, string>>({});
 
   // Required skills
   const [skillsRequired, setSkillsRequired] = useState<string[]>(["React", "JavaScript"]);
@@ -346,7 +319,177 @@ export default function OrganizationDashboard() {
     longitude: "",
   });
 
+
+  const user = JSON.parse(String(localStorage.getItem("jobify_signup")));
+  const companyName = user?.companyName;
+
+  const navigate = useNavigate();
+
+  // Recruiter listings fetch function
+  async function fetchListings() {
+    try {
+      setLoadingListings(true);
+      setListingsError("");
+      
+      const token = localStorage.getItem("jobify_token");
+
+      const res = await fetch(`${API_BASE}/opportunities/company/${companyName}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if(!res.ok) {
+        throw new Error("Failed to fetch recruiter listings.");
+      }
+
+      const data = await res.json();
+      console.log("Fetched listings for company", companyName, data);
+
+      const mapped: Listing[] = data.map((o: any) => ({
+        id: o.id,
+        title: o.title,
+        status: o.isClosed ? "closed" : "active",
+        postedDate: o.createdAtUtc ? o.createdAtUtc.slice(0, 10) : "",
+        deadline: o.deadlineUtc ? o.deadlineUtc.slice(0, 10) : "",
+        applicants: o.applicantCount ?? 0,
+        location: o.locationName || o.location || "—",
+        type: String(o.type ?? ""),
+        workMode: String(o.workMode ?? ""),
+        description: o.description || "",
+        benefitsPerks: o.benefitsJson || "",
+        skillsRequired: [],
+        skillsPreferred: [],
+        latitude: o.latitude?.toString() || "",
+        longitude: o.longitude?.toString() || "",
+      }));
+
+      setListings(mapped);
+    } 
+    catch(err: any) {
+      setListingsError(err.message || "Something went wrong.");
+    } 
+    finally {
+      setLoadingListings(false);
+    }
+  }
+
+  // All applications for a selected opportunity fetch function
+  async function fetchApplicationsForOpportunity(opportunityId: number) {
+    try {
+      setLoadingApplications(true);
+      setApplicationsError("");
+      setSelectedOpportunityId(opportunityId);
+      setSelectedApplication(null);
+
+      const token = localStorage.getItem("jobify_token");
+
+      const res = await fetch(`${API_BASE}/application/recruiter/opportunity/${opportunityId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if(!res.ok) {
+        throw new Error("Failed to fetch applications.");
+      }
+
+      const data = await res.json();
+      console.log("Fetched applications for opportunity ID", opportunityId, data);
+      setApplications(data);
+
+      const initialNotes: Record<number, string> = {};
+      const initialStatuses: Record<number, string> = {};
+
+      data.forEach((application: any) => {
+        initialNotes[application.applicationId] = application.note || "";
+        initialStatuses[application.applicationId] = application.status || "";
+      })
+
+      setApplicationNotes(initialNotes);
+      setApplicationStatuses(initialStatuses);
+
+      setActiveTab("applications");
+    }
+    catch(err: any) {
+      setApplicationsError(err.message || "Something went wrong.");
+    } 
+    finally {
+      setLoadingApplications(false);
+    }
+  }
+
+  //Single application details fetch function
+  async function fetchApplicationDetails(applicationId: number) {
+    try {
+      setSelectedApplication(null);
+      setLoadingApplicationDetails(true);
+      setApplicationDetailsError("");
+
+      const token = localStorage.getItem("jobify_token");
+
+      const res = await fetch(`${API_BASE}/application/recruiter/${applicationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if(!res.ok) {
+        throw new Error("Failed to fetch application details.");
+      }
+
+      const data = await res.json();
+      setSelectedApplication(data);
+      
+    }
+    catch(err: any) {
+      setApplicationDetailsError(err.message || "Something went wrong.");
+    }
+    finally {
+      setLoadingApplicationDetails(false);
+    }
+  }
+
+  // Recruiter updates application status and note
+  async function updateApplication(applicationId: number) {
+    try {
+      const token = localStorage.getItem("jobify_token");
+
+      const res = await fetch(`${API_BASE}/application/${applicationId}/recruiter`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: applicationStatuses[applicationId] || "Pending",
+          note: applicationNotes[applicationId] || ""
+        })
+      });
+
+      if(!res.ok) {
+        throw new Error("Failed to update application.");
+      }
+      
+      await fetchApplicationDetails(applicationId);
+      
+      if(selectedOpportunityId!==null)
+        await fetchApplicationsForOpportunity(selectedOpportunityId!);
+
+      alert(`Application of ID: ${applicationId} was updated successfully.`);
+    }
+    catch (error: any) {
+      alert(error.message || "Updating the application went wrong.");
+    }
+  }
+
+
   const count = useMemo(() => listings.length, [listings]);
+
+  // Fetch listings when dashboard loads
+  useEffect(() => {
+    fetchListings();
+  }, []);
 
   function setField<K extends keyof typeof formData>(k: K, v: string) {
     setFormData((p) => ({ ...p, [k]: v }));
@@ -404,35 +547,70 @@ export default function OrganizationDashboard() {
     return null;
   }
 
-  function publish() {
-    const err = validateStrict();
-    if (err) {
-      alert(err);
-      return;
+    async function publish() {
+      const err = validateStrict();
+      if(err) {
+        alert(err);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("jobify_token");
+
+        const res = await fetch(`${API_BASE}/opportunities`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: formData.title,
+            companyName: companyName,
+
+            location: formData.location || null,
+
+            type: formData.employmentType,   
+            level: "Entry",                  
+            workMode: formData.workType,
+
+            description: formData.description || null,
+            deadlineUtc: formData.deadline || null,
+
+            responsibilities: [],
+            preferredSkills: skillsPreferred || [],
+            benefits: formData.benefitsPerks ? [formData.benefitsPerks] : [],
+
+            latitude: formData.latitude ? Number(formData.latitude) : null,
+            longitude: formData.longitude ? Number(formData.longitude) : null,
+
+            minPay: null,
+            maxPay: null
+          })
+        });
+
+      if(!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+
+      alert("Opportunity published successfully!");
+      console.log("Created opportunity:", data);
+
+      await fetchListings();
+
+      resetForm();
+      setActiveTab("listings");
+
+    } catch(err) {
+      console.error(err);
+      if(err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Failed to publish opportunity");
+      }
     }
-
-    const newJob: Listing = {
-      id: Date.now(),
-      title: formData.title.trim(),
-      status: "active",
-      postedDate: new Date().toISOString().slice(0, 10),
-      deadline: formData.deadline,
-      applicants: 0,
-      location: formData.location.trim(),
-      type: mapEmployment(formData.employmentType),
-      workMode: mapWorkType(formData.workType),
-      description: formData.description.trim(),
-      benefitsPerks: formData.benefitsPerks.trim(),
-      skillsRequired: [...skillsRequired],
-      skillsPreferred: [...skillsPreferred],
-      latitude: formData.latitude.trim(),
-      longitude: formData.longitude.trim(),
-    };
-
-    setListings((p) => [newJob, ...p]);
-    resetForm();
-    setActiveTab("listings");
-    console.log("Publish (frontend-only):", newJob);
   }
 
   function saveDraft() {
@@ -487,7 +665,7 @@ export default function OrganizationDashboard() {
           <div style={styles.orgLeft}>
             <div style={styles.orgAvatar}>TC</div>
             <div>
-              <h1 style={styles.h1}>TechCorp Inc.</h1>
+              <h1 style={styles.h1}>{companyName}</h1>
               <p style={styles.muted}>Post jobs • manage listings • close/reopen roles</p>
             </div>
           </div>
@@ -518,6 +696,14 @@ export default function OrganizationDashboard() {
           >
             My Listings ({count})
           </button>
+
+            <button
+              type="button"
+              style={{ ...styles.tabBtn, ...(activeTab === "applications" ? styles.tabBtnActive : null) }}
+              onClick={() => setActiveTab("applications")}
+            >
+              Applications
+            </button>
         </div>
       </div>
 
@@ -837,10 +1023,149 @@ export default function OrganizationDashboard() {
                     )}
                   </div>
                 </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{fontWeight: 700}}>
+                    Applicants: {job.applicants}
+                  </span>
+
+                  <button type="button" style={styles.outlineBtn} onClick={() => fetchApplicationsForOpportunity(job.id)}>
+                      View Applicants
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </motion.div>
+      )}
+
+      {/* APPLICATIONS TAB */}
+      {activeTab==="applications" && (
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+        <div style={styles.card}>
+          <h2 style={styles.sectionTitle}>
+            <Users size={18} />Applications</h2>
+
+          <div style={styles.divider} />
+
+          {selectedOpportunityId === null && (
+            <p style={styles.muted}>Choose a Listing and Click on "View Applicants".</p>
+          )}
+
+          {loadingApplications && (
+            <p style={styles.small}>Loading applications...</p>
+          )}
+
+          {applicationsError && (
+            <p style={{ ...styles.small, color: "#b91c1c" }}>{applicationsError}</p>
+          )}
+
+          <div style={{ display: "grid", gap: 12 }}>
+            {applications.map((application) => (
+              <div key={application.applicationId} style={styles.listingCard}>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <strong style={{ fontSize: 16 }}>Application: {application.applicationId}</strong>
+
+                  <p style={styles.small}>
+                    <b>Student:</b> {application.candidateName}
+                  </p>
+
+                  <p style={styles.small}>
+                    <b>Status:</b> {application.status}
+                  </p>
+
+                  <p style={styles.small}>
+                    <b>Created At:</b> {fmtDate(application.createdAtUtc)}
+                  </p>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>Recruiter Note</label>
+                    <textarea
+                      style={styles.textarea}
+                      placeholder="Add recruiter note"
+                      value={applicationNotes[application.applicationId] || ""}
+                      onChange={(e) =>
+                        setApplicationNotes({...applicationNotes, [application.applicationId]: e.target.value})}
+                    />
+                  </div>
+
+                  <div style={styles.field}>
+                    <label style={styles.label}>Update Status</label>
+                    <select
+                      style={styles.input}
+                      value={applicationStatuses[application.applicationId] || "Pending"}
+                      onChange={(e) =>
+                        setApplicationStatuses({...applicationStatuses, [application.applicationId]: e.target.value})}
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="InReview">In Review</option>
+                      <option value="Accepted">Accepted</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+
+                  <div style={styles.actions}>
+                    <button type="button" style={styles.primaryBtn} onClick={() => updateApplication(application.applicationId)}>
+                      Update Application
+                    </button>
+
+                    <button type="button" style={styles.outlineBtn} onClick={() => fetchApplicationDetails(application.applicationId)}>
+                      View Details
+                    </button>
+
+                    <button type="button" style={styles.outlineBtn} onClick={() => navigate(`/student-profile/${application.studentUserId}`)}>
+                      View Profile
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {applications.length===0 && !loadingApplications && (
+              <p style={styles.small}>No applications for this opportunity yet.</p>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.divider} />
+
+        {loadingApplicationDetails && (
+          <p style={styles.small}>Loading application details...</p>
+        )}
+
+        {applicationDetailsError && (
+          <p style={{ ...styles.small, color: "#b91c1c" }}>
+            {applicationDetailsError}
+          </p>
+        )}
+
+        {selectedApplication && (
+          <div style={styles.card}>
+            <h3 style={{ marginTop: 0, marginBottom: 10 }}>Selected Application Details</h3>
+
+            <div style={styles.small}>
+              <b>Application ID:</b> {selectedApplication.applicationId}
+            </div>
+            <div style={styles.small}>
+              <b>Opportunity:</b> {selectedApplication.opportunityTitle}
+            </div>
+            <div style={styles.small}>
+              <b>Student:</b> {selectedApplication.studentUserId}
+            </div>
+            <div style={styles.small}>
+              <b>Status:</b> {selectedApplication.status}
+            </div>
+            <div style={styles.small}>
+              <b>Score:</b> {selectedApplication.assessment?.score ?? "—"}
+            </div>
+            <div style={styles.small}>
+              <b>Flagged:</b> {selectedApplication.assessment?.flagged ? "Yes" : "No"}
+            </div>
+            <div style={styles.small}>
+              <b>Flag Reason:</b> {selectedApplication.assessment?.flagReason || "—"}
+            </div>
+          </div>
+        )}
+      </motion.div>
       )}
     </div>
   );

@@ -29,6 +29,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Dashboard from "./pages/Dashboard";
 
 export default function App() {
+    console.log("API_BASE =", import.meta.env.VITE_API_BASE_URL);
     return (
         <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
@@ -46,12 +47,20 @@ export default function App() {
                 <Route path="/organization" element={<OrganizationDashboard />} />
                 <Route path="/opportunities/:id" element={<JobDetailsPage />} />
                 <Route path="/apply/:applicationId/review" element={<ProfileReviewPage />} />
-                <Route path="/matches" element={<Match />} />
+
                 <Route path="/profile" element={<ProfilePage />} />
+
                 <Route path="/application/:applicationId/review" element={<ApplicationReviewPage />} />
                 <Route path="/application/:applicationId/assessment/rules" element={<AssessmentRulesPage />} />
+                <Route path="/application/:applicationId/assessment/start" element={<AssessmentPage />} />
+
+
                 <Route path="/application/:applicationId/assessment" element={<AssessmentPage />} />
                 <Route path="/application/:applicationId/result" element={<ApplicationResultPage />} />
+
+                
+                
+
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />

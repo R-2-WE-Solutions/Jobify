@@ -128,6 +128,9 @@ namespace Jobify.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("WithdrawndAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OpportunityId");
@@ -627,7 +630,7 @@ namespace Jobify.Migrations
                     b.Property<DateTime?>("UniversityProofUploadedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("UserId");

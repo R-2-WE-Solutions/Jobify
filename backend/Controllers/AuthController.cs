@@ -199,7 +199,7 @@ public class AuthController : ControllerBase
         var frontendBase =
             _config["Frontend:BaseUrl"]
             ?? _config["FrontendUrl"]
-            ?? "http://localhost:5173";
+            ?? "http://localhost:63303";
 
         var redirectUrl = waitingAdmin
             ? $"{frontendBase}/email-confirmed?status=waiting_admin"

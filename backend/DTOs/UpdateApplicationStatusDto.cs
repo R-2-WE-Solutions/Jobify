@@ -1,4 +1,4 @@
-namespace Jobify.DTOs;
+namespace Jobify.Api.DTOs;
 
 public class UpdateApplicationStatusDto
 {

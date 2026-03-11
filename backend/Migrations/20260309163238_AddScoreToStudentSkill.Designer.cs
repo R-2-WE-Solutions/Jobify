@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Jobify.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260212164753_AupdateAppDb")]
-    partial class AupdateAppDb
+    [Migration("20260309163238_AddScoreToStudentSkill")]
+    partial class AddScoreToStudentSkill
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,76 @@ namespace Jobify.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Jobify.Api.Models.Opportunity", b =>
+            modelBuilder.Entity("ApplicationAssessment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswersJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ChallengeCountSnapshot")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CopyPasteCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FlagReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Flagged")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("McqCountSnapshot")
+                        .HasColumnType("int");
+
+                    b.Property<string>("QuestionOrderJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RandomSeed")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Score")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SuspiciousCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TabSwitchCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TimeLimitSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("WebcamConsent")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId")
+                        .IsUnique();
+
+                    b.ToTable("ApplicationAssessments");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.Application", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -36,8 +105,67 @@ namespace Jobify.Migrations
                     b.Property<string>("AssessmentJson")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StudentUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("WithdrawndAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("StudentUserId", "OpportunityId")
+                        .IsUnique();
+
+                    b.ToTable("Applications");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.Opportunity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssessmentChallengeCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AssessmentJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AssessmentMcqCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AssessmentTimeLimitSeconds")
+                        .HasColumnType("int");
+
                     b.Property<string>("BenefitsJson")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
@@ -57,6 +185,9 @@ namespace Jobify.Migrations
                     b.Property<string>("FullAddress")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsRemote")
                         .HasColumnType("bit");
@@ -255,6 +386,111 @@ namespace Jobify.Migrations
                     b.ToTable("Skills");
                 });
 
+            modelBuilder.Entity("Jobify.Api.Models.StudentEducation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Degree")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Gpa")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GraduationYear")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Major")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StudentUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("University")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("StudentEducations");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.StudentExperience", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Company")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Duration")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StudentUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("StudentExperiences");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.StudentInterest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Interest")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StudentUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("StudentInterests");
+                });
+
             modelBuilder.Entity("Jobify.Api.Models.StudentProfile", b =>
                 {
                     b.Property<string>("UserId")
@@ -284,7 +520,13 @@ namespace Jobify.Migrations
                     b.Property<string>("InterestsText")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Major")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PortfolioUrl")
@@ -328,6 +570,43 @@ namespace Jobify.Migrations
                     b.ToTable("StudentProfiles");
                 });
 
+            modelBuilder.Entity("Jobify.Api.Models.StudentProject", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Links")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StudentUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("TechStack")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("StudentProjects");
+                });
+
             modelBuilder.Entity("Jobify.Api.Models.StudentSkill", b =>
                 {
                     b.Property<int>("Id")
@@ -355,6 +634,9 @@ namespace Jobify.Migrations
 
                     b.Property<string>("VerifiedBy")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("score")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -591,6 +873,56 @@ namespace Jobify.Migrations
                     b.ToTable("OpportunityQuestions");
                 });
 
+            modelBuilder.Entity("ProctorEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApplicationAssessmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationAssessmentId");
+
+                    b.ToTable("ProctorEvents");
+                });
+
+            modelBuilder.Entity("ApplicationAssessment", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.Application", "Application")
+                        .WithOne("Assessment")
+                        .HasForeignKey("ApplicationAssessment", "ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.Application", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
+                });
+
             modelBuilder.Entity("Jobify.Api.Models.OpportunitySkill", b =>
                 {
                     b.HasOne("Jobify.Api.Models.Opportunity", "Opportunity")
@@ -610,11 +942,47 @@ namespace Jobify.Migrations
                     b.Navigation("Skill");
                 });
 
+            modelBuilder.Entity("Jobify.Api.Models.StudentEducation", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.StudentProfile", null)
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.StudentExperience", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.StudentProfile", null)
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.StudentInterest", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.StudentProfile", null)
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Jobify.Api.Models.StudentProfile", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithOne()
                         .HasForeignKey("Jobify.Api.Models.StudentProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.StudentProject", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.StudentProfile", null)
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -694,6 +1062,22 @@ namespace Jobify.Migrations
                         .IsRequired();
 
                     b.Navigation("Opportunity");
+                });
+
+            modelBuilder.Entity("ProctorEvent", b =>
+                {
+                    b.HasOne("ApplicationAssessment", "Assessment")
+                        .WithMany()
+                        .HasForeignKey("ApplicationAssessmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assessment");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.Application", b =>
+                {
+                    b.Navigation("Assessment");
                 });
 
             modelBuilder.Entity("Jobify.Api.Models.Opportunity", b =>
