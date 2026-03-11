@@ -168,37 +168,53 @@ var studentSkillsSet = studentSkillNames.ToHashSet();
 
         var total = await query.CountAsync();
 
-        var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(o => new OpportunityCardDto
-            {
-                Id = o.Id,
-                Title = o.Title,
-                CompanyName = o.CompanyName,
-                Location = o.Location,
-                IsRemote = o.IsRemote,
+        //calculate match %
 
-                WorkMode = o.WorkMode.ToString(),
+        var rawItems = await query
+    .Skip((page - 1) * pageSize)
+    .Take(pageSize)
+    .ToListAsync();
 
-                Type = o.Type.ToString(),
-                Level = o.Level.ToString(),
-                MinPay = o.MinPay,
-                MaxPay = o.MaxPay,
-                CreatedAtUtc = o.CreatedAtUtc,
-                DeadlineUtc = o.DeadlineUtc,
-                Skills = o.OpportunitySkills
-                    .Where(os => os.Skill != null)
-                    .Select(os => os.Skill!.Name)
-                    .ToList(),
+var items = rawItems.Select(o =>
+{
+    var opportunitySkillNames = o.OpportunitySkills
+        .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill!.Name))
+        .Select(os => os.Skill!.Name.Trim().ToLower())
+        .Distinct()
+        .ToList();
 
-                AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
-                AssessmentMcqCount = o.AssessmentMcqCount,
-                AssessmentChallengeCount = o.AssessmentChallengeCount,
+    int matchPercent = 0;
 
-                MatchPercent = null
-            })
-            .ToListAsync();
+    if (opportunitySkillNames.Count > 0)
+    {
+        var matchedCount = opportunitySkillNames.Count(skill => studentSkillsSet.Contains(skill));
+        matchPercent = (int)Math.Round((double)matchedCount * 100 / opportunitySkillNames.Count);
+    }
+
+    return new OpportunityCardDto
+    {
+        Id = o.Id,
+        Title = o.Title,
+        CompanyName = o.CompanyName,
+        Location = o.Location,
+        IsRemote = o.IsRemote,
+        WorkMode = o.WorkMode.ToString(),
+        Type = o.Type.ToString(),
+        Level = o.Level.ToString(),
+        MinPay = o.MinPay,
+        MaxPay = o.MaxPay,
+        CreatedAtUtc = o.CreatedAtUtc,
+        DeadlineUtc = o.DeadlineUtc,
+        Skills = o.OpportunitySkills
+            .Where(os => os.Skill != null)
+            .Select(os => os.Skill!.Name)
+            .ToList(),
+        AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
+        AssessmentMcqCount = o.AssessmentMcqCount,
+        AssessmentChallengeCount = o.AssessmentChallengeCount,
+        MatchPercent = matchPercent
+    };
+}).ToList();
 
         return Ok(new PagedResult<OpportunityCardDto>
         {
