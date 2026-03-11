@@ -344,6 +344,7 @@ export default function OrganizationDashboard() {
       }
 
       const data = await res.json();
+      console.log("Fetched listings for company", companyName, data);
 
       const mapped: Listing[] = data.map((o: any) => ({
         id: o.id,
@@ -351,7 +352,7 @@ export default function OrganizationDashboard() {
         status: o.isClosed ? "closed" : "active",
         postedDate: o.createdAtUtc ? o.createdAtUtc.slice(0, 10) : "",
         deadline: o.deadlineUtc ? o.deadlineUtc.slice(0, 10) : "",
-        applicants: o.applicantsCount ?? 0,
+        applicants: o.applicantCount ?? 0,
         location: o.locationName || o.location || "—",
         type: String(o.type ?? ""),
         workMode: String(o.workMode ?? ""),
@@ -394,6 +395,7 @@ export default function OrganizationDashboard() {
       }
 
       const data = await res.json();
+      console.log("Fetched applications for opportunity ID", opportunityId, data);
       setApplications(data);
 
       const initialNotes: Record<number, string> = {};
@@ -1064,7 +1066,7 @@ export default function OrganizationDashboard() {
                   <strong style={{ fontSize: 16 }}>Application: {application.applicationId}</strong>
 
                   <p style={styles.small}>
-                    <b>Student:</b> {application.studentUserId}
+                    <b>Student:</b> {application.candidateName}
                   </p>
 
                   <p style={styles.small}>

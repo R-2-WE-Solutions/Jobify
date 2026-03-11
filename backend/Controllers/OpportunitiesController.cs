@@ -42,6 +42,7 @@ public class OpportunitiesController : ControllerBase
         [FromQuery] string? skills,
         [FromQuery] decimal? minPay,
         [FromQuery] decimal? maxPay,
+        [FromQuery] int applicantCount,
         [FromQuery] string? sort = "newest",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10
@@ -679,7 +680,9 @@ public class OpportunitiesController : ControllerBase
                 AssessmentMcqCount = o.AssessmentMcqCount,
                 AssessmentChallengeCount = o.AssessmentChallengeCount,
 
-                MatchPercent = null
+                MatchPercent = null,
+
+                ApplicantCount = _db.Applications.Count(a => a.OpportunityId == o.Id && a.Status != ApplicationStatus.Withdrawn),
             })
             .ToListAsync();
 

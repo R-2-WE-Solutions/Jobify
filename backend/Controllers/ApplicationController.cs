@@ -978,7 +978,7 @@ public class ApplicationController : ControllerBase
             .Include(a => a.Opportunity)
             .Where(a => a.OpportunityId == opportunityId && a.Status != ApplicationStatus.Withdrawn)
             .OrderByDescending(a => a.CreatedAtUtc)
-            .ToListAsync();
+            .ToListAsync(); 
 
         var result = new List<RecruiterAppListDto>();
 
@@ -987,6 +987,10 @@ public class ApplicationController : ControllerBase
             var user = await _db.Users.AsNoTracking()
                            .FirstOrDefaultAsync(u => u.Id == app.UserId);
 
+            var student = await _db.StudentProfiles.AsNoTracking()
+                                 .FirstOrDefaultAsync(s => s.UserId == app.UserId);
+                                
+
             var assessment = await _db.ApplicationAssessments
                                  .AsNoTracking()
                                  .FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
@@ -994,7 +998,7 @@ public class ApplicationController : ControllerBase
             result.Add(new RecruiterAppListDto
             {
                 ApplicationId = app.Id,
-                CandidateName = user?.UserName ?? "Unknown",
+                CandidateName = student?.FullName ?? user?.UserName ?? "Unknown",
                 CandidateEmail = user?.Email ?? "",
                 Status = app.Status.ToString(),
                 CreatedAtUtc = app.CreatedAtUtc,
