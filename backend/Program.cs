@@ -41,6 +41,7 @@ builder.Services.AddScoped<RecommendationService>();
 // Skill services
 builder.Services.AddScoped<SkillService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<UniversityProofOcrService>();
 
 builder.Services.AddHttpClient<MlSkillClient>(client =>
 {
