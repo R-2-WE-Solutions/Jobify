@@ -77,7 +77,7 @@ var studentSkillsSet = studentSkillNames.ToHashSet();
                 .ThenInclude(os => os.Skill)
             .AsQueryable();
 
-        query = query.Where(o => !o.IsClosed);
+        // query = query.Where(o => !o.IsClosed);
 
         if (!string.IsNullOrWhiteSpace(q)) // filter by search bar
         {
@@ -474,6 +474,39 @@ var items = rawItems.Select(o =>
 
         _db.Opportunities.Add(opportunity);
         await _db.SaveChangesAsync();
+        if (dto.Skills != null && dto.Skills.Count > 0)
+{
+    foreach (var skillName in dto.Skills)
+    {
+        if (string.IsNullOrWhiteSpace(skillName))
+            continue;
+
+        var trimmed = skillName.Trim();
+        var normalized = trimmed.ToLower();
+
+        var skill = await _db.Skills
+            .FirstOrDefaultAsync(s => s.Name.ToLower() == normalized);
+
+        if (skill == null)
+        {
+            skill = new Skill
+            {
+                Name = trimmed
+            };
+
+            _db.Skills.Add(skill);
+            await _db.SaveChangesAsync();
+        }
+
+        _db.OpportunitySkills.Add(new OpportunitySkill
+        {
+            OpportunityId = opportunity.Id,
+            SkillId = skill.Id
+        });
+    }
+
+    await _db.SaveChangesAsync();
+}
 
         // var extracted = await _mlSkillClient.ExtractOpportunitySkillsAsync(
             // opportunity.Description ?? "",
