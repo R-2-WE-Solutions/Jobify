@@ -9,7 +9,7 @@ namespace Jobify.Api.Services
 {
     public class RecommendationService
     {
-        private const double THRESHOLD = 0.4;
+        
 
         private static readonly Dictionary<string, string> SynonymMap = new()
         {
@@ -129,7 +129,7 @@ namespace Jobify.Api.Services
 
                 var score = matchedWeight / totalWeight;
 
-                if (score >= THRESHOLD)
+                if (score > 0)
                 {
                     results.Add(new RecommendedOpportunityDto
                     {
