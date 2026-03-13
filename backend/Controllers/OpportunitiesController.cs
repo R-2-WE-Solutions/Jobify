@@ -1,14 +1,13 @@
 using Jobify.Api.Data;
 using Jobify.Api.DTOs;
 using Jobify.Api.Models;
+using Jobify.Api.Services;
 using Jobify.Api.Services.SkillServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
-
-
 
 namespace Jobify.Api.Controllers;
 
@@ -27,11 +26,7 @@ public class OpportunitiesController : ControllerBase
         _mlSkillClient = mlSkillClient;
     }
 
-
-
-    // =========================
-    // GET LIST (PUBLIC)
-    // GET: /api/opportunities?q=&type=&level=&remote=&location=&skills=&minPay=&maxPay=&sort=&page=&pageSize=
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<PagedResult<OpportunityCardDto>>> GetAll(
         [FromQuery] string? q,
@@ -52,15 +47,40 @@ public class OpportunitiesController : ControllerBase
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 50) pageSize = 50;
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var applicantSkills = await _db.StudentSkills
+            .AsNoTracking()
+            .Where(ss => ss.StudentUserId == userId && ss.SkillId != null)
+            .Join(
+                _db.Skills,
+                ss => ss.SkillId,
+                s => s.Id,
+                (ss, s) => new SkillInputDto
+                {
+                    Name = s.Name,
+                    Weight = 1
+                }
+            )
+            .ToListAsync();
+
+        var applicantSkillNames = applicantSkills
+            .Where(a => !string.IsNullOrWhiteSpace(a.Name))
+            .Select(a => a.Name.Trim().ToLower())
+            .ToHashSet();
+
         var query = _db.Opportunities
             .AsNoTracking()
             .Include(o => o.OpportunitySkills)
                 .ThenInclude(os => os.Skill)
             .AsQueryable();
 
-        query = query.Where(o => !o.IsClosed);
+        // query = query.Where(o => !o.IsClosed);
 
-        if (!string.IsNullOrWhiteSpace(q)) // filter by search bar
+        if (!string.IsNullOrWhiteSpace(q))
         {
             var s = q.Trim().ToLower();
             query = query.Where(o =>
@@ -70,8 +90,7 @@ public class OpportunitiesController : ControllerBase
             );
         }
 
-        // Parse the string into enum and compare enum-to-enum.
-        if (!string.IsNullOrWhiteSpace(type)) //filter by internship etc... level
+        if (!string.IsNullOrWhiteSpace(type))
         {
             var rawType = type.Trim();
 
@@ -85,8 +104,7 @@ public class OpportunitiesController : ControllerBase
             }
         }
 
-        // Map UI -> enum, and also allow enum names.
-        if (!string.IsNullOrWhiteSpace(level)) //filter by junior senior entry....
+        if (!string.IsNullOrWhiteSpace(level))
         {
             var raw = level.Trim().ToLower();
 
@@ -149,19 +167,32 @@ public class OpportunitiesController : ControllerBase
 
         var total = await query.CountAsync();
 
-        var items = await query
+        var rawItems = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(o => new OpportunityCardDto
+            .ToListAsync();
+
+        var recommendationService = new RecommendationService();
+
+        var items = rawItems.Select(o =>
+        {
+            var matchPercentage = recommendationService.CalculateOpportunityPercentage(applicantSkills, o);
+
+            var matchedSkills = o.OpportunitySkills
+                .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
+                .Select(os => os.Skill!.Name.Trim().ToLower())
+                .Where(skill => applicantSkillNames.Contains(skill))
+                .Distinct()
+                .ToList();
+
+            return new OpportunityCardDto
             {
                 Id = o.Id,
                 Title = o.Title,
                 CompanyName = o.CompanyName,
                 Location = o.Location,
                 IsRemote = o.IsRemote,
-
                 WorkMode = o.WorkMode.ToString(),
-
                 Type = o.Type.ToString(),
                 Level = o.Level.ToString(),
                 MinPay = o.MinPay,
@@ -172,14 +203,17 @@ public class OpportunitiesController : ControllerBase
                     .Where(os => os.Skill != null)
                     .Select(os => os.Skill!.Name)
                     .ToList(),
-
                 AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
                 AssessmentMcqCount = o.AssessmentMcqCount,
                 AssessmentChallengeCount = o.AssessmentChallengeCount,
+                MatchPercentage = matchPercentage,
+                MatchedSkills = matchedSkills
+            };
+        }).ToList();
 
-                MatchPercent = null
-            })
-            .ToListAsync();
+        items = items
+    .OrderByDescending(x => x.MatchPercentage) //best match sorting
+    .ToList();
 
         return Ok(new PagedResult<OpportunityCardDto>
         {
@@ -190,7 +224,6 @@ public class OpportunitiesController : ControllerBase
         });
     }
 
-    // GET BY ID (PUBLIC) - DETAILS
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OpportunityDetailsDto>> GetById(int id)
     {
@@ -227,7 +260,6 @@ public class OpportunitiesController : ControllerBase
             FullAddress = o.FullAddress,
             Latitude = o.Latitude,
             Longitude = o.Longitude,
-
             Type = o.Type.ToString(),
             Level = o.Level.ToString(),
             MinPay = o.MinPay,
@@ -235,34 +267,28 @@ public class OpportunitiesController : ControllerBase
             Description = o.Description,
             CreatedAtUtc = o.CreatedAtUtc,
             DeadlineUtc = o.DeadlineUtc,
-
             Responsibilities = ReadList(o.ResponsibilitiesJson),
             PreferredSkills = ReadList(o.PreferredSkillsJson),
             Benefits = ReadList(o.BenefitsJson),
             Assessment = string.IsNullOrWhiteSpace(o.AssessmentJson)
                 ? null
                 : JsonSerializer.Deserialize<object>(o.AssessmentJson),
-
             AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
             AssessmentMcqCount = o.AssessmentMcqCount,
             AssessmentChallengeCount = o.AssessmentChallengeCount,
-
-
             Skills = o.OpportunitySkills
                 .Where(os => os.Skill != null)
                 .Select(os => os.Skill!.Name)
                 .ToList(),
-
             Qa = qa
         });
     }
 
     [HttpGet("{id}/similar")]
     public async Task<ActionResult<List<OpportunityCardDto>>> GetSimilar(
-    int id,
-    [FromQuery] int take = 4)
+        int id,
+        [FromQuery] int take = 4)
     {
-        // 1️⃣ Load the base opportunity with its skills
         var baseOpp = await _db.Opportunities
             .Include(o => o.OpportunitySkills)
                 .ThenInclude(os => os.Skill)
@@ -276,15 +302,13 @@ public class OpportunitiesController : ControllerBase
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // 2️⃣ Get candidate pool (cheap filter first)
         var candidates = await _db.Opportunities
             .Include(o => o.OpportunitySkills)
                 .ThenInclude(os => os.Skill)
-            .Where(o => o.Id != id && o.Type == baseOpp.Type && !o.IsClosed)  // strong filter
+            .Where(o => o.Id != id && o.Type == baseOpp.Type && !o.IsClosed)
             .Take(150)
             .ToListAsync();
 
-        // 3️⃣ Similarity scoring
         double Score(Opportunity o)
         {
             var skills = o.OpportunitySkills
@@ -312,10 +336,9 @@ public class OpportunitiesController : ControllerBase
             return score;
         }
 
-        // 4️⃣ Return top similar opportunities
         var result = candidates
             .Select(o => new { Opportunity = o, Score = Score(o) })
-            .Where(x => x.Score > 0) // optional filter
+            .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
             .Take(Math.Clamp(take, 1, 12))
             .Select(x => new OpportunityCardDto
@@ -325,24 +348,18 @@ public class OpportunitiesController : ControllerBase
                 CompanyName = x.Opportunity.CompanyName,
                 Location = x.Opportunity.Location,
                 IsRemote = x.Opportunity.IsRemote,
-
                 Type = x.Opportunity.Type.ToString(),
                 Level = x.Opportunity.Level.ToString(),
-
                 MinPay = x.Opportunity.MinPay,
                 MaxPay = x.Opportunity.MaxPay,
-
                 CreatedAtUtc = x.Opportunity.CreatedAtUtc,
                 DeadlineUtc = x.Opportunity.DeadlineUtc,
-
                 Skills = x.Opportunity.OpportunitySkills
                     .Select(s => s.Skill.Name)
                     .ToList(),
-
                 WorkMode = x.Opportunity.WorkMode.ToString(),
-
-                MatchPercent = null,
-
+                MatchPercentage = 0,
+                MatchedSkills = new List<string>(),
                 AssessmentTimeLimitSeconds = x.Opportunity.AssessmentTimeLimitSeconds,
                 AssessmentMcqCount = x.Opportunity.AssessmentMcqCount,
                 AssessmentChallengeCount = x.Opportunity.AssessmentChallengeCount
@@ -351,7 +368,6 @@ public class OpportunitiesController : ControllerBase
 
         return result;
     }
-
 
     [Authorize]
     [HttpPost("{id:int}/questions")]
@@ -376,7 +392,6 @@ public class OpportunitiesController : ControllerBase
         return Ok(new { q.Id });
     }
 
-
     [Authorize(Roles = "Recruiter")]
     [HttpPut("questions/{questionId:int}/answer")]
     public async Task<ActionResult> AnswerQuestion(int questionId, [FromBody] QaDto dto)
@@ -392,7 +407,6 @@ public class OpportunitiesController : ControllerBase
 
         return NoContent();
     }
-
 
     [Authorize(Roles = "Recruiter")]
     [HttpPost]
@@ -442,18 +456,38 @@ public class OpportunitiesController : ControllerBase
         _db.Opportunities.Add(opportunity);
         await _db.SaveChangesAsync();
 
-        var extracted = await _mlSkillClient.ExtractOpportunitySkillsAsync(
-    $"{opportunity.Title} {opportunity.Description}".Trim(),
-    null
-);
+        if (dto.Skills != null && dto.Skills.Count > 0)
+        {
+            foreach (var skillName in dto.Skills)
+            {
+                if (string.IsNullOrWhiteSpace(skillName))
+                    continue;
 
-        if (extracted != null && extracted.Any())
-        {
-            await _skillService.SaveOpportunitySkillsAsync(opportunity.Id, extracted);
-        }
-        else
-        {
-            await ReplaceSkills(opportunity.Id, dto.PreferredSkills ?? new List<string>());
+                var trimmed = skillName.Trim();
+                var normalized = trimmed.ToLower();
+
+                var skill = await _db.Skills
+                    .FirstOrDefaultAsync(s => s.Name.ToLower() == normalized);
+
+                if (skill == null)
+                {
+                    skill = new Skill
+                    {
+                        Name = trimmed
+                    };
+
+                    _db.Skills.Add(skill);
+                    await _db.SaveChangesAsync();
+                }
+
+                _db.OpportunitySkills.Add(new OpportunitySkill
+                {
+                    OpportunityId = opportunity.Id,
+                    SkillId = skill.Id
+                });
+            }
+
+            await _db.SaveChangesAsync();
         }
 
         return CreatedAtAction(nameof(GetById), new { id = opportunity.Id }, new { opportunity.Id });
@@ -481,9 +515,7 @@ public class OpportunitiesController : ControllerBase
         opportunity.Title = dto.Title.Trim();
         opportunity.CompanyName = dto.CompanyName.Trim();
         opportunity.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
-
         opportunity.IsRemote = parsedMode == WorkMode.Remote;
-
         opportunity.WorkMode = parsedMode;
         opportunity.LocationName = string.IsNullOrWhiteSpace(dto.LocationName) ? null : dto.LocationName.Trim();
         opportunity.FullAddress = string.IsNullOrWhiteSpace(dto.FullAddress) ? null : dto.FullAddress.Trim();
@@ -493,7 +525,6 @@ public class OpportunitiesController : ControllerBase
         opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);
         opportunity.BenefitsJson = WriteList(dto.Benefits);
         opportunity.AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment);
-
         opportunity.Type = parsedType;
         opportunity.Level = parsedLevel;
         opportunity.MinPay = dto.MinPay;
@@ -550,7 +581,6 @@ public class OpportunitiesController : ControllerBase
         var oppExists = await _db.Opportunities.AnyAsync(o => o.Id == id);
         if (!oppExists) return NotFound("Opportunity not found.");
 
-        // If already applied (not withdrawn), return existing application
         var existing = await _db.Applications
             .FirstOrDefaultAsync(a => a.OpportunityId == id && a.UserId == userId && a.Status != ApplicationStatus.Withdrawn);
 
@@ -570,7 +600,6 @@ public class OpportunitiesController : ControllerBase
 
         return Ok(new { applicationId = app.Id, status = app.Status.ToString() });
     }
-
 
     private async Task ReplaceSkills(int opportunityId, List<string> skills)
     {
@@ -631,6 +660,7 @@ public class OpportunitiesController : ControllerBase
 
         return cleaned.Count == 0 ? null : JsonSerializer.Serialize(cleaned);
     }
+
     [Authorize(Roles = "Recruiter")]
     [HttpPatch("{id:int}/close")]
     public async Task<IActionResult> Close(int id)
@@ -646,6 +676,7 @@ public class OpportunitiesController : ControllerBase
         await _db.SaveChangesAsync();
         return NoContent();
     }
+
     [Authorize(Roles = "Recruiter")]
     [HttpPatch("{id:int}/reopen")]
     public async Task<IActionResult> Reopen(int id)

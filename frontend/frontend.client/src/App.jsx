@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
 // login pages
+// login pages
 import LoginPage from "./pages/LoginPage/LoginPage";
 import SignupPage from "./pages/LoginPage/SignupPage";
 import ForgotPasswordPage from "./pages/LoginPage/ForgotPasswordPage";
@@ -9,6 +10,7 @@ import ResetPasswordPage from "./pages/LoginPage/ResetPasswordPage";
 import OAuthCallbackPage from "./pages/LoginPage/OAuthCallbackPage";
 import EmailConfirmed from "./pages/LoginPage/EmailConfirmed";
 
+// job details pages
 // job details pages
 import ProfileReviewPage from "./pages/JobDetails/ProfileReviewPage";
 import ApplicationReviewPage from "./pages/JobDetails/ApplicationReviewPage";
@@ -43,7 +45,7 @@ export default function App() {
             <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/browse" element={<BrowseOpportunities />} />
-                <Route path="/match" element={<MatchesPage />} />
+                
                 <Route path="/organization" element={<OrganizationDashboard />} />
                 <Route path="/opportunities/:id" element={<JobDetailsPage />} />
                 <Route path="/apply/:applicationId/review" element={<ProfileReviewPage />} />

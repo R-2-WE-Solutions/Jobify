@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
+using System.Linq;
+using Jobify.Api.Services;
 
 namespace Jobify.Api.Controllers;
 
@@ -17,16 +20,19 @@ public class ProfileController : ControllerBase
     private readonly AppDbContext _context;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IConfiguration _config;
+    private readonly UniversityProofOcrService _ocrService;
 
     public ProfileController(
-        AppDbContext context,
-        UserManager<IdentityUser> userManager,
-        IConfiguration config)
-    {
-        _context = context;
-        _userManager = userManager;
-        _config = config;
-    }
+    AppDbContext context,
+    UserManager<IdentityUser> userManager,
+    IConfiguration config,
+    UniversityProofOcrService ocrService)
+{
+    _context = context;
+    _userManager = userManager;
+    _config = config;
+    _ocrService = ocrService;
+}
 
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -1040,6 +1046,66 @@ public class ProfileController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Interest removed." });
     }
+    private static string NormalizeText(string input)
+{
+    if (string.IsNullOrWhiteSpace(input))
+        return string.Empty;
+
+    input = input.ToLowerInvariant();
+    input = Regex.Replace(input, @"[^\w\s]", " ");
+    input = Regex.Replace(input, @"\s+", " ").Trim();
+
+    return input;
+}
+
+private static bool NameLooksPresent(string ocrText, string fullName)
+{
+    if (string.IsNullOrWhiteSpace(ocrText) || string.IsNullOrWhiteSpace(fullName))
+        return false;
+
+    var text = NormalizeText(ocrText);
+
+    var firstName = NormalizeText(fullName)
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .FirstOrDefault();
+
+    if (string.IsNullOrWhiteSpace(firstName) || firstName.Length < 3)
+        return false;
+
+    return text.Contains(firstName);
+}
+
+private static string? ExtractUniversityName(string ocrText)
+{
+    if (string.IsNullOrWhiteSpace(ocrText))
+        return null;
+
+    var lines = ocrText
+        .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+        .Select(x => x.Trim())
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .ToList();
+
+    var patterns = new[]
+    {
+        @"\b[A-Z][A-Za-z&,\-\s]+University[A-Za-z&,\-\s]*\b",
+        @"\b[A-Z][A-Za-z&,\-\s]+College[A-Za-z&,\-\s]*\b",
+        @"\b[A-Z][A-Za-z&,\-\s]+Institute[A-Za-z&,\-\s]*\b",
+        @"\b[A-Z][A-Za-z&,\-\s]+School[A-Za-z&,\-\s]*\b"
+    };
+
+    foreach (var line in lines)
+    {
+        foreach (var pattern in patterns)
+        {
+            var match = Regex.Match(line, pattern);
+            if (match.Success)
+                return match.Value.Trim();
+        }
+    }
+
+    return null;
+}
 }
 
 public class UpdateProfileRequest

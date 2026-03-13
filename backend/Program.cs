@@ -39,6 +39,23 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+// Recommendation system
+builder.Services.AddScoped<RecommendationService>();
+
+// Skill services
+builder.Services.AddScoped<SkillService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<UniversityProofOcrService>();
+
+builder.Services.AddHttpClient<MlSkillClient>(client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["MlService:BaseUrl"] ?? "http://localhost:8000/"
+    );
+});
+
+builder.Services.AddHttpClient();
+
 // ASP.NET Identity
 // Handles users, roles, passwords, hashing, tokens, etc.
 builder.Services

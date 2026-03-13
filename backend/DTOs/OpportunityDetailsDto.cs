@@ -33,11 +33,11 @@ public class OpportunityDetailsDto
     public int AssessmentMcqCount { get; set; }
     public int AssessmentChallengeCount { get; set; }
 
-
     public List<string> Responsibilities { get; set; } = new();
     public List<string> PreferredSkills { get; set; } = new();
     public List<string> Benefits { get; set; } = new();
 
     public List<QaDto> Qa { get; set; } = new();
 
+    public double MatchPercentage { get; set; }
 }
