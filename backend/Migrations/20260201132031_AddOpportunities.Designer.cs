@@ -220,7 +220,7 @@ namespace Jobify.Migrations
                     b.Property<string>("University")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("UserId");

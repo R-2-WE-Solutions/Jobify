@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
 // login pages
+// login pages
 import LoginPage from "./pages/LoginPage/LoginPage";
 import SignupPage from "./pages/LoginPage/SignupPage";
 import ForgotPasswordPage from "./pages/LoginPage/ForgotPasswordPage";
@@ -10,6 +11,7 @@ import OAuthCallbackPage from "./pages/LoginPage/OAuthCallbackPage";
 import EmailConfirmed from "./pages/LoginPage/EmailConfirmed";
 
 // job details pages
+// job details pages
 import ProfileReviewPage from "./pages/JobDetails/ProfileReviewPage";
 import ApplicationReviewPage from "./pages/JobDetails/ApplicationReviewPage";
 import AssessmentPage from "./pages/JobDetails/AssesmentsPage";
@@ -17,7 +19,8 @@ import ApplicationResultPage from "./pages/JobDetails/ApplicationResultPage";
 import JobDetailsPage from "./pages/JobDetails/JobDetailsPage";
 import AssessmentRulesPage from "./pages/JobDetails/AssesmentRulesPage";
 
-import Match from "./pages/Match";
+// matches page
+import MatchesPage from "./pages/MatchesPage";
 
 // organization page
 import OrganizationDashboard from "./pages/OrganizationDashboard";
@@ -46,10 +49,10 @@ export default function App() {
                 <Route path="/organization" element={<OrganizationDashboard />} />
                 <Route path="/opportunities/:id" element={<JobDetailsPage />} />
                 <Route path="/apply/:applicationId/review" element={<ProfileReviewPage />} />
-                <Route path="/matches" element={<Match />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/application/:applicationId/review" element={<ApplicationReviewPage />} />
                 <Route path="/application/:applicationId/assessment/rules" element={<AssessmentRulesPage />} />
+                <Route path="/application/:applicationId/assessment/start" element={<AssessmentPage />} />
                 <Route path="/application/:applicationId/assessment" element={<AssessmentPage />} />
                 <Route path="/application/:applicationId/result" element={<ApplicationResultPage />} />
             </Route>

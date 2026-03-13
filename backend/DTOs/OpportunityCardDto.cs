@@ -26,4 +26,6 @@ public class OpportunityCardDto
 
     public double MatchPercentage { get; set; }
     public List<string> MatchedSkills { get; set; } = new();
+    
+    public int ApplicantCount { get; set; }
 }
