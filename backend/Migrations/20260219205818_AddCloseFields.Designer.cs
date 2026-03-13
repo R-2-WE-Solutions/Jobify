@@ -435,7 +435,7 @@ namespace Jobify.Migrations
                     b.Property<DateTime?>("UniversityProofUploadedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("UserId");

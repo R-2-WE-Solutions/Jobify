@@ -1,5 +1,5 @@
-
 import { rawRequest } from "./profile";
+
 
 export async function uploadResume(file) {
     const form = new FormData();

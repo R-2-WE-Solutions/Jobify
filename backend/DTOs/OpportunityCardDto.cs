@@ -26,4 +26,6 @@ public class OpportunityCardDto
     public int AssessmentTimeLimitSeconds { get; set; }
     public int AssessmentMcqCount { get; set; }
     public int AssessmentChallengeCount { get; set; }
+    
+    public int ApplicantCount { get; set; }
 }

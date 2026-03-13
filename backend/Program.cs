@@ -4,6 +4,7 @@ using Jobify.Api.Data;
 using Jobify.Api.Services;
 using Jobify.Api.Services.SkillServices;
 using Jobify.Api.Swagger;
+using Jobify.Api.Services.Dashboard;
 
 
 // Authentication / Authorization
@@ -76,6 +77,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<JwtTokenService>();
 
 builder.Services.AddScoped<UniversityProofOcrService>();
+
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Skill extraction services
 builder.Services.AddScoped<SkillService>();

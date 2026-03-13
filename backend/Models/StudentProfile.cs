@@ -33,7 +33,7 @@ public class StudentProfile
     public DateTime? UniversityProofUploadedAtUtc { get; set; }
 
     public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime? UpdatedAtUtc { get; set; }
 }
 
 // ─── Education ────────────────────────────────────────────────
