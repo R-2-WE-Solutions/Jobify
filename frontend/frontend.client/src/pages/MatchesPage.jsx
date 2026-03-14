@@ -1,4 +1,4 @@
-import { useState, useNavigate, useEffect } from "react";
+import { useState, useNavigate, useEffect, useMemo } from "react";
 import { Briefcase, ListChecks, Calendar, FileText } from "lucide-react";
 import "./styles/matches.css";
 import { api } from "../api/api";
@@ -128,6 +128,20 @@ export default function MatchesPage() {
         fetchOpportunities();
         fetchApplications;
     }, []);
+
+
+    // Map Applications
+    const mappedApplications = useMemo(() => {
+        return applications.map((application) => ({
+            id: application.applicationId,
+            company: application.companyName,
+            jobTitle: application.opportunityTitle,
+            status: normalizeApplicationStatus(application.status),
+            logoColor: "blue",
+            deadline: application.hasAssessment ? "Assessment Available" : formatAppliedDate(application.createdAtUtc)
+        }))
+    }, [applications]);
+
 
     return (
         <div className="matches-page">
