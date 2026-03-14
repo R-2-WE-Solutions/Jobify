@@ -49,7 +49,6 @@ export default function MatchesPage() {
         catch(error) {
             console.error("Failed to fetch opportunities.");
             setOpportunities([]);
-
             setOpportunitiesError(error?.message || "Failed to fetch opportunities.")
         }
         finally {
@@ -57,8 +56,33 @@ export default function MatchesPage() {
         } 
     }
 
+    // Load Opportunities When The Page is Mounted
     useEffect(() => {
         fetchOpportunities();
+    }, []);
+
+    // Applications Fetching Function
+    async function fetchApplications() {
+        try {
+            const res = await api.get("/api/applications/me");
+
+            const data = Array.isArray(res.data) ? res.data : [];
+            setApplications(data);
+        }
+        catch(error) {
+            console.error("Failed to Load Applications.")
+            setApplicationsError(error?.message || "Failed to Load Applications.")
+            setApplications([]);
+        }
+        finally {
+            setApplicationsLoading(false);
+        }
+    }
+
+    // Load Opportunities and Applications When The Page is Mounted
+    useEffect(() => {
+        fetchOpportunities();
+        fetchApplications;
     }, []);
 
     return (
