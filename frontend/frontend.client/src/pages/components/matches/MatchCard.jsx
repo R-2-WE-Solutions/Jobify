@@ -19,8 +19,8 @@ function getInitials(company = "") {
 }
 
 function scoreColor(score) {
-    if (score >= 80) return "green";
-    if (score >= 70) return "blue";
+    if (score >= 70) return "green";
+    if (score >= 50) return "blue";
     return "yellow";
 }
 

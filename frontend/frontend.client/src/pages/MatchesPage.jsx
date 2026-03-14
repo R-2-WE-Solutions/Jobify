@@ -1,5 +1,8 @@
-import { useState, useNavigate, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Briefcase, ListChecks, Calendar, FileText } from "lucide-react";
+import matches from "./data/MatchesData"
+import { MatchesTabs } from "./components/matches/MatchesTabs"
 import "./styles/matches.css";
 import { api } from "../api/api";
 
@@ -144,7 +147,7 @@ export default function MatchesPage() {
             setApplicationsLoading(true);
             setApplicationsError("");
 
-            const res = await api.get("/api/applications/me");
+            const res = await api.get("/api/application/me");
 
             const data = Array.isArray(res.data) ? res.data : [];
             setApplications(data);
@@ -162,7 +165,7 @@ export default function MatchesPage() {
     // Load Opportunities and Applications When The Page is Mounted
     useEffect(() => {
         fetchOpportunities();
-        fetchApplications;
+        fetchApplications();
     }, []);
 
 
@@ -182,10 +185,10 @@ export default function MatchesPage() {
     const mappedOpportunities = useMemo(() => {
         return opportunities.map((opportunity) => {
 
-            const matchedSkills = Array.isArray(opportunity.matchedSkills) ? opportunity.matchedSkills : [];
+            const matchedSkills = Array.isArray(opportunity.matchedSkills) ? opportunity.matchedSkills.map((skill) => String(skill).toLowerCase()) : [];
             const skills = Array.isArray(opportunity.skills) ? opportunity.skills.map((skill) => ({
                 name: skill,
-                matched: matchedSkills.include(String(skill))
+                matched: matchedSkills.includes(String(skill).toLowerCase())
             })) : [];
 
             return {
@@ -201,6 +204,16 @@ export default function MatchesPage() {
             };
         });
     }, [opportunities]);
+
+    // Interviews
+    const mappedInterviews = useMemo(() => {
+        return matches.filter((item) => item.status === "Interview");
+    }, []);
+
+    // Matches
+    const mappedMatches = useMemo(() => {
+        return [...mappedOpportunities, ...mappedApplications, ...mappedInterviews];
+    }, [mappedApplications, mappedOpportunities, mappedInterviews])
 
 
     return (
@@ -230,7 +243,7 @@ export default function MatchesPage() {
             </div>
 
             <div className="matches-content">
-                <MatchesTabs activeTab={activeTab} matches={matches} />
+                <MatchesTabs activeTab={activeTab} matches={mappedMatches} />
             </div>
         </div>
     );
