@@ -1,4 +1,4 @@
-import { useState, useNavigate } from "react";
+import { useState, useNavigate, useEffect } from "react";
 import { Briefcase, ListChecks, Calendar, FileText } from "lucide-react";
 import "./styles/matches.css";
 import { api } from "../api/api";
@@ -56,6 +56,10 @@ export default function MatchesPage() {
             setOpportunitiesLoading(false);
         } 
     }
+
+    useEffect(() => {
+        fetchOpportunities();
+    }, []);
 
     return (
         <div className="matches-page">
