@@ -75,6 +75,8 @@ function Steps({ status }) {
 export function OpportunityCard({ match }) {
     const [expanded, setExpanded] = useState(false);
 
+    const navigate = useNavigate();
+
     return (
         <div className={`match-card opportunity-card ${expanded ? "expanded" : ""}`}>
             <div className="match-card-row">
@@ -131,7 +133,7 @@ export function OpportunityCard({ match }) {
                 <div className="match-expanded">
                     <div className="match-analysis-header">
                         <div className="match-analysis-title">⚡ MATCH ANALYSIS</div>
-                        <button type="button" className="job-link-btn">
+                        <button type="button" className="job-link-btn" onClick={() => navigate(`/opportunities/${match.id}`)}>
                             See Full Job Description ↗
                         </button>
                     </div>
@@ -196,6 +198,8 @@ export function ApplicationsTab({ matches = [] }) {
         ["Applied", "Assessment", "Under Review", "Offer", "Rejected"].includes(m.status)
     );
 
+    const navigate = useNavigate();
+
     if (!applications.length) {
         return <div className="matches-empty">No active applications.</div>;
     }
@@ -232,7 +236,7 @@ export function ApplicationsTab({ matches = [] }) {
                                 <Clock size={15} />
                                 {match.deadline}
                             </div>
-                            <button className="arrow-btn">→</button>
+                            <button className="arrow-btn" onClick={() => navigate(`/apply/${match.id}/review`)}>→</button>
                         </div>
                     </div>
                 </div>
