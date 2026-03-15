@@ -37,6 +37,19 @@ export default function Dashboard() {
     );
   }
 
+  const MATCH_THRESHOLD = 50;
+
+  const recommendedOpportunities = (data?.recommendedOpportunities || []).filter(
+    (job) => (job.matchScore ?? 0) >= MATCH_THRESHOLD
+  );
+
+  const savedOpportunities = data?.savedOpportunities || [];
+
+  const upcomingDeadlines = recommendedOpportunities
+    .filter((job) => job.deadlineUtc)
+    .sort((a, b) => new Date(a.deadlineUtc) - new Date(b.deadlineUtc))
+    .slice(0, 3);
+
   return (
     <div style={{ padding: "24px", background: "#f8fafc", minHeight: "100vh" }}>
       <div
@@ -106,12 +119,12 @@ export default function Dashboard() {
         <div style={sectionStyle}>
           <h2 style={sectionTitleStyle}>Recommended Opportunities</h2>
 
-          {data.recommendedOpportunities.length === 0 ? (
+          {recommendedOpportunities.length === 0 ? (
             <p style={{ color: "#666" }}>
-              No recommendations yet. Complete your profile and add skills.
+              No strong recommendations yet. Complete your profile and add skills.
             </p>
           ) : (
-            data.recommendedOpportunities.map((job) => (
+            recommendedOpportunities.map((job) => (
               <OpportunityCard key={job.id} job={job} showScore={true} />
             ))
           )}
@@ -119,22 +132,41 @@ export default function Dashboard() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={sectionStyle}>
-            <h2 style={sectionTitleStyle}>Quick Actions</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <ActionButton text="Browse Jobs" onClick={() => (window.location.href = "/browse")} />
-              <ActionButton text="View Matches" onClick={() => (window.location.href = "/matches")} />
-              <ActionButton text="Edit Profile" onClick={() => (window.location.href = "/profile")} />
-              <ActionButton text="Get Recommendations" onClick={() => (window.location.href = "/match")} />
-            </div>
+            <h2 style={sectionTitleStyle}>Saved Opportunities</h2>
+
+            {savedOpportunities.length === 0 ? (
+              <p style={{ color: "#666" }}>No saved opportunities yet.</p>
+            ) : (
+              savedOpportunities.slice(0, 3).map((job) => (
+                <OpportunityCard key={job.id} job={job} showScore={false} />
+              ))
+            )}
+
+            <button
+              onClick={() => (window.location.href = "/saved-opportunities")}
+              style={{
+                marginTop: "12px",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                border: "none",
+                background: "#2563eb",
+                color: "white",
+                fontWeight: "600",
+                cursor: "pointer"
+              }}
+            >
+              View All
+            </button>
           </div>
 
           <div style={sectionStyle}>
-            <h2 style={sectionTitleStyle}>Recent Opportunities</h2>
-            {data.recentOpportunities.length === 0 ? (
-              <p style={{ color: "#666" }}>No opportunities found.</p>
+            <h2 style={sectionTitleStyle}>Upcoming Deadlines</h2>
+
+            {upcomingDeadlines.length === 0 ? (
+              <p style={{ color: "#666" }}>No upcoming deadlines found.</p>
             ) : (
-              data.recentOpportunities.map((job) => (
-                <OpportunityCard key={job.id} job={job} showScore={false} />
+              upcomingDeadlines.map((job) => (
+                <DeadlineCard key={job.id} job={job} />
               ))
             )}
           </div>
@@ -237,31 +269,29 @@ function OpportunityCard({ job, showScore }) {
   );
 }
 
-function ActionButton({ text, onClick }) {
+function DeadlineCard({ job }) {
+  const formattedDeadline = new Date(job.deadlineUtc).toLocaleDateString();
+
   return (
-    <button
-      onClick={onClick}
+    <div
       style={{
-        padding: "12px 16px",
-        borderRadius: "12px",
-        border: "none",
-        background: "#2563eb",
-        color: "white",
-        fontWeight: "600",
-        cursor: "pointer",
-        transition: "transform 0.15s ease, opacity 0.15s ease"
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.opacity = "0.95";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.opacity = "1";
+        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        padding: "16px",
+        marginBottom: "14px",
+        background: "#fff"
       }}
     >
-      {text}
-    </button>
+      <h3 style={{ margin: "0 0 6px 0", fontSize: "18px", color: "#111827" }}>
+        {job.title}
+      </h3>
+      <p style={{ margin: "0 0 4px 0", color: "#555", fontWeight: "500" }}>
+        {job.companyName}
+      </p>
+      <p style={{ margin: 0, color: "#777", fontSize: "14px" }}>
+        Closes on {formattedDeadline}
+      </p>
+    </div>
   );
 }
 
