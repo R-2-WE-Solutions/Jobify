@@ -160,7 +160,7 @@ export default function Dashboard() {
           </div>
 
           <div style={sectionStyle}>
-            <h2 style={sectionTitleStyle}>Upcoming Deadlines</h2>
+            <h2 style={sectionTitleStyle}>Upcoming Deadlines</h2> 
 
             {upcomingDeadlines.length === 0 ? (
               <p style={{ color: "#666" }}>No upcoming deadlines found.</p>
@@ -174,7 +174,7 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+}// show upcoming deadlines
 
 function StatCard({ title, value, icon }) {
   return (
