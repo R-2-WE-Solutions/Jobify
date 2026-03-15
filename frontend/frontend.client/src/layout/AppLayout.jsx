@@ -8,7 +8,6 @@ import {
     Sparkles,
     Star,
     UserCircle,
-    Building2,
 } from "lucide-react";
 import { api } from "../api/api";
 import "../pages/styles/layout.css";
@@ -70,6 +69,9 @@ export default function AppLayout() {
         fetchProfile();
     }, []);
 
+    const dashboardPath =
+        !loadingProfile && role === "Recruiter" ? "/organization" : "/dashboard";
+
     return (
         <div className="al-shell">
             <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
@@ -101,32 +103,45 @@ export default function AppLayout() {
             <div className="al-body">
                 <aside className="al-sidebar">
                     <nav className="al-nav">
-                        <NavLink to="/dashboard" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                            <span className="al-linkIcon"><LayoutGrid size={18} /></span>
+                        <NavLink
+                            to={dashboardPath}
+                            className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                        >
+                            <span className="al-linkIcon">
+                                <LayoutGrid size={18} />
+                            </span>
                             <span className="al-linkText">Dashboard</span>
                         </NavLink>
 
-                        <NavLink to="/browse" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                            <span className="al-linkIcon"><Sparkles size={18} /></span>
+                        <NavLink
+                            to="/browse"
+                            className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                        >
+                            <span className="al-linkIcon">
+                                <Sparkles size={18} />
+                            </span>
                             <span className="al-linkText">Browse</span>
                         </NavLink>
 
-                        {!loadingProfile && role === "Recruiter" && (
-                            <NavLink to="/organization" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                                <span className="al-linkIcon"><Building2 size={18} /></span>
-                                <span className="al-linkText">Organization</span>
-                            </NavLink>
-                        )}
-
                         {!loadingProfile && role === "Student" && (
-                            <NavLink to="/match" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                                <span className="al-linkIcon"><Star size={18} /></span>
+                            <NavLink
+                                to="/match"
+                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                            >
+                                <span className="al-linkIcon">
+                                    <Star size={18} />
+                                </span>
                                 <span className="al-linkText">Matches</span>
                             </NavLink>
                         )}
 
-                        <NavLink to="/profile" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                            <span className="al-linkIcon"><UserCircle size={18} /></span>
+                        <NavLink
+                            to="/profile"
+                            className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                        >
+                            <span className="al-linkIcon">
+                                <UserCircle size={18} />
+                            </span>
                             <span className="al-linkText">Profile</span>
                         </NavLink>
                     </nav>
