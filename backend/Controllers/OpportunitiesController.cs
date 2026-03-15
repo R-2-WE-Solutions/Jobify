@@ -43,197 +43,190 @@ public class OpportunitiesController : ControllerBase
         [FromQuery] int pageSize = 10
     )
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-        if (pageSize > 50) pageSize = 50;
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
-
-        var applicantSkills = await _db.StudentSkills
-            .AsNoTracking()
-            .Where(ss => ss.StudentUserId == userId && ss.SkillId != null)
-            .Join(
-                _db.Skills,
-                ss => ss.SkillId,
-                s => s.Id,
-                (ss, s) => new SkillInputDto
-                {
-                    Name = s.Name,
-                    Weight = 1
-                }
-            )
-            .ToListAsync();
-
-        var applicantSkillNames = applicantSkills
-            .Where(a => !string.IsNullOrWhiteSpace(a.Name))
-            .Select(a => a.Name.Trim().ToLower())
-            .ToHashSet();
-
-        var query = _db.Opportunities
-            .AsNoTracking()
-            .Include(o => o.OpportunitySkills)
-                .ThenInclude(os => os.Skill)
-            .AsQueryable();
-
-        // query = query.Where(o => !o.IsClosed);
-
-        if (!string.IsNullOrWhiteSpace(q))
+        try
         {
-            var s = q.Trim().ToLower();
-            query = query.Where(o =>
-                o.Title.ToLower().Contains(s) ||
-                o.CompanyName.ToLower().Contains(s) ||
-                o.OpportunitySkills.Any(os => os.Skill != null && os.Skill.Name.ToLower().Contains(s))
-            );
-        }
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 50) pageSize = 50;
 
-        if (!string.IsNullOrWhiteSpace(type))
-        {
-            var rawType = type.Trim();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (Enum.TryParse<OpportunityType>(rawType, true, out var parsedType))
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var applicantSkills = await _db.StudentSkills
+                .AsNoTracking()
+                .Where(ss => ss.StudentUserId == userId && ss.SkillId != null)
+                .Join(
+                    _db.Skills,
+                    ss => ss.SkillId,
+                    s => s.Id,
+                    (ss, s) => new SkillInputDto
+                    {
+                        Name = s.Name,
+                        Weight = 1
+                    }
+                )
+                .ToListAsync();
+
+            var applicantSkillNames = applicantSkills
+                .Where(a => !string.IsNullOrWhiteSpace(a.Name))
+                .Select(a => a.Name.Trim().ToLower())
+                .ToHashSet();
+
+            var query = _db.Opportunities
+                .AsNoTracking()
+                .Include(o => o.OpportunitySkills)
+                    .ThenInclude(os => os.Skill)
+                .AsQueryable();
+
+            // query = query.Where(o => !o.IsClosed);
+
+            if (!string.IsNullOrWhiteSpace(q))
             {
-                query = query.Where(o => o.Type == parsedType);
-            }
-            else
-            {
-                return BadRequest("Invalid type.");
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(level))
-        {
-            var raw = level.Trim().ToLower();
-
-            ExperienceLevel? mapped = raw switch
-            {
-                "beginner" => ExperienceLevel.Entry,
-                "intermediate" => ExperienceLevel.Junior,
-                "senior" => ExperienceLevel.Senior,
-                _ => Enum.TryParse<ExperienceLevel>(level.Trim(), true, out var parsedLevel)
-                    ? parsedLevel
-                    : null
-            };
-
-            if (mapped == null)
-                return BadRequest("Invalid level.");
-
-            query = query.Where(o => o.Level == mapped.Value);
-        }
-
-        if (remote.HasValue)
-        {
-            query = query.Where(o => o.IsRemote == remote.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(location))
-        {
-            var loc = location.Trim().ToLower();
-            query = query.Where(o => o.Location != null && o.Location.ToLower().Contains(loc));
-        }
-
-        if (!string.IsNullOrWhiteSpace(skills))
-        {
-            var wanted = skills
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(x => x.ToLower())
-                .ToList();
-
-            if (wanted.Count > 0)
-            {
+                var s = q.Trim().ToLower();
                 query = query.Where(o =>
-                    o.OpportunitySkills.Any(os => os.Skill != null && wanted.Contains(os.Skill.Name.ToLower()))
+                    o.Title.ToLower().Contains(s) ||
+                    o.CompanyName.ToLower().Contains(s) ||
+                    o.OpportunitySkills.Any(os => os.Skill != null && os.Skill.Name.ToLower().Contains(s))
                 );
             }
+
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                var rawType = type.Trim();
+
+                if (Enum.TryParse<OpportunityType>(rawType, true, out var parsedType))
+                {
+                    query = query.Where(o => o.Type == parsedType);
+                }
+                else
+                {
+                    return BadRequest("Invalid type.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(level))
+            {
+                var raw = level.Trim().ToLower();
+
+                ExperienceLevel? mapped = raw switch
+                {
+                    "beginner" => ExperienceLevel.Entry,
+                    "intermediate" => ExperienceLevel.Junior,
+                    "senior" => ExperienceLevel.Senior,
+                    _ => Enum.TryParse<ExperienceLevel>(level.Trim(), true, out var parsedLevel)
+                        ? parsedLevel
+                        : null
+                };
+
+                if (mapped == null)
+                    return BadRequest("Invalid level.");
+
+                query = query.Where(o => o.Level == mapped.Value);
+            }
+
+            if (remote.HasValue)
+            {
+                query = query.Where(o => o.IsRemote == remote.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                var loc = location.Trim().ToLower();
+                query = query.Where(o => o.Location != null && o.Location.ToLower().Contains(loc));
+            }
+
+            if (!string.IsNullOrWhiteSpace(skills))
+            {
+                var wanted = skills
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(x => x.ToLower())
+                    .ToList();
+
+                if (wanted.Count > 0)
+                {
+                    query = query.Where(o =>
+                        o.OpportunitySkills.Any(os => os.Skill != null && wanted.Contains(os.Skill.Name.ToLower()))
+                    );
+                }
+            }
+
+            if (minPay.HasValue)
+                query = query.Where(o => o.MaxPay == null || o.MaxPay >= minPay.Value);
+
+            if (maxPay.HasValue)
+                query = query.Where(o => o.MinPay == null || o.MinPay <= maxPay.Value);
+
+            sort = (sort ?? "newest").Trim().ToLower();
+            query = sort switch
+            {
+                "salaryhigh" => query.OrderByDescending(o => o.MaxPay ?? 0),
+                "salarylow" => query.OrderBy(o => o.MinPay ?? 0),
+                "deadline" => query.OrderBy(o => o.DeadlineUtc ?? DateTime.MaxValue),
+                _ => query.OrderByDescending(o => o.CreatedAtUtc)
+            };
+
+            var total = await query.CountAsync();
+
+            var rawItems = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = rawItems.Select(o =>
+            {
+                var safeSkills = o.OpportunitySkills?
+                    .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
+                    .Select(os => os.Skill!.Name.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList() ?? new List<string>();
+
+                var matchedSkills = safeSkills
+                    .Select(s => s.ToLower())
+                    .Where(skill => applicantSkillNames.Contains(skill))
+                    .Distinct()
+                    .ToList();
+
+                return new OpportunityCardDto
+                {
+                    Id = o.Id,
+                    Title = o.Title,
+                    CompanyName = o.CompanyName,
+                    Location = o.Location,
+                    IsRemote = o.IsRemote,
+                    WorkMode = o.WorkMode.ToString(),
+                    Type = o.Type.ToString(),
+                    Level = o.Level.ToString(),
+                    MinPay = o.MinPay,
+                    MaxPay = o.MaxPay,
+                    CreatedAtUtc = o.CreatedAtUtc,
+                    DeadlineUtc = o.DeadlineUtc,
+                    Skills = safeSkills,
+                    AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
+                    AssessmentMcqCount = o.AssessmentMcqCount,
+                    AssessmentChallengeCount = o.AssessmentChallengeCount,
+                    MatchPercentage = 0,
+                    MatchedSkills = matchedSkills
+                };
+            }).ToList();
+
+            items = items
+                .OrderByDescending(x => x.MatchPercentage)
+                .ToList();
+
+            return Ok(new PagedResult<OpportunityCardDto>
+            {
+                Items = items,
+                TotalCount = total,
+                Page = page,
+                PageSize = pageSize
+            });
         }
-
-        if (minPay.HasValue)
-            query = query.Where(o => o.MaxPay == null || o.MaxPay >= minPay.Value);
-
-        if (maxPay.HasValue)
-            query = query.Where(o => o.MinPay == null || o.MinPay <= maxPay.Value);
-
-        sort = (sort ?? "newest").Trim().ToLower();
-        query = sort switch
+        catch (Exception ex)
         {
-            "salaryhigh" => query.OrderByDescending(o => o.MaxPay ?? 0),
-            "salarylow" => query.OrderBy(o => o.MinPay ?? 0),
-            "deadline" => query.OrderBy(o => o.DeadlineUtc ?? DateTime.MaxValue),
-            _ => query.OrderByDescending(o => o.CreatedAtUtc)
-        };
-
-        var total = await query.CountAsync();
-
-        var rawItems = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-       var recommendationService = new RecommendationService();
-
-var items = rawItems.Select(o =>
-{
-    var safeSkills = o.OpportunitySkills?
-        .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
-        .Select(os => os.Skill!.Name.Trim())
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .ToList() ?? new List<string>();
-
-    var matchedSkills = safeSkills
-        .Select(s => s.ToLower())
-        .Where(skill => applicantSkillNames.Contains(skill))
-        .Distinct()
-        .ToList();
-
-    double matchPercentage = 0;
-
-    try
-    {
-        matchPercentage = recommendationService.CalculateOpportunityPercentage(applicantSkills, o);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Match calculation failed for opportunity {o.Id}: {ex.Message}");
-        matchPercentage = 0;
-    }
-
-    return new OpportunityCardDto
-    {
-        Id = o.Id,
-        Title = o.Title,
-        CompanyName = o.CompanyName,
-        Location = o.Location,
-        IsRemote = o.IsRemote,
-        WorkMode = o.WorkMode.ToString(),
-        Type = o.Type.ToString(),
-        Level = o.Level.ToString(),
-        MinPay = o.MinPay,
-        MaxPay = o.MaxPay,
-        CreatedAtUtc = o.CreatedAtUtc,
-        DeadlineUtc = o.DeadlineUtc,
-        Skills = safeSkills,
-        AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
-        AssessmentMcqCount = o.AssessmentMcqCount,
-        AssessmentChallengeCount = o.AssessmentChallengeCount,
-        MatchPercentage = matchPercentage,
-        MatchedSkills = matchedSkills
-    };
-}).ToList();
-
-        items = items
-    .OrderByDescending(x => x.MatchPercentage) //best match sorting
-    .ToList();
-
-        return Ok(new PagedResult<OpportunityCardDto>
-        {
-            Items = items,
-            TotalCount = total,
-            Page = page,
-            PageSize = pageSize
-        });
+            return StatusCode(500, ex.ToString());
+        }
     }
 
     [HttpGet("{id:int}")]
@@ -289,7 +282,7 @@ var items = rawItems.Select(o =>
             AssessmentMcqCount = o.AssessmentMcqCount,
             AssessmentChallengeCount = o.AssessmentChallengeCount,
             Skills = o.OpportunitySkills
-                .Where(os => os.Skill != null)
+                .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
                 .Select(os => os.Skill!.Name)
                 .ToList(),
             Qa = qa
@@ -310,8 +303,8 @@ var items = rawItems.Select(o =>
             return NotFound();
 
         var baseSkills = baseOpp.OpportunitySkills
-            .Select(os => os.Skill.Name)
-            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
+            .Select(os => os.Skill!.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var candidates = await _db.Opportunities
@@ -324,8 +317,8 @@ var items = rawItems.Select(o =>
         double Score(Opportunity o)
         {
             var skills = o.OpportunitySkills
-                .Select(os => os.Skill.Name)
-                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
+                .Select(os => os.Skill!.Name)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var intersection = skills.Intersect(baseSkills).Count();
@@ -367,7 +360,8 @@ var items = rawItems.Select(o =>
                 CreatedAtUtc = x.Opportunity.CreatedAtUtc,
                 DeadlineUtc = x.Opportunity.DeadlineUtc,
                 Skills = x.Opportunity.OpportunitySkills
-                    .Select(s => s.Skill.Name)
+                    .Where(s => s.Skill != null && !string.IsNullOrWhiteSpace(s.Skill.Name))
+                    .Select(s => s.Skill!.Name)
                     .ToList(),
                 WorkMode = x.Opportunity.WorkMode.ToString(),
                 MatchPercentage = 0,
@@ -547,9 +541,9 @@ var items = rawItems.Select(o =>
         await _db.SaveChangesAsync();
 
         var extracted = await _mlSkillClient.ExtractOpportunitySkillsAsync(
-    $"{opportunity.Title} {opportunity.Description}".Trim(),
-    null
-);
+            $"{opportunity.Title} {opportunity.Description}".Trim(),
+            null
+        );
 
         if (extracted != null && extracted.Any())
         {
@@ -730,16 +724,13 @@ var items = rawItems.Select(o =>
                 CreatedAtUtc = o.CreatedAtUtc,
                 DeadlineUtc = o.DeadlineUtc,
                 Skills = o.OpportunitySkills
-                    .Where(os => os.Skill != null)
+                    .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
                     .Select(os => os.Skill!.Name)
                     .ToList(),
-
                 AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
                 AssessmentMcqCount = o.AssessmentMcqCount,
                 AssessmentChallengeCount = o.AssessmentChallengeCount,
-
                 MatchPercentage = 0,
-
                 ApplicantCount = _db.Applications.Count(a => a.OpportunityId == o.Id && a.Status != ApplicationStatus.Withdrawn),
             })
             .ToListAsync();
@@ -803,7 +794,7 @@ var items = rawItems.Select(o =>
                 CreatedAtUtc = o.CreatedAtUtc,
                 DeadlineUtc = o.DeadlineUtc,
                 Skills = o.OpportunitySkills
-                    .Where(os => os.Skill != null)
+                    .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
                     .Select(os => os.Skill!.Name)
                     .ToList(),
                 AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
