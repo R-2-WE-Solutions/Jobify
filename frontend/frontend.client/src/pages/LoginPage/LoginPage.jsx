@@ -16,6 +16,7 @@
  * - Decorative floating icons on the left panel
  */
 
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -76,7 +77,7 @@ function FloatingIcons() {
 }
 
 export default function LoginPage() {
-    const navigate = useNavigate(); // ✅ added
+    const navigate = useNavigate();
 
     /**
      * API base URL (Vite .env if exists, fallback if not)
@@ -84,9 +85,9 @@ export default function LoginPage() {
      */
     const API_URL =
         (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL) ||
-        "http://localhost:5159"; // change if your backend port differs
+        "http://localhost:5159";
 
-    // ✅ OAuth redirect helpers
+    // OAuth redirect helpers
     const loginWithGoogle = () => {
         window.location.href = `${API_URL}/api/Auth/external/Google`;
     };
@@ -98,7 +99,7 @@ export default function LoginPage() {
     /** Theme state (local UI only) */
     const { darkMode, setDarkMode } = useTheme();
 
-    const toggleDarkMode = () => setDarkMode(d => !d);
+    const toggleDarkMode = () => setDarkMode((d) => !d);
 
     /** Role toggle affects UI copy/stats (auth itself is based on backend response) */
     const [userRole, setUserRole] = useState("candidate");
@@ -130,60 +131,54 @@ export default function LoginPage() {
      * - Validates email format + required password
      * - Calls backend /api/Auth/login
      * - Saves token + user info to localStorage
-     * - Redirects to dashboard on success
+     * - Redirects to shared dashboard route
      */
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    if (!validateEmail(email)) {
-        setEmailError("Please enter a valid email address");
-        return;
-    }
-    if (!password) return;
-
-    try {
-        setIsLoading(true);
-
-        const res = await fetch(`${API_URL}/api/Auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
-
-        if (!res.ok) {
-            const msg = await res.text();
-            throw new Error(msg || "Login failed");
+        if (!validateEmail(email)) {
+            setEmailError("Please enter a valid email address");
+            return;
         }
 
-        const data = await res.json();
+        if (!password) return;
 
-        localStorage.setItem("jobify_token", data.token);
+        try {
+            setIsLoading(true);
 
-        localStorage.setItem(
-            "jobify_user",
-            JSON.stringify({
-                userId: data.userId,
-                email: data.email,
-                roles: data.roles,
-                expiresAt: data.expiresAt,
-                userRole,
-            })
-        );
+            const res = await fetch(`${API_URL}/api/Auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const roles = data.roles || [];
-        const isRecruiter = roles.includes("Recruiter");
+            if (!res.ok) {
+                const msg = await res.text();
+                throw new Error(msg || "Login failed");
+            }
 
-        if (isRecruiter) {
-            navigate("/organization");
-        } else {
+            const data = await res.json();
+
+            localStorage.setItem("jobify_token", data.token);
+
+            localStorage.setItem(
+                "jobify_user",
+                JSON.stringify({
+                    userId: data.userId,
+                    email: data.email,
+                    roles: data.roles,
+                    expiresAt: data.expiresAt,
+                    userRole,
+                })
+            );
+
             navigate("/dashboard");
+        } catch (err) {
+            alert(err.message || "Login failed");
+        } finally {
+            setIsLoading(false);
         }
-    } catch (err) {
-        alert(err.message || "Login failed");
-    } finally {
-        setIsLoading(false);
-    }
-};
+    };
 
     /**
      * Left-side stats shown for social proof.
@@ -192,17 +187,17 @@ export default function LoginPage() {
     const stats =
         userRole === "candidate"
             ? [
-                { icon: Users, value: "10K+", label: "Candidates" },
-                { icon: Briefcase, value: "2K+", label: "Opportunities" },
-                { icon: Target, value: "85%", label: "Match Accuracy" },
-                { icon: Building2, value: "500+", label: "Partner Organizations" },
-            ]
+                  { icon: Users, value: "10K+", label: "Candidates" },
+                  { icon: Briefcase, value: "2K+", label: "Opportunities" },
+                  { icon: Target, value: "85%", label: "Match Accuracy" },
+                  { icon: Building2, value: "500+", label: "Partner Organizations" },
+              ]
             : [
-                { icon: Building2, value: "500+", label: "Organizations" },
-                { icon: Users, value: "10K+", label: "Active Candidates" },
-                { icon: Briefcase, value: "2K+", label: "Posted Jobs" },
-                { icon: Target, value: "85%", label: "Success Rate" },
-            ];
+                  { icon: Building2, value: "500+", label: "Organizations" },
+                  { icon: Users, value: "10K+", label: "Active Candidates" },
+                  { icon: Briefcase, value: "2K+", label: "Posted Jobs" },
+                  { icon: Target, value: "85%", label: "Success Rate" },
+              ];
 
     /**
      * Candidate-only "Suggested for you" carousel content.
@@ -307,7 +302,6 @@ export default function LoginPage() {
                                 })}
                             </div>
 
-                            {/* Candidate-only suggested matches preview */}
                             {userRole === "candidate" && (
                                 <motion.div
                                     className="lp-match"
@@ -342,7 +336,6 @@ export default function LoginPage() {
 
                     <div className="lp-right">
                         <div className="lp-card">
-                            {/* Desktop theme toggle */}
                             <div className="lp-darktoggle-desktop">
                                 <button className="lp-iconbtn" onClick={toggleDarkMode} type="button" aria-label="Toggle theme">
                                     {darkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -354,7 +347,6 @@ export default function LoginPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6 }}
                             >
-                                {/* Role toggle affects UI copy/preview content */}
                                 <div className="lp-roletoggle">
                                     <div className="lp-roletoggle-wrap">
                                         <button
@@ -428,7 +420,6 @@ export default function LoginPage() {
                                         </div>
                                     </div>
 
-                                    {/* Navigation to forgot-password flow */}
                                     <div className="lp-forgot">
                                         <button type="button" className="lp-link" onClick={() => navigate("/forgot-password")}>
                                             Forgot password?
@@ -464,8 +455,6 @@ export default function LoginPage() {
                                     </>
                                 )}
 
-
-                                {/* Sign up navigation */}
                                 <div className="lp-forgot" style={{ marginTop: 14, justifyContent: "center" }}>
                                     <button type="button" className="lp-link" onClick={() => navigate("/signup")}>
                                         Don’t have an account? Sign up
