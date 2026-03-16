@@ -11,11 +11,9 @@ import {
     ArrowUpDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../api/api";
 
 import "./styles/browseopportunities.css";
-
-// Vite API URL (set in .env: VITE_API_URL=https://localhost:7176)
-const API_URL = import.meta.env.VITE_API_URL;
 
 // logo based on type/level (emoji avatar)
 function getOppLogo(type, level) {

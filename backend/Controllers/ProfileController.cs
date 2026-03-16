@@ -452,7 +452,7 @@ public class ProfileController : ControllerBase
 
     [HttpPost("student/university-proof")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadUniversityProof(IFormFile file)
+    public async Task<IActionResult> UploadUniversityProof(IFormFile uploadedFile)
     {
         var uploadedFile = file;
 

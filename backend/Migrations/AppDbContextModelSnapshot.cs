@@ -636,8 +636,8 @@ namespace Jobify.Migrations
                     b.Property<string>("VerifiedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<float>("score")
-                        .HasColumnType("real");
+                    b.Property<int>("score")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
