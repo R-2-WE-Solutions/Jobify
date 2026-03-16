@@ -1,3 +1,4 @@
+import { api } from "../api/api";
 import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -81,12 +82,11 @@ export function BrowseOpportunities() {
                 params.set("page", "1");
                 params.set("pageSize", "50");
 
-                const res = await api.get("/api/opportunities", {
-                    params: Object.fromEntries(params.entries()),
-                    signal: controller.signal,
-                });
+                const res = await api.get(`/api/opportunities?${params.toString()}`, {
+    signal: controller.signal,
+});
 
-                const data = res.data;
+const data = res.data;
 
                 const mapped = (data.items || []).map((o) => {
                     const payText =

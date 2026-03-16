@@ -454,7 +454,7 @@ public class ProfileController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadUniversityProof(IFormFile uploadedFile)
     {
-        var file = uploadedFile;
+        var uploadedFile = file;
 
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId))

@@ -34,7 +34,7 @@ export default function AppLayout() {
                 setLoadingProfile(true);
                 setProfileError("");
 
-                const res = await api.get("/api/profile");
+                const res = await api.get("/api/Profile");
                 const data = res.data;
 
                 console.log("PROFILE DATA:", data);
@@ -101,31 +101,46 @@ export default function AppLayout() {
             <div className="al-body">
                 <aside className="al-sidebar">
                     <nav className="al-nav">
-                        <NavLink to="/dashboard" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
+                        <NavLink
+                            to="/dashboard"
+                            className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                        >
                             <span className="al-linkIcon"><LayoutGrid size={18} /></span>
                             <span className="al-linkText">Dashboard</span>
                         </NavLink>
 
-                        <NavLink to="/browse" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
+                        <NavLink
+                            to="/browse"
+                            className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                        >
                             <span className="al-linkIcon"><Sparkles size={18} /></span>
                             <span className="al-linkText">Browse</span>
                         </NavLink>
 
                         {!loadingProfile && role === "Recruiter" && (
-                            <NavLink to="/organization" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
+                            <NavLink
+                                to="/organization"
+                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                            >
                                 <span className="al-linkIcon"><Building2 size={18} /></span>
                                 <span className="al-linkText">Organization</span>
                             </NavLink>
                         )}
 
                         {!loadingProfile && role === "Student" && (
-                            <NavLink to="/matches" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
+                            <NavLink
+                                to="/match"
+                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                            >
                                 <span className="al-linkIcon"><Star size={18} /></span>
                                 <span className="al-linkText">Matches</span>
                             </NavLink>
                         )}
 
-                        <NavLink to="/profile" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
+                        <NavLink
+                            to="/profile"
+                            className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                        >
                             <span className="al-linkIcon"><UserCircle size={18} /></span>
                             <span className="al-linkText">Profile</span>
                         </NavLink>
