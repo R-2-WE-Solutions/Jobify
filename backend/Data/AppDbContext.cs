@@ -27,6 +27,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<OpportunitySkill> OpportunitySkills => Set<OpportunitySkill>();
     public DbSet<OpportunityQuestion> OpportunityQuestions => Set<OpportunityQuestion>();
+    public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
 
     // =========================
     // APPLICATION FLOW
