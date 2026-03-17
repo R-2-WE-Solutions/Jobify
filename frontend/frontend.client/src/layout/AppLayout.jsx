@@ -96,7 +96,7 @@ export default function AppLayout() {
         localStorage.removeItem("jobify_signup");
         navigate("/login");
     }
-
+//handle go to profile option
     function handleGoToProfile() {
         setShowProfileMenu(false);
         navigate("/profile");
