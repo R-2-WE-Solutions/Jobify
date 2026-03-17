@@ -27,7 +27,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<OpportunitySkill> OpportunitySkills => Set<OpportunitySkill>();
     public DbSet<OpportunityQuestion> OpportunityQuestions => Set<OpportunityQuestion>();
-    public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
+    public DbSet<SavedOpportunity> SavedOpportunities => Set<SavedOpportunity>();
 
     // =========================
     // APPLICATION FLOW
@@ -41,10 +41,8 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     // =========================
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<RecruiterProfile> RecruiterProfiles => Set<RecruiterProfile>();
-
     public DbSet<Interview> Interviews => Set<Interview>();
-
-    public DbSet<OpportunityReport> OpportunityReports { get; set; }
+    public DbSet<OpportunityReport> OpportunityReports => Set<OpportunityReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +117,19 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .OnDelete(DeleteBehavior.Cascade);
 
         // =========================
+        // SavedOpportunity
+        // =========================
+        modelBuilder.Entity<SavedOpportunity>()
+            .HasIndex(x => new { x.UserId, x.OpportunityId })
+            .IsUnique();
+
+        modelBuilder.Entity<SavedOpportunity>()
+            .HasOne(x => x.Opportunity)
+            .WithMany()
+            .HasForeignKey(x => x.OpportunityId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // =========================
         // Application Constraints
         // =========================
         modelBuilder.Entity<Application>()
@@ -139,11 +150,12 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(e => e.ApplicationAssessmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // OpportunityReport
         modelBuilder.Entity<OpportunityReport>()
-        .HasOne(r => r.Opportunity)
-        .WithMany()
-        .HasForeignKey(r => r.OpportunityId)
-        .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(r => r.Opportunity)
+            .WithMany()
+            .HasForeignKey(r => r.OpportunityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<OpportunityReport>()
             .HasIndex(r => new { r.OpportunityId, r.ReporterUserId, r.Reason });
