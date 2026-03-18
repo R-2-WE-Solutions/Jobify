@@ -322,7 +322,8 @@ export default function OrganizationDashboard() {
 
 
   const user = JSON.parse(String(localStorage.getItem("jobify_signup")));
-  const companyName = user?.companyName;
+const companyName = user?.companyName;
+const organizationName = companyName || "Organization";
 
   const navigate = useNavigate();
 
@@ -666,7 +667,9 @@ export default function OrganizationDashboard() {
           <div style={styles.orgLeft}>
             <div style={styles.orgAvatar}>TC</div>
             <div>
-              <h1 style={styles.h1}>{companyName}</h1>
+              <h1 style={styles.h1}>
+  Welcome back, {organizationName} 👋
+</h1>
               <p style={styles.muted}>Post jobs • manage listings • close/reopen roles</p>
             </div>
           </div>
