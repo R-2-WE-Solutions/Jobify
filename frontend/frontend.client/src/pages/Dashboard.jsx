@@ -40,24 +40,38 @@ export default function Dashboard() {
 function RecruiterDashboard() {
   const navigate = useNavigate();
 
-  const [companyName, setCompanyName] = useState("Recruiter");
+  const [companyName, setCompanyName] = useState("Organization");
 
   useEffect(() => {
-    try {
-      const signupRaw = localStorage.getItem("jobify_signup");
-      const signupUser = signupRaw ? JSON.parse(signupRaw) : null;
+    async function loadRecruiterName() {
+      try {
+        const signupRaw = localStorage.getItem("jobify_signup");
+        const signupUser = signupRaw ? JSON.parse(signupRaw) : null;
 
-      const profileRaw = localStorage.getItem("jobify_user");
-      const profileUser = profileRaw ? JSON.parse(profileRaw) : null;
+        const profileRaw = localStorage.getItem("jobify_user");
+        const profileUser = profileRaw ? JSON.parse(profileRaw) : null;
 
-      setCompanyName(
-        signupUser?.companyName ||
+        const localName =
+          signupUser?.companyName ||
           profileUser?.companyName ||
-          "Recruiter"
-      );
-    } catch {
-      setCompanyName("Recruiter");
+          null;
+
+        if (localName) {
+          setCompanyName(localName);
+          return;
+        }
+
+        const res = await api.get("/api/Profile");
+        const data = res.data;
+
+        const apiName = data?.profile?.companyName || "Organization";
+        setCompanyName(apiName);
+      } catch {
+        setCompanyName("Organization");
+      }
     }
+
+    loadRecruiterName();
   }, []);
 
   const stats = [
