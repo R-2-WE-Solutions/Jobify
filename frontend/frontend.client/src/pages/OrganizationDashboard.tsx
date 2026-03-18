@@ -658,7 +658,7 @@ const organizationName = companyName || "Organization";
   function reopenJob(id: number) {
     setListings((p) => p.map((j) => (j.id === id ? { ...j, status: "active" } : j)));
   }
-
+// change header to welcome back, {organization name}
   return (
     <div style={styles.page}>
       {/* Header */}
