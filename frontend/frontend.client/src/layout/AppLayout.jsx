@@ -46,7 +46,7 @@ export default function AppLayout() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-//use effect
+
     useEffect(() => {
         async function fetchProfile() {
             try {
@@ -88,7 +88,7 @@ export default function AppLayout() {
 
         fetchProfile();
     }, []);
-//top buttun
+
     function handleLogout() {
         setShowProfileMenu(false);
         localStorage.removeItem("token");
@@ -96,7 +96,7 @@ export default function AppLayout() {
         localStorage.removeItem("jobify_signup");
         navigate("/login");
     }
-//handle go to profile option
+
     function handleGoToProfile() {
         setShowProfileMenu(false);
         navigate("/profile");
@@ -244,7 +244,7 @@ export default function AppLayout() {
 
                 <main className="al-main">
                     <div className="al-content">
-                        <Outlet />
+                        <Outlet context={{ displayName, role, loadingProfile }} />
                     </div>
                 </main>
             </div>
