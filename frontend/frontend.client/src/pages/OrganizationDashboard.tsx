@@ -39,6 +39,7 @@ type Listing = {
 };
 
 const API_BASE = "http://localhost:5159/api";
+const [organizationName, setOrganizationName] = useState("Organization");
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
