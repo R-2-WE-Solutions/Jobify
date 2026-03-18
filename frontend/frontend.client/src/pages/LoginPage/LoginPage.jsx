@@ -172,8 +172,10 @@ export default function LoginPage() {
                 })
             );
 
-            // Navigate to dashboard after successful authentication
-            navigate("/dashboard");
+            // Navigate to dashboard (admin/student/recruiter) after successful authentication
+            const isAdmin = Array.isArray(data.roles) && data.roles.includes("Admin");
+            navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+
         } catch (err) {
             alert(err.message || "Login failed");
         } finally {
