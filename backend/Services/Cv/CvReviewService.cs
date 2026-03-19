@@ -18,6 +18,54 @@ namespace Jobify.Api.Services.Cv
         private const int MinBullets = 4;
         private const int MaxBullets = 20;
 
+        private enum ResumeTrack
+        {
+            Software,
+            General
+        }
+
+        private static readonly string[] SoftwareMajors =
+{
+    "computer science", "software engineering", "computer engineering",
+    "information technology", "informatics", "data science",
+    "artificial intelligence", "ai", "cybersecurity", "information systems"
+};
+
+        private static readonly string[] SoftwareSignals =
+        {
+    ".net", "c#", "java", "python", "javascript", "typescript", "react",
+    "node", "express", "sql", "mongodb", "mysql", "html", "css",
+    "git", "github", "linux", "docker", "api", "rest"
+};
+
+        private static ResumeTrack DetectResumeTrack(
+            StudentProfile? profile,
+            List<StudentEducation> educations,
+            List<string> skillNames,
+            List<StudentProject> projects,
+            string cvText)
+        {
+            var combinedText = string.Join(" ", new[]
+            {
+        profile?.EducationText,
+        profile?.ExperienceText,
+        profile?.ProjectsText,
+        profile?.CertificationsText,
+        string.Join(" ", educations.Select(e => e.Major)),
+        string.Join(" ", skillNames),
+        string.Join(" ", projects.Select(p => $"{p.Title} {p.TechStack} {p.Description}")),
+        cvText
+    }.Where(x => !string.IsNullOrWhiteSpace(x))).ToLowerInvariant();
+
+            bool hasSoftwareMajor = SoftwareMajors.Any(m => combinedText.Contains(m));
+            int softwareSignalHits = SoftwareSignals.Count(s => combinedText.Contains(s));
+
+            if (hasSoftwareMajor || softwareSignalHits >= 4)
+                return ResumeTrack.Software;
+
+            return ResumeTrack.General;
+        }
+
         private static readonly string[] ActionVerbs =
         {
             "built","developed","implemented","designed","created","led","improved",
@@ -37,10 +85,22 @@ namespace Jobify.Api.Services.Cv
             "recieve", "acheive", "managment", "responsability", "knowlege"
         };
 
-        private static readonly string[] SuggestedSkills =
+        private static readonly string[] SoftwareSuggestedSkills =
+{
+    "Git", "Docker", "Linux", "SQL", "REST API", "Agile", "CI/CD"
+};
+
+        private static readonly string[] GeneralSuggestedSkills =
         {
-            "Git", "Docker", "Linux", "SQL", "REST API", "Agile", "CI/CD"
-        };
+    "Excel", "PowerPoint", "Communication", "Presentation", "Research", "Teamwork"
+};
+
+        private static List<string> GetSuggestedSkillsByTrack(ResumeTrack track)
+        {
+            return track == ResumeTrack.Software
+                ? SoftwareSuggestedSkills.ToList()
+                : GeneralSuggestedSkills.ToList();
+        }
 
         public CvReviewService(AppDbContext db, IWebHostEnvironment env)
         {
@@ -98,6 +158,7 @@ namespace Jobify.Api.Services.Cv
             );
 
             var cvText = NormalizeCvText(rawReviewText);
+            var track = DetectResumeTrack(profile, educations, skillNames, projects, cvText);
 
             if (profile == null &&
                 !projects.Any() &&
@@ -115,18 +176,21 @@ namespace Jobify.Api.Services.Cv
                 skillNames,
                 dbProjectCount: projects.Count,
                 dbEducationCount: educations.Count,
-                dbExperienceCount: experiences.Count);
+                dbExperienceCount: experiences.Count,
+                track: track);
 
             var feedback = BuildFeedback(
                 analysis,
                 skillNames,
                 analysis.DetectedProjectCount,
-                experiences.Count);
+                experiences.Count,
+                track);
 
             var score = ComputeScore(
                 analysis,
                 analysis.DetectedProjectCount,
-                skillNames);
+                skillNames,
+                track);
 
             return new CvReviewDto
             {
@@ -330,7 +394,8 @@ namespace Jobify.Api.Services.Cv
             List<string> dbSkillNames,
             int dbProjectCount,
             int dbEducationCount,
-            int dbExperienceCount)
+            int dbExperienceCount,
+            ResumeTrack track)
         {
             var lower = cvText.ToLowerInvariant();
             var rawLower = rawCvText.ToLowerInvariant();
@@ -449,7 +514,9 @@ namespace Jobify.Api.Services.Cv
                 dbProjectCount,
                 DetectProjectCount(projectsText, cvText, rawCvText, hasProjectsSection));
 
-            var missingSkills = SuggestedSkills
+            var suggestedSkills = GetSuggestedSkillsByTrack(track);
+
+            var missingSkills = suggestedSkills
                 .Where(s =>
                     !dbSkillNames.Any(x => x.Equals(s, StringComparison.OrdinalIgnoreCase)) &&
                     !Regex.IsMatch(lower, $@"\b{Regex.Escape(s.ToLowerInvariant())}\b", RegexOptions.IgnoreCase))
@@ -492,7 +559,7 @@ namespace Jobify.Api.Services.Cv
             };
         }
 
-        private static int ComputeScore(CvAnalysis a, int projectCount, List<string> skills)
+        private static int ComputeScore(CvAnalysis a, int projectCount, List<string> skills, ResumeTrack track)
         {
             int score = 0;
 
@@ -530,7 +597,9 @@ namespace Jobify.Api.Services.Cv
             if (skills.Count >= 10) score += 2;
             else if (skills.Count >= 6) score += 1;
 
-            int suggestedSkillsPresent = SuggestedSkills.Count(s =>
+            var suggestedSkills = GetSuggestedSkillsByTrack(track);
+
+            int suggestedSkillsPresent = suggestedSkills.Count(s =>
                 skills.Any(x => x.Equals(s, StringComparison.OrdinalIgnoreCase)));
 
             score += Math.Min(suggestedSkillsPresent, 5);
@@ -551,7 +620,7 @@ namespace Jobify.Api.Services.Cv
         }
 
         private static (List<string> Strengths, List<string> Warnings, List<string> Suggestions)
-            BuildFeedback(CvAnalysis a, List<string> skills, int projectCount, int experienceCount)
+            BuildFeedback(CvAnalysis a, List<string> skills, int projectCount, int experienceCount, ResumeTrack track)
         {
             var strengths = new List<string>();
             var warnings = new List<string>();
@@ -587,7 +656,7 @@ namespace Jobify.Api.Services.Cv
                 strengths.Add("GitHub URL detected.");
             else if (a.HasGithubDomainOnly)
                 warnings.Add("GitHub looks incomplete. Use a full GitHub URL, not just github.com/.");
-            else
+            else if (track == ResumeTrack.Software)
                 suggestions.Add("Add your GitHub URL. For software roles, it helps a lot.");
 
             if (a.HasPortfolioSite)
@@ -596,7 +665,9 @@ namespace Jobify.Api.Services.Cv
             if (a.HasSummarySection)
                 strengths.Add("Professional summary present.");
             else
-                suggestions.Add("Add a 2–3 line summary at the top tailored to software internships or junior roles.");
+                suggestions.Add(track == ResumeTrack.Software
+                ? "Add a 2–3 line summary at the top tailored to software internships or junior roles."
+                : "Add a 2–3 line summary at the top tailored to your target role or internship.");
 
             if (a.HasSkillsSection)
                 strengths.Add("Skills section present.");
@@ -614,9 +685,13 @@ namespace Jobify.Api.Services.Cv
                 warnings.Add("Experience section is missing or too weak.");
 
             if (a.HasProjectsSection)
-                strengths.Add("Projects section present — important for developer CVs.");
+                strengths.Add(track == ResumeTrack.Software
+                    ? "Projects section present — important for software roles."
+                    : "Projects section present.");
             else
-                suggestions.Add("Add a Projects section with 2–3 technical projects.");
+                suggestions.Add(track == ResumeTrack.Software
+                    ? "Add a Projects section with 2–3 strong technical or academic projects."
+                    : "Add a Projects or Activities section with relevant academic, volunteer, research, or practical work.");
 
             if (!a.SectionsInGoodOrder)
                 suggestions.Add("Use a cleaner order like Summary → Experience → Education → Projects → Skills.");
@@ -648,11 +723,17 @@ namespace Jobify.Api.Services.Cv
                 warnings.Add("Possible spelling issues detected. Run a spell-check before sending the CV.");
 
             if (skills.Count >= 8)
-                strengths.Add($"{skills.Count} skills listed — solid technical coverage.");
+                strengths.Add(track == ResumeTrack.Software
+                    ? $"{skills.Count} skills listed — solid technical coverage."
+                    : $"{skills.Count} skills listed — good skills coverage.");
             else if (skills.Count > 0)
-                suggestions.Add($"Only {skills.Count} skills detected. Expand to 8–15 relevant technologies.");
+                suggestions.Add(track == ResumeTrack.Software
+                    ? $"Only {skills.Count} skills detected. Expand to 8–15 relevant technologies."
+                    : $"Only {skills.Count} skills detected. Add more role-relevant skills, tools, and strengths.");
             else
-                warnings.Add("No skills detected from the profile. Add or sync technical skills.");
+                warnings.Add(track == ResumeTrack.Software
+                    ? "No skills detected from the profile. Add or sync technical skills."
+                    : "No skills detected from the profile. Add or sync relevant skills.");
 
             if (a.MissingSkills.Any())
                 suggestions.Add("Common skills you may want to include if you know them: " + string.Join(", ", a.MissingSkills) + ".");
@@ -660,9 +741,13 @@ namespace Jobify.Api.Services.Cv
             if (projectCount >= 3)
                 strengths.Add($"{projectCount} projects detected — strong evidence of practical experience.");
             else if (projectCount >= 1)
-                suggestions.Add($"{projectCount} project(s) detected. Aim for at least 3 strong projects with stack and impact.");
+                suggestions.Add(track == ResumeTrack.Software
+                    ? $"{projectCount} project(s) detected. Aim for at least 3 strong projects with stack and impact."
+                    : $"{projectCount} project(s) detected. Add more relevant projects, activities, research, or applied work if available.");
             else
-                warnings.Add("No projects detected. Projects are extremely important for software internships.");
+                warnings.Add(track == ResumeTrack.Software
+                    ? "No projects detected. Projects are extremely important for software internships."
+                    : "No projects or relevant activities detected. Add academic work, volunteering, research, leadership, or practical experience if available.");
 
             if (experienceCount == 0)
                 suggestions.Add("Add internships, research, leadership, or technical volunteering to strengthen experience.");
