@@ -152,10 +152,15 @@ export default function JobDetailsPage() {
                 setLoading(true);
                 setErr("");
 
-                const res = await fetch(`${API_URL}/api/opportunities/${id}`, {
-                    signal: controller.signal,
-                    headers: { "Content-Type": "application/json" },
-                });
+                const token = localStorage.getItem("jobify_token");
+
+const res = await fetch(`${API_URL}/api/opportunities/${id}`, {
+    signal: controller.signal,
+    headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+    },
+});
 
                 if (!res.ok) throw new Error(`Failed to load opportunity (${res.status})`);
 
