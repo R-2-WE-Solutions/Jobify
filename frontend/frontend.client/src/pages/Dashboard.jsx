@@ -92,13 +92,13 @@ function RecruiterDashboard() {
       title: "Interviews",
       description: "Track and schedule recruiter interviews.",
       button: "View Interviews",
-      onClick: () => alert("Interviews section coming next."),
+      onClick: () => navigate("/organization/interviews"),
     },
     {
       title: "Candidate Q&A",
       description: "Respond to candidate questions and clarify opportunity details.",
       button: "Open Q&A",
-      onClick: () => alert("Q&A section coming next."),
+      onClick: () => navigate("/organization/qanda"),
     },
   ];
 
@@ -131,18 +131,18 @@ function RecruiterDashboard() {
           </button>
 
           <button
-            onClick={() => alert("Interviews section coming next.")}
-            style={secondaryButtonStyle}
-          >
-            Interviews
-          </button>
+                    onClick={() => navigate("/organization/interviews")}
+                    style={secondaryButtonStyle}
+                        >
+                   Interviews
+            </button>
 
           <button
-            onClick={() => alert("Q&A section coming next.")}
-            style={secondaryButtonStyle}
-          >
-            Q&A
-          </button>
+                onClick={() => navigate("/organization/qanda")}
+                  style={secondaryButtonStyle}
+                    >
+                   Q&A
+                </button>
         </div>
       </div>
 
