@@ -506,6 +506,9 @@ export default function JobDetailsPage() {
                                     <Flag size={18} />
                                 </button>
                             </div>
+                            <div className="jobMatchBadge">
+                                         {job?.matchPercentage ?? 0}% Match
+                                  </div>
 
                             {shareOk ? <div className="shareFeedback shareSuccess">{shareOk}</div> : null}
                             {shareErr ? <div className="shareFeedback shareError">{shareErr}</div> : null}
@@ -615,11 +618,17 @@ export default function JobDetailsPage() {
                         <div className="card">
                             <div className="matchHeader">
                                 <h4 className="matchTitle">Profile Match</h4>
-                                <span className="pillGreen">High Match</span>
+                                <span className="pillGreen">
+                                             {(job?.matchPercentage ?? 0) >= 70
+                                                         ? "High Match"
+                                                         : (job?.matchPercentage ?? 0) >= 40
+                                                           ? "Medium Match"
+                                                      : "Low Match"}
+                                            </span>
                             </div>
 
                             <div className="ringWrap">
-                                <MatchRing percent={0} />
+                                <MatchRing percent={job?.matchPercentage ?? 0} />
                             </div>
 
                             <div className="matchList">
@@ -627,7 +636,7 @@ export default function JobDetailsPage() {
                                     <span className="miniIcon blueMini">
                                         <CheckCircle2 size={14} />
                                     </span>
-                                    <span>Match scoring coming soon…</span>
+                                    <span>{job?.matchPercentage ?? 0}% overall profile match</span>
                                 </div>
 
                                 <div className="matchLine">
