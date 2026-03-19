@@ -229,7 +229,7 @@ export default function AppLayout() {
 
                 <main className="al-main">
                     <div className="al-content">
-                        <Outlet />
+                        <Outlet context={{ displayName, role, loadingProfile }} />
                     </div>
                 </main>
             </div>
