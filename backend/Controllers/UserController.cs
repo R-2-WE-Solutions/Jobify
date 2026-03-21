@@ -53,28 +53,14 @@ public class UsersController : ControllerBase
     [HttpGet("by-role/{role}")]
     public async Task<IActionResult> GetUsersByRole(string role)
     {
-        // Get users
-        var users = await _userManager.ToListAsync();
+        // use AppDbContext instead of IdentityUser
+        var context = HttpContext.RequestServices.GetRequiredService<AppDbContext>();
 
-        var results = new List<UserDto>();
+        var users = await context.Users
+            .Where(u => u.Role.ToLower() == role.ToLower())
+            .ToListAsync();
 
-        foreach (var user in users)
-        {
-            var userRoles = await _userManager.GetRolesAsync(u);
-
-            if (userRoles.Contains(role)) {
-                results.Add(
-                    new UserDto(
-                        Id: u.Id,
-                        Email: u.Email ?? "";
-                        UserName: u.UserName ?? "";
-                        Roles: userRoles.ToList();
-                    )
-                );
-            } 
-        }
-
-        return Ok(resuls);
+        return Ok(users);
     }
 
     // GET: /api/users/{id}
