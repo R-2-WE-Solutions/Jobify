@@ -104,10 +104,8 @@ export default function ResetPasswordPage() {
         (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL) ||
         "http://localhost:5159";
 
-    /** Theme state (local UI only) */
-    const { darkMode, setDarkMode } = useTheme();
-
-    const toggleDarkMode = () => setDarkMode(d => !d);
+    /** Theme state (local UI only) // global now*/
+    const { darkMode, toggleTheme } = useTheme();
 
     /** Read token + email from URL */
     const { token, email } = useQueryParams();
@@ -243,7 +241,7 @@ export default function ResetPasswordPage() {
     };
 
     return (
-        <div className={`lp-root ${darkMode ? "lp-dark" : ""}`}>
+        <div className="lp-root">
             <div className="lp-page">
                 <div className="lp-grid">
                     {/* LEFT */}
@@ -288,7 +286,7 @@ export default function ResetPasswordPage() {
                     <div className="lp-right">
                         <div className="lp-card">
                             <div className="lp-darktoggle-desktop">
-                                <button className="lp-iconbtn" onClick={toggleDarkMode} type="button" aria-label="Toggle theme">
+                                <button className="lp-iconbtn" onClick={toggleTheme} type="button" aria-label="Toggle theme">
                                     {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                                 </button>
                             </div>
