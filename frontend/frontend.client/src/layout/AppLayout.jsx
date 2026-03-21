@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { api } from "../api/api";
 import "../pages/styles/layout.css";
+import { FileText } from "lucide-react";
 
 export default function AppLayout() {
     const navigate = useNavigate();
@@ -184,15 +185,30 @@ export default function AppLayout() {
                             <span className="al-linkText">Dashboard</span>
                         </NavLink>
 
-                        <NavLink to="/browse" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                            <span className="al-linkIcon"><Sparkles size={18} /></span>
-                            <span className="al-linkText">Browse</span>
-                        </NavLink>
-
                         {!loadingProfile && role === "Recruiter" && (
                             <NavLink to="/organization" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
                                 <span className="al-linkIcon"><Building2 size={18} /></span>
-                                <span className="al-linkText">Organization</span>
+                                <span className="al-linkText">Posting</span>
+                            </NavLink>
+                        )}
+
+                        {!loadingProfile && role === "Recruiter" && (
+                            <NavLink
+                                to="/applicants"
+                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                            >
+                                <span className="al-linkIcon"><FileText size={18} /></span>
+                                <span className="al-linkText">Applicants</span>
+                            </NavLink>
+                        )}
+
+                        {!loadingProfile && role === "Student" && (
+                            <NavLink
+                                to="/browse"
+                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+                            >
+                                <span className="al-linkIcon"><Sparkles size={18} /></span>
+                                <span className="al-linkText">Browse</span>
                             </NavLink>
                         )}
 
@@ -229,7 +245,7 @@ export default function AppLayout() {
 
                 <main className="al-main">
                     <div className="al-content">
-                        <Outlet context={{ displayName, role, loadingProfile }} />
+                        <Outlet />
                     </div>
                 </main>
             </div>
