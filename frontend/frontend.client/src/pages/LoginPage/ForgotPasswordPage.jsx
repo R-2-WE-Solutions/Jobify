@@ -80,10 +80,8 @@ function FloatingIcons() {
 export default function ForgotPasswordPage() {
     const navigate = useNavigate();
 
-    /** UI theme state (local only) */
-    const { darkMode, setDarkMode } = useTheme();
-
-    const toggleDarkMode = () => setDarkMode(d => !d);
+    /** UI theme state (local only)// global now */
+   const { darkMode, toggleTheme } = useTheme();
 
     /** Form & request state */
     const [email, setEmail] = useState("");
@@ -180,7 +178,7 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className={`lp-root ${darkMode ? "lp-dark" : ""}`}>
+        <div className="lp-root">
             <div className="lp-page">
                 <div className="lp-grid">
                     {/* LEFT PANEL — branding, stats, visuals */}
@@ -248,7 +246,7 @@ export default function ForgotPasswordPage() {
                             <div className="lp-darktoggle-desktop">
                                 <button
                                     className="lp-iconbtn"
-                                    onClick={toggleDarkMode}
+                                    onClick={toggleTheme}
                                     type="button"
                                     aria-label="Toggle theme"
                                 >
