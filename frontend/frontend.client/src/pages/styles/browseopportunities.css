@@ -2,8 +2,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
-    --bg: #fffff;
+    --bg: #ffffff;
     --card: #ffffff;
+    --surface-2: #f8fafc;
+    --surface-3: #f1f5f9;
     --text: #0f172a;
     --muted: #64748b;
     --border: #e5e7eb;
@@ -13,13 +15,79 @@
     --shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
     --shadow2: 0 16px 40px rgba(15, 23, 42, 0.10);
     --radius: 16px;
+
+    --label: #334155;
+    --icon: #64748b;
+    --placeholder: #94a3b8;
+    --dot: #cbd5e1;
+    --deadline: #f97316;
+
+    --type-internship-bg: #dcfce7;
+    --type-internship-border: #bbf7d0;
+    --type-internship-text: #166534;
+
+    --type-job-bg: #dbeafe;
+    --type-job-border: #bfdbfe;
+    --type-job-text: #1e40af;
+
+    --type-scholarship-bg: #ede9fe;
+    --type-scholarship-border: #ddd6fe;
+    --type-scholarship-text: #5b21b6;
+
+    --type-other-bg: #ffedd5;
+    --type-other-border: #fed7aa;
+    --type-other-text: #9a3412;
+
+    --match-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.14));
+    --match-border: rgba(37, 99, 235, 0.20);
+}
+
+.dark {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --surface-2: #111827;
+    --surface-3: #1f2937;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: #334155;
+    --border2: #475569;
+    --blue: #3b82f6;
+    --blue2: #60a5fa;
+    --shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    --shadow2: 0 16px 40px rgba(0, 0, 0, 0.38);
+
+    --label: #cbd5e1;
+    --icon: #94a3b8;
+    --placeholder: #94a3b8;
+    --dot: #64748b;
+    --deadline: #fb923c;
+
+    --type-internship-bg: rgba(34, 197, 94, 0.16);
+    --type-internship-border: rgba(34, 197, 94, 0.28);
+    --type-internship-text: #86efac;
+
+    --type-job-bg: rgba(59, 130, 246, 0.16);
+    --type-job-border: rgba(59, 130, 246, 0.28);
+    --type-job-text: #93c5fd;
+
+    --type-scholarship-bg: rgba(139, 92, 246, 0.16);
+    --type-scholarship-border: rgba(139, 92, 246, 0.28);
+    --type-scholarship-text: #c4b5fd;
+
+    --type-other-bg: rgba(249, 115, 22, 0.16);
+    --type-other-border: rgba(249, 115, 22, 0.28);
+    --type-other-text: #fdba74;
+
+    --match-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(96, 165, 250, 0.18));
+    --match-border: rgba(59, 130, 246, 0.28);
 }
 
 * {
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     height: 100%;
 }
 
@@ -37,6 +105,8 @@ body {
     max-width: 1120px;
     margin: 0 auto;
     padding: 28px 22px 60px;
+    background: var(--bg);
+    color: var(--text);
 }
 
 .bo-space {
@@ -57,7 +127,7 @@ body {
     line-height: 1.08;
     letter-spacing: -0.02em;
     font-weight: 800;
-    color: #1d4ed8;
+    color: var(--blue2);
 }
 
 .bo-subtitle {
@@ -102,7 +172,7 @@ body {
     transform: translateY(-50%);
     width: 18px;
     height: 18px;
-    color: #94a3b8;
+    color: var(--placeholder);
 }
 
 .bo-input {
@@ -111,9 +181,10 @@ body {
     border-radius: 14px;
     padding: 12px 14px;
     outline: none;
-    background: #f8fafc;
+    background: var(--surface-2);
     color: var(--text);
     font-size: 14px;
+    transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease;
 }
 
 .bo-inputSearch {
@@ -121,11 +192,11 @@ body {
 }
 
 .bo-input::placeholder {
-    color: #94a3b8;
+    color: var(--placeholder);
 }
 
 .bo-input:focus {
-    background: #ffffff;
+    background: var(--card);
     border-color: rgba(37, 99, 235, 0.45);
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
@@ -142,7 +213,7 @@ body {
     justify-content: center;
     gap: 10px;
     user-select: none;
-    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .bo-btnIcon {
@@ -151,15 +222,15 @@ body {
 }
 
 .bo-btnOutline {
-    background: #ffffff;
+    background: var(--card);
     border-color: var(--border2);
     color: var(--text);
 }
 
-    .bo-btnOutline:hover {
-        background: #f8fafc;
-        transform: translateY(-1px);
-    }
+.bo-btnOutline:hover {
+    background: var(--surface-2);
+    transform: translateY(-1px);
+}
 
 .bo-btnPrimary {
     background: var(--blue);
@@ -167,10 +238,10 @@ body {
     box-shadow: 0 10px 20px rgba(37, 99, 235, 0.20);
 }
 
-    .bo-btnPrimary:hover {
-        background: var(--blue2);
-        transform: translateY(-1px);
-    }
+.bo-btnPrimary:hover {
+    background: var(--blue2);
+    transform: translateY(-1px);
+}
 
 .bo-selectWrap {
     position: relative;
@@ -183,7 +254,7 @@ body {
     transform: translateY(-50%);
     width: 16px;
     height: 16px;
-    color: #64748b;
+    color: var(--icon);
     pointer-events: none;
 }
 
@@ -193,12 +264,13 @@ body {
     border: 1px solid var(--border2);
     border-radius: 14px;
     padding: 12px 40px 12px 42px;
-    background: #ffffff;
+    background: var(--card);
     color: var(--text);
     font-size: 14px;
     font-weight: 600;
     outline: none;
     cursor: pointer;
+    transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease;
 }
 
 .bo-selectWrap::after {
@@ -208,8 +280,8 @@ body {
     top: 50%;
     width: 8px;
     height: 8px;
-    border-right: 2px solid #64748b;
-    border-bottom: 2px solid #64748b;
+    border-right: 2px solid var(--icon);
+    border-bottom: 2px solid var(--icon);
     transform: translateY(-65%) rotate(45deg);
     pointer-events: none;
 }
@@ -247,7 +319,7 @@ body {
 .bo-label {
     font-size: 12px;
     font-weight: 700;
-    color: #334155;
+    color: var(--label);
     letter-spacing: 0.02em;
 }
 
@@ -279,12 +351,11 @@ body {
     transition: box-shadow 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 
-    .bo-cardHover:hover {
-        border-color: rgba(37, 99, 235, 0.35);
-        box-shadow: var(--shadow2);
-        transform: translateY(-2px);
-    }
-
+.bo-cardHover:hover {
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: var(--shadow2);
+    transform: translateY(-2px);
+}
 
 .bo-row {
     display: grid;
@@ -312,7 +383,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 30px;
-    background: #f1f5f9;
+    background: var(--surface-3);
     border: 1px solid var(--border);
     border-radius: 14px;
 }
@@ -341,9 +412,9 @@ body {
     letter-spacing: -0.01em;
 }
 
-    .bo-oppTitleBtn:hover {
-        color: var(--blue);
-    }
+.bo-oppTitleBtn:hover {
+    color: var(--blue);
+}
 
 .bo-company {
     margin: 6px 0 0 0;
@@ -371,11 +442,11 @@ body {
 .bo-ico {
     width: 16px;
     height: 16px;
-    color: #64748b;
+    color: var(--icon);
 }
 
 .bo-dot {
-    color: #cbd5e1;
+    color: var(--dot);
 }
 
 .bo-badge {
@@ -390,40 +461,40 @@ body {
 }
 
 .bo-badgeOutline {
-    border-color: #e2e8f0;
-    color: #334155;
-    background: #ffffff;
+    border-color: var(--border);
+    color: var(--label);
+    background: var(--card);
 }
 
 .bo-badgeSkill {
-    background: #f1f5f9;
-    border-color: #e2e8f0;
-    color: #334155;
+    background: var(--surface-3);
+    border-color: var(--border);
+    color: var(--label);
     font-weight: 700;
 }
 
 .bo-badgeType.isInternship {
-    background: #dcfce7;
-    border-color: #bbf7d0;
-    color: #166534;
+    background: var(--type-internship-bg);
+    border-color: var(--type-internship-border);
+    color: var(--type-internship-text);
 }
 
 .bo-badgeType.isJob {
-    background: #dbeafe;
-    border-color: #bfdbfe;
-    color: #1e40af;
+    background: var(--type-job-bg);
+    border-color: var(--type-job-border);
+    color: var(--type-job-text);
 }
 
 .bo-badgeType.isScholarship {
-    background: #ede9fe;
-    border-color: #ddd6fe;
-    color: #5b21b6;
+    background: var(--type-scholarship-bg);
+    border-color: var(--type-scholarship-border);
+    color: var(--type-scholarship-text);
 }
 
 .bo-badgeType.isOther {
-    background: #ffedd5;
-    border-color: #fed7aa;
-    color: #9a3412;
+    background: var(--type-other-bg);
+    border-color: var(--type-other-border);
+    color: var(--type-other-text);
 }
 
 .bo-skills {
@@ -444,7 +515,7 @@ body {
 }
 
 .bo-deadline {
-    color: #f97316;
+    color: var(--deadline);
     font-weight: 800;
 }
 
@@ -466,8 +537,8 @@ body {
 }
 
 .bo-match {
-    border: 1px solid rgba(37, 99, 235, 0.20);
-    background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(37,99,235,0.14));
+    border: 1px solid var(--match-border);
+    background: var(--match-bg);
     border-radius: 16px;
     padding: 14px 16px;
     min-width: 132px;
@@ -524,21 +595,21 @@ body {
     justify-content: center;
 }
 
-    .bo-saveBtn.isSaved {
-        border-color: rgba(37, 99, 235, 0.45);
-        background: rgba(37, 99, 235, 0.08);
-    }
+.bo-saveBtn.isSaved {
+    border-color: rgba(37, 99, 235, 0.45);
+    background: rgba(37, 99, 235, 0.08);
+}
 
 .bo-saveIcon {
     width: 18px;
     height: 18px;
-    color: #0f172a;
+    color: var(--text);
 }
 
-    .bo-saveIcon.isSaved {
-        color: var(--blue);
-        fill: var(--blue);
-    }
+.bo-saveIcon.isSaved {
+    color: var(--blue);
+    fill: var(--blue);
+}
 
 .bo-loadMore {
     display: flex;
