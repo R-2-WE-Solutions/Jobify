@@ -19,7 +19,7 @@ import {
     Target, Lightbulb, Phone, MapPin, Mail, Download
 } from 'lucide-react';
 import './styles/profile.css';
-import { useTheme } from '../layout/useTheme';
+
 import { extractSkillsFromCv } from "../api/cvExtract";
 
 /* ─────────────────────────────────────────────
@@ -36,7 +36,7 @@ const ProfilePage = () => {
     const [bannerDismissed, setBannerDismissed] = useState(false);
 
     const [skillsRefreshKey, setSkillsRefreshKey] = useState(0);
-    const { darkMode, toggleTheme } = useTheme();
+    
 
     useEffect(() => {
         fetchProfileData();
@@ -112,17 +112,8 @@ const ProfilePage = () => {
     return (
         <div className="pf-page">
             <header className="pf-header">
-                <div className="pf-header__inner">
-                    <button
-                        className="pf-theme-toggle"
-                        onClick={toggleTheme}
-                        aria-label="Toggle theme"
-                        type="button"
-                    >
-                        {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
-
-                    <div className="pf-header__body">
+    <div className="pf-header__inner">
+        <div className="pf-header__body">
                         <div className="pf-avatar-wrap">
                             <div className="pf-avatar">
                                 <span>{(profile.fullName || profile.companyName || '?').charAt(0).toUpperCase()}</span>
