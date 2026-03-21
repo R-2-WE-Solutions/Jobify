@@ -324,7 +324,7 @@ export default function AdminStudents() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
               <div>
                 <h2 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "4px" }}>
-                  Applications - {selectedStudent.name}
+                  Applications - {selectedStudent.fullName}
                 </h2>
                 <p style={{ fontSize: "14px", color: "#6b7280" }}>{selectedStudent.email}</p>
               </div>
