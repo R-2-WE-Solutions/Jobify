@@ -241,7 +241,7 @@ export default function ResetPasswordPage() {
     };
 
     return (
-        <div className="lp-root">
+        <div className={`lp-root ${darkMode ? "lp-dark" : ""}`}>
             <div className="lp-page">
                 <div className="lp-grid">
                     {/* LEFT */}
