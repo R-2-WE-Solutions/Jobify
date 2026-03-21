@@ -6,7 +6,6 @@ const navItems = [
     { to: "/admin/recruiters", label: "Recruiters", icon: Briefcase },
     { to: "/admin/students", label: "Students", icon: Users },
     { to: "/admin/companies", label: "Companies", icon: Building2 },
-    { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout() {

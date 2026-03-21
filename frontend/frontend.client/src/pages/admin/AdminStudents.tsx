@@ -315,7 +315,7 @@ export default function AdminStudents() {
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
                         >
-                          Warn
+                          Notify
                         </button>
                         <button
                           style={{
