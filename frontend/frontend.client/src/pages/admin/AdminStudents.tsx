@@ -274,27 +274,6 @@ export default function AdminStudents() {
                     <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6", textAlign: "right" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
                         <button
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "white",
-                            color: "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "6px",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-                        >
-                          <Eye style={{ width: "14px", height: "14px" }} />
-                          Profile
-                        </button>
-                        <button
                           onClick={() => {
                             fetchStudentApplications(student)
                           }}
@@ -317,6 +296,46 @@ export default function AdminStudents() {
                         >
                           <FileText style={{ width: "14px", height: "14px" }} />
                           Applications
+                        </button>
+                        <button
+                          style={{
+                            padding: "6px 12px",
+                            backgroundColor: "white",
+                            color: "#374151",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+                        >
+                          Send Email
+                        </button>
+                        <button
+                          style={{
+                            padding: "6px 12px",
+                            backgroundColor: "white",
+                            color: "#374151",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+                        >
+                            Delete
                         </button>
                       </div>
                     </td>
