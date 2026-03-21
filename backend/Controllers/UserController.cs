@@ -141,6 +141,21 @@ public class UsersController : ControllerBase
     }
 
 
+    // Verify Student
+    [Authorize(Roles = "Admin")]
+    [HttpPut("admin/students/{id}/verify")]
+    public async Task<IActionResult> VerifyStudent(string id)
+    {
+        var profile = await _context.StudentProfiles.FirstOrDefaultAsync(s => s.UserId == id);
+        if (profile == null) return NotFound();
+
+        profile.isVerified = true;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Student verified" });
+    }
+
+
     // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
 

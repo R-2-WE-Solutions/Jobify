@@ -646,6 +646,9 @@ namespace Jobify.Migrations
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool?>("isVerified")
+                        .HasColumnType("bit");
+
                     b.HasKey("UserId");
 
                     b.ToTable("StudentProfiles");

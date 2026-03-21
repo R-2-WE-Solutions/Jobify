@@ -34,6 +34,7 @@ public class StudentProfile
     public string? UniversityProofContentType { get; set; }
     public DateTime? UniversityProofUploadedAtUtc { get; set; }
 
+    public bool? isVerified { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
 }
