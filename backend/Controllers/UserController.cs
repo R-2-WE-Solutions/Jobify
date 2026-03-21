@@ -172,6 +172,40 @@ public class UsersController : ControllerBase
     }
 
 
+    // Notify (Warn) Student
+    [Authorize(Roles = "Admin")]
+    [HttpPost("admin/students/{id}/notify")]
+    public async Task<IActionResult> NotifyStudent(string id, [FromBody] NotifyRequest request)
+    {
+        // Check if user exists
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+            return NotFound("User not found.");
+
+        // Validate input
+        if (string.IsNullOrWhiteSpace(request.Message))
+            return BadRequest("Message is required.");
+
+        // Create notification
+        var notification = new Notification
+        {
+            UserId = id,
+            Title = string.IsNullOrWhiteSpace(request.Title) ? "Notification" : request.Title,
+            Message = request.Message,
+            Type = "warning",
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Save to DB
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+
+        // Return response
+        return Ok(new { message = "Notification sent successfully." });
+    }
+
+
     // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
 
@@ -183,5 +217,12 @@ public class UsersController : ControllerBase
         public string? FullName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
+    };
+
+
+    public class NotifyRequest
+    {
+        public string? Title { get; set; }
+        public string Message { get; set; } = string.Empty;
     };
 }
