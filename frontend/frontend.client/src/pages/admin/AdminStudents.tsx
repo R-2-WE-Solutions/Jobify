@@ -1,62 +1,6 @@
 import { useState } from "react";
 import { Eye, FileText, Search } from "lucide-react";
 
-const students = [
-  {
-    id: "STU001",
-    name: "Sarah Johnson",
-    email: "sarah.j@university.edu",
-    createdAt: "2025-01-15",
-    lastUpdated: "2025-03-10",
-    applications: [
-      { job: "Software Engineer Intern", company: "TechCorp", status: "Interview", date: "2025-03-05" },
-      { job: "Data Analyst", company: "DataHub", status: "Applied", date: "2025-03-08" },
-      { job: "Frontend Developer", company: "WebSolutions", status: "Rejected", date: "2025-02-20" },
-    ],
-  },
-  {
-    id: "STU002",
-    name: "Michael Chen",
-    email: "m.chen@university.edu",
-    createdAt: "2025-01-20",
-    lastUpdated: "2025-03-12",
-    applications: [
-      { job: "Backend Developer", company: "CloudTech", status: "Accepted", date: "2025-03-01" },
-    ],
-  },
-  {
-    id: "STU003",
-    name: "Emily Brown",
-    email: "emily.b@university.edu",
-    createdAt: "2025-02-01",
-    lastUpdated: "2025-03-14",
-    applications: [
-      { job: "Product Designer", company: "DesignCo", status: "Interview", date: "2025-03-10" },
-      { job: "UX Researcher", company: "UserLab", status: "Applied", date: "2025-03-12" },
-    ],
-  },
-  {
-    id: "STU004",
-    name: "David Miller",
-    email: "d.miller@university.edu",
-    createdAt: "2025-02-10",
-    lastUpdated: "2025-03-15",
-    applications: [
-      { job: "Marketing Intern", company: "BrandHub", status: "Applied", date: "2025-03-14" },
-    ],
-  },
-  {
-    id: "STU005",
-    name: "Jessica Lee",
-    email: "j.lee@university.edu",
-    createdAt: "2025-02-15",
-    lastUpdated: "2025-03-16",
-    applications: [
-      { job: "Data Scientist", company: "AI Labs", status: "Interview", date: "2025-03-08" },
-      { job: "ML Engineer", company: "DeepTech", status: "Applied", date: "2025-03-15" },
-    ],
-  },
-];
 
 const statusStyles: { [key: string]: { backgroundColor: string; color: string } } = {
   Applied: { backgroundColor: "#dbeafe", color: "#1e40af" },
@@ -67,9 +11,13 @@ const statusStyles: { [key: string]: { backgroundColor: string; color: string } 
 
 export default function AdminStudents() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState<(typeof students)[0] | null>(null);
   const [showApplications, setShowApplications] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+
+  // Students
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
   const filteredStudents = students.filter(
     (student) =>
