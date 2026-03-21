@@ -33,7 +33,7 @@ export default function AdminStudents() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<(Student & { applications?: Application[] }) | null>(null);
-
+  
   // Applications
   const [loadingApplications, setLoadingApplications] = useState(false);
   const [showApplications, setShowApplications] = useState(false);
