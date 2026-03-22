@@ -101,11 +101,23 @@ export default function AdminRecruiters() {
   // Reject handler
   const handleReject = async (recruiterId: string) => {
     try {
+      const token = localStorage.getItem("jobify_token");
 
+      await fetch(`http://localhost:5159/api/auth/admin/reject-recruiter/${recruiterId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        }
+      });
+
+      fetchRecruiters();
+
+      alert("Recruiter Rejected Successfully.");
     }
     catch (err) {
-      
+      console.error("Error in Rejecting Recruiter: ", err);
     }
+
   };
 
 
