@@ -42,7 +42,7 @@ export default function AdminRecruiters() {
     try {
       setLoadingRecruiters(true);
 
-      const token = localStorage.getItem("jobify_item");
+      const token = localStorage.getItem("jobify_token");
 
       const res = await fetch("http://localhost:5159/api/users/by-role/recruiter" , {
         headers: {
@@ -54,12 +54,12 @@ export default function AdminRecruiters() {
 
       const mapped = data.map((r: any) => ({
         id: r.id,
-        name: r.fullName,
+        name: r.fullName ?? r.email,
         email: r.email,
         company: r.companyName,
         createdAt: r.createdAt.split("T")[0],
-        lastUpdated: r.updatedAt.split("T")[0],
-        status: r.status
+        lastUpdated: r.updatedAtUtc ? r.updatedAtUtc.split("T")[0] : r.createdAt.split("T")[0],
+        status: mapStatus(r.verificationStatus)
       }));
 
       setRecruiters(mapped);
@@ -155,6 +155,10 @@ export default function AdminRecruiters() {
     { value: "rejected", label: "Rejected", icon: XCircle, count: rejectedCount, color: "#dc2626" }
   ];
 
+  // Loading Recruiters
+  if (loadingRecruiters) {
+    return <p style={{ padding: "24px" }}>Loading recruiters...</p>;
+  }
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
@@ -498,6 +502,27 @@ export default function AdminRecruiters() {
                           >
                             <Eye style={{ width: "14px", height: "14px" }} />
                             View Profile
+                          </button>
+                        )}
+                        {activeTab === "rejected" && (
+                          <button
+                            onClick={() => handleApprove(recruiter.id)}
+                            style={{
+                              padding: "6px 12px",
+                              backgroundColor: "#16a34a",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "6px",
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <CheckCircle style={{ width: "14px", height: "14px" }} />
+                            Re-Approve
                           </button>
                         )}
                       </div>
