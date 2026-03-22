@@ -212,10 +212,22 @@ export default function AdminRecruiters() {
           </div>
         </div>
       </div>
+      <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "20px", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ backgroundColor: "#fee2e2", padding: "12px", borderRadius: "8px" }}>
+            <XCircle style={{ width: "24px", height: "24px", color: "#dc2626" }} />
+          </div>
+          <div>
+            <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>Rejected</p>
+            <p style={{ fontSize: "28px", fontWeight: "700" }}>{rejectedCount}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Recruiter Management Card */}
       <div
         style={{
+          marginTop: "20px",
           backgroundColor: "white",
           borderRadius: "12px",
           padding: "24px",
