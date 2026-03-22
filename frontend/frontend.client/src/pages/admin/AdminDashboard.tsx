@@ -1,23 +1,90 @@
-import { useState } from "react";
-import { Users, Briefcase, Building2, FileText, TrendingUp, UserPlus, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, Briefcase, Building2, FileText, TrendingUp, UserPlus, Clock, CheckCircle, XCircle } from "lucide-react";
 
-const stats = [
-  { title: "Total Students", value: "1,247", icon: Users, iconColor: "#2563eb", bgColor: "#dbeafe" },
-  { title: "Total Recruiters", value: "342", icon: Briefcase, iconColor: "#16a34a", bgColor: "#dcfce7" },
-  { title: "Total Companies", value: "89", icon: Building2, iconColor: "#9333ea", bgColor: "#f3e8ff" },
-  { title: "Total Applications", value: "5,821", icon: FileText, iconColor: "#ea580c", bgColor: "#ffedd5" },
-];
 
-const recentActivity = [
-  { type: "New Student", name: "Sarah Johnson", email: "sarah.j@university.edu", time: "2 minutes ago", icon: UserPlus, iconColor: "#2563eb", bgColor: "#dbeafe" },
-  { type: "New Recruiter", name: "Michael Chen", company: "TechCorp Inc.", time: "15 minutes ago", icon: Briefcase, iconColor: "#16a34a", bgColor: "#dcfce7" },
-  { type: "Pending Approval", name: "Emily Brown", company: "StartupHub", time: "1 hour ago", icon: Clock, iconColor: "#ea580c", bgColor: "#ffedd5" },
-  { type: "New Application", name: "David Miller", job: "Software Engineer Intern", time: "2 hours ago", icon: FileText, iconColor: "#9333ea", bgColor: "#f3e8ff" },
-  { type: "New Student", name: "Jessica Lee", email: "j.lee@university.edu", time: "3 hours ago", icon: UserPlus, iconColor: "#2563eb", bgColor: "#dbeafe" },
-];
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case "New Student":
+      return { icon: UserPlus, color: "#2563eb", bg: "#dbeafe" };
+    case "New Recruiter":
+      return { icon: Briefcase, color: "#16a34a", bg: "#dcfce7" };
+    case "New Application":
+      return { icon: FileText, color: "#9333ea", bg: "#f3e8ff" };
+    case "New Opportunity":
+      return { icon: Building2, color: "#ea580c", bg: "#ffedd5" };
+    default:
+      return { icon: Clock, color: "#6b7280", bg: "#f3f4f6" };
+  }
+};
 
 export default function AdminDashboard() {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+
+  // Dashboard
+  const [dashboard, setDashboard] = useState<any>();
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+
+
+  // Dashboard Fetching
+  async function fetchDashboard() {
+    try {
+      const token = localStorage.getItem("jobify_token");
+
+      const res = await fetch("http://localhost:5159/api/users/admin/dashboard", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      setDashboard(data);
+    
+    }
+    catch (err) {
+      console.error("Error in Fetching Dashboard: ",err);
+    }
+    finally {
+      setLoadingDashboard(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+
+  // Stats
+  const stats = [
+    {
+      title: "Total Students",
+      value: dashboard?.totalStudents ?? "--",
+      icon: Users,
+      iconColor: "#2563eb",
+      bgColor: "#dbeafe",
+    },
+    {
+      title: "Total Recruiters",
+      value: dashboard?.totalRecruiters ?? "--",
+      icon: Briefcase,
+      iconColor: "#16a34a",
+      bgColor: "#dcfce7",
+    },
+    {
+      title: "Total Companies",
+      value: dashboard?.totalCompanies ?? "--",
+      icon: Building2,
+      iconColor: "#9333ea",
+      bgColor: "#f3e8ff",
+    },
+    {
+      title: "Total Applications",
+      value: dashboard?.totalApplications ?? "--",
+      icon: FileText,
+      iconColor: "#ea580c",
+      bgColor: "#ffedd5",
+    },
+  ];
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
@@ -117,22 +184,22 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Pending Verification</span>
-                <span style={{ fontWeight: "600" }}>--</span>
+                <span style={{ fontWeight: "600" }}>{dashboard?.pendingVerification ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Pending Approval</span>
-                <span style={{ fontWeight: "600" }}>--</span>
+                <span style={{ fontWeight: "600" }}>{dashboard?.pendingApproval ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Verified</span>
-                <span style={{ fontWeight: "600" }}>--</span>
+                <span style={{ fontWeight: "600" }}>{dashboard?.verifiedRecruiters ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Rejected</span>
-                <span style={{ fontWeight: "600", color: "#dc2626" }}>--</span>
+                <span style={{ fontWeight: "600", color: "#dc2626" }}>{dashboard?.rejectedRecruiters ?? "--"}</span>
               </div>
             </div>
           </div>
@@ -146,17 +213,17 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Active Users</span>
-                <span style={{ fontWeight: "600" }}>--</span>
+                <span style={{ fontWeight: "600" }}>{dashboard?.activeUsers ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>New Signups (24h)</span>
-                <span style={{ fontWeight: "600" }}>--</span>
+                <span style={{ fontWeight: "600" }}>{dashboard?.newSignups ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Pending Actions</span>
-                <span style={{ fontWeight: "600", color: "#ea580c" }}>--</span>
+                <span style={{ fontWeight: "600", color: "#ea580c" }}>{dashboard?.pendingActions ?? "--"}</span>
               </div>
             </div>
           </div>
@@ -177,8 +244,8 @@ export default function AdminDashboard() {
       >
         <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px" }}>Recent Activity</h2>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {recentActivity.map((activity, index) => {
-            const Icon = activity.icon;
+          {dashboard?.recentActivity?.map((activity: any, index: number) => {
+            const { icon: Icon, color, bg } = getActivityIcon(activity.type);
             return (
               <div
                 key={index}
@@ -187,12 +254,12 @@ export default function AdminDashboard() {
                   alignItems: "flex-start",
                   gap: "16px",
                   paddingBottom: "16px",
-                  borderBottom: index < recentActivity.length - 1 ? "1px solid #e5e7eb" : "none",
+                  borderBottom: index < dashboard.recentActivity.length - 1 ? "1px solid #e5e7eb" : "none",
                 }}
               >
                 <div
                   style={{
-                    backgroundColor: activity.bgColor,
+                    backgroundColor: bg,
                     padding: "10px",
                     borderRadius: "8px",
                     display: "flex",
@@ -201,7 +268,7 @@ export default function AdminDashboard() {
                     flexShrink: 0,
                   }}
                 >
-                  <Icon style={{ width: "20px", height: "20px", color: activity.iconColor }} />
+                  <Icon style={{ width: "20px", height: "20px", color: color }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ marginBottom: "4px" }}>

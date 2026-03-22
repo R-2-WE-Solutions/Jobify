@@ -1,4 +1,5 @@
 ﻿using Jobify.Api.Data;
+using Jobify.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -259,6 +260,143 @@ public class UsersController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Recruiter notified successfully." });
+    }
+
+    // Get Admin Dashboard
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/dashboard")]
+    public async Task<IActionResult> GetDashboard()
+    {
+        var now = DateTime.UtcNow;
+        var yesterday = now.AddDays(-1);
+
+        // Stats
+
+        var totalStudents = await _context.StudentProfiles.CountAsync();
+        var totalRecruiters = await _context.RecruiterProfiles.CountAsync();
+
+        var totalCompanies = await _context.RecruiterProfiles
+            .Select(r => r.CompanyName)
+            .Distinct()
+            .CountAsync();
+
+        var totalApplications = await _context.Applications.CountAsync();
+
+        // Recruiter Status
+
+        var pendingVerification = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.EmailPending);
+
+        var pendingApproval = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Pending);
+
+        var verifiedRecruiters = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Verified);
+
+        var rejectedRecruiters = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Rejected);
+
+        // Platform Health
+
+        var activeUsers = await _context.Users.CountAsync();
+
+        var newSignups = 0;
+
+        var pendingActions = pendingApproval + pendingVerification;
+
+        // Recent Activity
+
+        var recentStudents = await _context.StudentProfiles
+            .OrderByDescending(s => s.CreatedAt)
+            .Take(10)
+            .Select(s => new
+            {
+                type = "New Student",
+                name = s.FullName ?? s.Email,
+                email = s.Email,
+                company = (string?)null,
+                job = (string?)null,
+                date = s.CreatedAt
+            })
+            .ToListAsync();
+
+        var recentRecruiters = await _context.RecruiterProfiles
+            .OrderByDescending(r => r.CreatedAtUtc)
+            .Take(10)
+            .Select(r => new
+            {
+                type = "New Recruiter",
+                name = r.CompanyName,
+                email = r.Email,
+                company = r.CompanyName,
+                job = (string?)null,
+                date = r.CreatedAtUtc
+            })
+            .ToListAsync();
+
+        var recentApplications = await _context.Applications
+            .OrderByDescending(a => a.CreatedAtUtc)
+            .Take(10)
+            .Select(a => new
+            {
+                type = "New Application",
+                name = "Application #" + a.Id,
+                email = (string?)null,
+                company = (string?)null,
+                job = (string?)null,
+                date = a.CreatedAtUtc
+            })
+            .ToListAsync();
+
+        var recentOpportunities = await _context.Opportunities
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Take(10)
+            .Select(o => new
+            {
+                type = "New Opportunity",
+                name = o.Title,
+                email = (string?)null,
+                company = o.CompanyName,
+                job = o.Title,
+                date = o.CreatedAtUtc
+            })
+            .ToListAsync();
+
+        var recentActivity = recentStudents
+            .Concat(recentRecruiters)
+            .Concat(recentApplications)
+            .Concat(recentOpportunities)
+            .OrderByDescending(x => x.date)
+            .Take(10)
+            .Select(x => new
+            {
+                x.type,
+                x.name,
+                x.email,
+                x.company,
+                x.job,
+                time = x.date.ToString("g")
+            })
+            .ToList();
+
+        return Ok(new
+        {
+            totalStudents,
+            totalRecruiters,
+            totalCompanies,
+            totalApplications,
+
+            pendingVerification,
+            pendingApproval,
+            verifiedRecruiters,
+            rejectedRecruiters,
+
+            activeUsers,
+            newSignups,
+            pendingActions,
+
+            recentActivity
+        });
     }
 
 
