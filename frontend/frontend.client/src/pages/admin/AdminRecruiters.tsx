@@ -65,7 +65,7 @@ export default function AdminRecruiters() {
       setRecruiters(mapped);
     }
     catch (err) {
-      console.log("Error in Fetching Recruiters: ", err)
+      console.error("Error in Fetching Recruiters: ", err)
     }
     finally {
       setLoadingRecruiters(false);
@@ -77,14 +77,35 @@ export default function AdminRecruiters() {
   }, []);
 
   // Approve handler
-  const handleApprove = (recruiterId: string) => {
-    
+  const handleApprove = async (recruiterId: string) => {
+    try {
+      const token = localStorage.getItem("jobify_token");
+
+      await fetch(`http://localhost:5159/api/auth/admin/approve-recruiter/${recruiterId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        }
+      });
+
+      fetchRecruiters();
+
+      alert("Recruiter Approved Successfully!");
+    }
+    catch (err) {
+      console.error("Error in Approving Recruiter: ", err);
+    }
   };
 
 
   // Reject handler
-  const handleReject = (recruiterId: string) => {
+  const handleReject = async (recruiterId: string) => {
+    try {
 
+    }
+    catch (err) {
+      
+    }
   };
 
 
