@@ -1,89 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, Users, Eye, Search } from "lucide-react";
 
-interface Company {
+type Company = {
   id: string;
   name: string;
-  logo: string;
-  description: string;
+  email: string;
+  website?: string;
+  linkedin?: string;
+  instagram?: string;
   recruiterCount: number;
+  status: string;
   recruiters: {
     id: string;
-    name: string;
     email: string;
     joinedAt: string;
     status: string;
   }[];
-}
+};
 
-const companies: Company[] = [
-  {
-    id: "COM001",
-    name: "TechCorp Inc.",
-    logo: "TC",
-    description: "Leading technology solutions provider specializing in cloud computing and AI.",
-    recruiterCount: 5,
-    recruiters: [
-      { id: "REC001", name: "James Anderson", email: "james@techcorp.com", joinedAt: "2025-01-15", status: "Active" },
-      { id: "REC002", name: "Emily Davis", email: "emily@techcorp.com", joinedAt: "2025-02-20", status: "Active" },
-      { id: "REC003", name: "Michael Brown", email: "michael@techcorp.com", joinedAt: "2025-03-01", status: "Active" },
-    ],
-  },
-  {
-    id: "COM002",
-    name: "StartupHub",
-    logo: "SH",
-    description: "Innovative startup accelerator connecting talent with emerging companies.",
-    recruiterCount: 3,
-    recruiters: [
-      { id: "REC004", name: "Lisa Wang", email: "lisa@startupHub.com", joinedAt: "2025-02-10", status: "Active" },
-      { id: "REC005", name: "John Martinez", email: "john@startupHub.com", joinedAt: "2025-02-25", status: "Active" },
-    ],
-  },
-  {
-    id: "COM003",
-    name: "CloudTech",
-    logo: "CT",
-    description: "Cloud infrastructure and DevOps solutions for modern enterprises.",
-    recruiterCount: 4,
-    recruiters: [
-      { id: "REC006", name: "Robert Smith", email: "robert@cloudtech.io", joinedAt: "2025-01-20", status: "Active" },
-      { id: "REC007", name: "Jessica Lee", email: "jessica@cloudtech.io", joinedAt: "2025-02-15", status: "Active" },
-    ],
-  },
-  {
-    id: "COM004",
-    name: "DesignCo",
-    logo: "DC",
-    description: "Creative design agency crafting beautiful digital experiences.",
-    recruiterCount: 2,
-    recruiters: [
-      { id: "REC008", name: "Maria Garcia", email: "maria@designco.com", joinedAt: "2025-02-01", status: "Active" },
-    ],
-  },
-  {
-    id: "COM005",
-    name: "AI Labs",
-    logo: "AL",
-    description: "Cutting-edge artificial intelligence research and development company.",
-    recruiterCount: 6,
-    recruiters: [
-      { id: "REC009", name: "David Kim", email: "david@aiLabs.com", joinedAt: "2025-01-10", status: "Active" },
-      { id: "REC010", name: "Sarah Chen", email: "sarah@aiLabs.com", joinedAt: "2025-01-25", status: "Active" },
-      { id: "REC011", name: "Thomas Wilson", email: "thomas@aiLabs.com", joinedAt: "2025-02-10", status: "Active" },
-    ],
-  },
-  {
-    id: "COM006",
-    name: "WebSolutions",
-    logo: "WS",
-    description: "Full-stack web development and digital transformation consultancy.",
-    recruiterCount: 3,
-    recruiters: [
-      { id: "REC012", name: "Sarah Thompson", email: "sarah@webSolutions.com", joinedAt: "2025-01-05", status: "Active" },
-    ],
-  },
-];
 
 export default function AdminCompanies() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,14 +25,63 @@ export default function AdminCompanies() {
   const [showRecruiters, setShowRecruiters] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
+  // Companies
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+
+  // Companies Fetching
+  async function fetchCompanies() {
+    try {
+      setLoadingCompanies(true);
+
+      const token = localStorage.getItem("jobify_token");
+
+      const res = await fetch("http://localhost:5159/api/users/companies", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      setCompanies(data);
+    }
+    catch (err) {
+      console.error("Error in Fetching Companies: ", err);
+    }
+    finally {
+      setLoadingCompanies(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+
   const filteredCompanies = companies.filter((company) =>
-    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    company.description.toLowerCase().includes(searchQuery.toLowerCase())
+    company.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getInitials = (name: string) => {
+  // Get Recruiter Name 
+  const getName = (email: string) => {
+    return email.split("@")[0];
+  };
+
+  // Get Company Logo
+  const getLogo = (name: string) => {
     return name.split(" ").map((n) => n[0]).join("");
   };
+
+  // Loading
+  if (loadingCompanies) {
+    return (
+      <div style={{ padding: "24px" }}>
+        <p>Loading companies...</p>
+      </div>
+    );
+  }
+
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
@@ -206,7 +189,7 @@ export default function AdminCompanies() {
                       flexShrink: 0,
                     }}
                   >
-                    {company.logo}
+                    {getLogo(company.name)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3
@@ -237,6 +220,32 @@ export default function AdminCompanies() {
                       <Users style={{ width: "12px", height: "12px" }} />
                       {company.recruiterCount} {company.recruiterCount === 1 ? "Recruiter" : "Recruiters"}
                     </span>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "4px 12px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        marginTop: "15px",
+                        marginLeft: "5px",
+                        marginBottom: "10px",
+                        backgroundColor:
+                          company.status === "Verified"
+                            ? "#dcfce7"
+                            : company.status === "Pending"
+                            ? "#fef3c7"
+                            : "#fee2e2",
+                        color:
+                          company.status === "Verified"
+                            ? "#166534"
+                            : company.status === "Pending"
+                            ? "#92400e"
+                            : "#991b1b",
+                      }}
+                    >
+                      {company.status}
+                    </span>
                   </div>
                 </div>
                 <p
@@ -252,8 +261,19 @@ export default function AdminCompanies() {
                     overflow: "hidden",
                   }}
                 >
-                  {company.description}
+                  {company.email}
                 </p>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+                  {company.website && (
+                    <a href={company.website} target="_blank">🌐</a>
+                  )}
+                  {company.linkedin && (
+                    <a href={company.linkedin} target="_blank">💼</a>
+                  )}
+                  {company.instagram && (
+                    <a href={company.instagram} target="_blank">📷</a>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setSelectedCompany(company);
@@ -340,7 +360,7 @@ export default function AdminCompanies() {
                   fontSize: "18px",
                 }}
               >
-                {selectedCompany.logo}
+                {getLogo(selectedCompany.name)}
               </div>
               <div style={{ flex: 1 }}>
                 <h2 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "4px" }}>
@@ -391,7 +411,7 @@ export default function AdminCompanies() {
                 </thead>
                 <tbody>
                   {selectedCompany.recruiters.map((recruiter, index) => {
-                    const initials = recruiter.name.split(" ").map((n) => n[0]).join("");
+                    const initials = getName(recruiter.email).split(" ").map((n) => n[0]).join("");
                     return (
                       <tr key={recruiter.id}>
                         <td style={{ padding: "16px", borderTop: index > 0 ? "1px solid #f3f4f6" : "none" }}>
@@ -412,7 +432,7 @@ export default function AdminCompanies() {
                             >
                               {initials}
                             </div>
-                            <span style={{ fontWeight: "600", fontSize: "14px" }}>{recruiter.name}</span>
+                            <span style={{ fontWeight: "600", fontSize: "14px" }}>{getName(recruiter.email)}</span>
                           </div>
                         </td>
                         <td style={{ padding: "16px", borderTop: index > 0 ? "1px solid #f3f4f6" : "none", color: "#6b7280", fontSize: "14px" }}>

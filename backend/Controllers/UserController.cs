@@ -400,6 +400,56 @@ public class UsersController : ControllerBase
     }
 
 
+    // Get Companies
+    [Authorize(Roles = "Admin")]
+    [HttpGet("companies")]
+    public async Task<IActionResult> GetCompanies()
+    {
+        var profiles = await _context.RecruiterProfiles.ToListAsync();
+
+        // group recruiters by company name (normalized)
+        var companies = profiles
+            .GroupBy(p => p.CompanyName.Trim().ToLower())
+            .Select(group =>
+            {
+                // first recruiter from the company recruiters grouped
+                var first = group.First();
+
+                return new
+                {
+                    Id = group.Key,
+                    Name = first.CompanyName,
+                    Email = first.Email,
+                    Website = first.WebsiteUrl,
+                    Linkedin = first.LinkedinUrl,
+                    Instagram = first.InstagramUrl,
+
+                    // number of recruiters grouped
+                    RecruiterCount = group.Count(),
+
+                    // a company is verified if at least one of its recruiters is verified
+                    Status = group.Any(p => p.VerificationStatus == RecruiterVerificationStatus.Verified)
+                        ? "Verified"
+                        : group.Any(p => p.VerificationStatus == RecruiterVerificationStatus.Pending)
+                            ? "Pending"
+                            : "Unverified",
+
+                    // the list of recruiters of the company
+                    Recruiters = group.Select(p => new
+                    {
+                        Id = p.UserId,
+                        Email = p.Email,
+                        JoinedAt = p.CreatedAtUtc,
+                        Status = p.VerificationStatus.ToString()
+                    })
+                };
+            })
+            .ToList();
+
+        return Ok(companies);
+    }
+
+
     // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
 
