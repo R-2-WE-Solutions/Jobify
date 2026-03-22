@@ -92,6 +92,78 @@ export default function AdminDashboard() {
           );
         })}
       </div>
+      <div
+          style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+          marginTop: "24px",
+          marginBottom: "24px"
+        }}
+      >
+        <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px" }}>
+          System Overview
+        </h2>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+          
+          {/* Recruiter Status Breakdown */}
+          <div>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px" }}>
+              Recruiter Status
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>Pending Verification</span>
+                <span style={{ fontWeight: "600" }}>--</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>Pending Approval</span>
+                <span style={{ fontWeight: "600" }}>--</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>Verified</span>
+                <span style={{ fontWeight: "600" }}>--</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>Rejected</span>
+                <span style={{ fontWeight: "600", color: "#dc2626" }}>--</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Platform Health */}
+          <div>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px" }}>
+              Platform Health
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>Active Users</span>
+                <span style={{ fontWeight: "600" }}>--</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>New Signups (24h)</span>
+                <span style={{ fontWeight: "600" }}>--</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#6b7280" }}>Pending Actions</span>
+                <span style={{ fontWeight: "600", color: "#ea580c" }}>--</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      
 
       {/* Recent Activity */}
       <div
@@ -100,6 +172,7 @@ export default function AdminDashboard() {
           borderRadius: "12px",
           padding: "24px",
           boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+          marginBottom: "20px"
         }}
       >
         <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px" }}>Recent Activity</h2>
@@ -165,69 +238,6 @@ export default function AdminDashboard() {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div
-        style={{
-          backgroundColor: "white",
-          borderRadius: "12px",
-          padding: "24px",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-          marginTop: "24px",
-        }}
-      >
-        <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px" }}>Quick Actions</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-          <button
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3b82f6")}
-          >
-            Approve Pending Recruiters
-          </button>
-          <button
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "white",
-              color: "#374151",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-          >
-            View All Students
-          </button>
-          <button
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "white",
-              color: "#374151",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-          >
-            Manage Companies
-          </button>
         </div>
       </div>
     </div>
