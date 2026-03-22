@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, CheckCircle, XCircle, Clock, Mail, Search } from "lucide-react";
 
 interface Recruiter {
@@ -27,85 +27,68 @@ function mapStatus(status: string) {
   }
 };
 
-const initialRecruiters: Recruiter[] = [
-  {
-    id: "REC001",
-    name: "James Anderson",
-    email: "james@techcorp.com",
-    company: "TechCorp Inc.",
-    createdAt: "2025-03-10",
-    lastUpdated: "2025-03-10",
-    status: "pending_verification",
-  },
-  {
-    id: "REC002",
-    name: "Lisa Wang",
-    email: "lisa@startupHub.com",
-    company: "StartupHub",
-    createdAt: "2025-03-12",
-    lastUpdated: "2025-03-12",
-    status: "pending_approval",
-  },
-  {
-    id: "REC003",
-    name: "Robert Smith",
-    email: "robert@cloudtech.io",
-    company: "CloudTech",
-    createdAt: "2025-03-14",
-    lastUpdated: "2025-03-14",
-    status: "pending_approval",
-  },
-  {
-    id: "REC004",
-    name: "Maria Garcia",
-    email: "maria@designco.com",
-    company: "DesignCo",
-    createdAt: "2025-02-20",
-    lastUpdated: "2025-03-15",
-    status: "verified",
-  },
-  {
-    id: "REC005",
-    name: "David Kim",
-    email: "david@aiLabs.com",
-    company: "AI Labs",
-    createdAt: "2025-02-15",
-    lastUpdated: "2025-03-16",
-    status: "verified",
-  },
-  {
-    id: "REC006",
-    name: "Sarah Thompson",
-    email: "sarah@webSolutions.com",
-    company: "WebSolutions",
-    createdAt: "2025-01-10",
-    lastUpdated: "2025-03-17",
-    status: "verified",
-  },
-];
 
 export default function AdminRecruiters() {
-  const [recruiters, setRecruiters] = useState<Recruiter[]>(initialRecruiters);
+  // Recruiters
+  const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
+  const [loadingRecruiters, setLoadingRecruiters] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"pending_verification" | "pending_approval" | "verified">("pending_verification");
+  const [activeTab, setActiveTab] = useState<"pending_verification" | "pending_approval" | "verified" | "rejected">("pending_verification");
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
+  // Recruiters Fetching
+  async function fetchRecruiters() {
+    try {
+      setLoadingRecruiters(true);
+
+      const token = localStorage.getItem("jobify_item");
+
+      const res = await fetch("http://localhost:5159/api/users/by-role/recruiter" , {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      const mapped = data.map((r: any) => ({
+        id: r.id,
+        name: r.fullName,
+        email: r.email,
+        company: r.companyName,
+        createdAt: r.createdAt.split("T")[0],
+        lastUpdated: r.updatedAt.split("T")[0],
+        status: r.status
+      }));
+
+      setRecruiters(mapped);
+    }
+    catch (err) {
+      console.log("Error in Fetching Recruiters: ", err)
+    }
+    finally {
+      setLoadingRecruiters(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchRecruiters();
+  }, []);
+
+  // Approve handler
   const handleApprove = (recruiterId: string) => {
-    setRecruiters((prev) =>
-      prev.map((rec) =>
-        rec.id === recruiterId
-          ? { ...rec, status: "verified", lastUpdated: new Date().toISOString().split("T")[0] }
-          : rec
-      )
-    );
-    alert("Recruiter approved successfully");
+    
   };
 
+
+  // Reject handler
   const handleReject = (recruiterId: string) => {
-    setRecruiters((prev) => prev.filter((rec) => rec.id !== recruiterId));
-    alert("Recruiter rejected");
+
   };
 
+
+  // Filtered Recruiters
   const filteredRecruiters = recruiters.filter((recruiter) => {
     const matchesSearch =
       recruiter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -117,21 +100,28 @@ export default function AdminRecruiters() {
     return matchesSearch && matchesTab;
   });
 
+
+  // Status Counts
   const pendingVerificationCount = recruiters.filter((r) => r.status === "pending_verification").length;
   const pendingApprovalCount = recruiters.filter((r) => r.status === "pending_approval").length;
   const verifiedCount = recruiters.filter((r) => r.status === "verified").length;
   const rejectedCount = recruiters.filter((r) => r.status === "rejected").length;
 
+
+  // Initials
   const getInitials = (name: string) => {
     return name.split(" ").map((n) => n[0]).join("");
   };
 
+
+  // Tabs
   const tabs = [
     { value: "pending_verification", label: "Waiting for Email", icon: Mail, count: pendingVerificationCount, color: "#ea580c" },
     { value: "pending_approval", label: "Waiting for Approval", icon: Clock, count: pendingApprovalCount, color: "#3b82f6" },
     { value: "verified", label: "Verified", icon: CheckCircle, count: verifiedCount, color: "#16a34a" },
     { value: "rejected", label: "Rejected", icon: XCircle, count: rejectedCount, color: "#dc2626" }
   ];
+
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
