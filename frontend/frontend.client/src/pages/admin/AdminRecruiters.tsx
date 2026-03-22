@@ -495,10 +495,11 @@ export default function AdminRecruiters() {
                         )}
                         {activeTab === "verified" && (
                           <button
+                            onClick={() => handleReject(recruiter.id)}
                             style={{
                               padding: "6px 12px",
                               backgroundColor: "white",
-                              color: "#374151",
+                              color: "#dc2626",
                               border: "1px solid #d1d5db",
                               borderRadius: "6px",
                               fontSize: "13px",
@@ -507,13 +508,18 @@ export default function AdminRecruiters() {
                               display: "flex",
                               alignItems: "center",
                               gap: "4px",
-                              transition: "all 0.2s",
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#fee2e2";
+                              e.currentTarget.style.borderColor = "#dc2626";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "white";
+                              e.currentTarget.style.borderColor = "#d1d5db";
+                            }}
                           >
-                            <Eye style={{ width: "14px", height: "14px" }} />
-                            View Profile
+                            <XCircle style={{ width: "14px", height: "14px" }} />
+                            Revoke
                           </button>
                         )}
                         {activeTab === "rejected" && (
