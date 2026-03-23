@@ -146,27 +146,11 @@ export default function AppLayout() {
                             </button>
 
                             {showProfileMenu && (
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        top: "48px",
-                                        right: 0,
-                                        width: "170px",
-                                        background: "white",
-                                        border: "1px solid #e5e7eb",
-                                        borderRadius: "12px",
-                                        boxShadow: "0 10px 24px rgba(0,0,0,0.10)",
-                                        padding: "8px",
-                                        zIndex: 1000,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "6px",
-                                    }}
-                                >
+                                <div className="al-profileMenu">
                                     <button
                                         type="button"
                                         onClick={handleGoToProfile}
-                                        style={menuItemStyle}
+                                        className="al-profileMenuItem"
                                     >
                                         Profile
                                     </button>
@@ -174,7 +158,7 @@ export default function AppLayout() {
                                     <button
                                         type="button"
                                         onClick={handleLogout}
-                                        style={menuItemStyle}
+                                        className="al-profileMenuItem al-profileMenuItemDanger"
                                     >
                                         Log out
                                     </button>
