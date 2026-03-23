@@ -25,6 +25,8 @@ export default function AppLayout() {
     const [profileError, setProfileError] = useState("");
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     const profileMenuRef = useRef(null);
 
     useEffect(() => {
@@ -109,6 +111,12 @@ export default function AppLayout() {
                 <div className="al-headerInner">
                     <div className="al-headerSide al-left">
                         <div className="al-logo">Jobify</div>
+                        <button
+                            className="al-hamburger"
+                            onClick={() => setSidebarOpen(prev => !prev)}
+                        >
+                            ☰
+                        </button>
                     </div>
 
                     <div className="al-headerCenter">
@@ -178,7 +186,14 @@ export default function AppLayout() {
             </header>
 
             <div className="al-body">
-                <aside className="al-sidebar">
+                <div className="al-body">
+                    {sidebarOpen && (
+                        <div
+                            className="al-overlay"
+                            onClick={() => setSidebarOpen(false)}
+                        />
+                    )}
+                <aside className={`al-sidebar ${sidebarOpen ? "open" : ""}`}>
                     <nav className="al-nav">
                         <NavLink to="/dashboard" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
                             <span className="al-linkIcon"><LayoutGrid size={18} /></span>
