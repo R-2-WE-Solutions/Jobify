@@ -450,6 +450,34 @@ namespace Jobify.Migrations
                     b.ToTable("RecruiterProfiles");
                 });
 
+            modelBuilder.Entity("Jobify.Api.Models.SavedOpportunity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SavedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("UserId", "OpportunityId")
+                        .IsUnique();
+
+                    b.ToTable("SavedOpportunities");
+                });
+
             modelBuilder.Entity("Jobify.Api.Models.Skill", b =>
                 {
                     b.Property<int>("Id")
@@ -1081,6 +1109,17 @@ namespace Jobify.Migrations
                     b.Navigation("Opportunity");
 
                     b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("Jobify.Api.Models.SavedOpportunity", b =>
+                {
+                    b.HasOne("Jobify.Api.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("Jobify.Api.Models.StudentEducation", b =>
