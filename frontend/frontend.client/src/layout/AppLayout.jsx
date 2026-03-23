@@ -186,13 +186,12 @@ export default function AppLayout() {
             </header>
 
             <div className="al-body">
-                <div className="al-body">
-                    {sidebarOpen && (
-                        <div
-                            className="al-overlay"
-                            onClick={() => setSidebarOpen(false)}
-                        />
-                    )}
+                {sidebarOpen && (
+                    <div
+                        className="al-overlay"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                )}
                 <aside className={`al-sidebar ${sidebarOpen ? "open" : ""}`}>
                     <nav className="al-nav">
                         <NavLink to="/dashboard" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
@@ -300,15 +299,3 @@ export default function AppLayout() {
         </div>
     );
 }
-
-const menuItemStyle = {
-    border: "none",
-    background: "white",
-    textAlign: "left",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "500",
-    color: "#111827",
-    width: "100",
-};
