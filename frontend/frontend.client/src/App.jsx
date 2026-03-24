@@ -36,6 +36,8 @@ import { BrowseOpportunities } from "./pages/BrowseOpportunities";
 import ProfilePage from "./pages/ProfilePage";
 import Dashboard from "./pages/Dashboard";
 
+import Applicants from "./pages/applicants";
+
 // Reads and validates the current user from localStorage
 function getUser() {
     try {
@@ -99,6 +101,7 @@ export default function App() {
                 <Route path="/organization" element={<OrganizationDashboard />} />
                 <Route path="/organization/interviews" element={<RecruiterInterviewsPage />} />
                 <Route path="/organization/qanda" element={<QAPage />} />
+                <Route path="/organization/applicants" element={<Applicants />} />
                 <Route path="/opportunities/:id" element={<JobDetailsPage />} />
                 <Route path="/apply/:applicationId/review" element={<ProfileReviewPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
