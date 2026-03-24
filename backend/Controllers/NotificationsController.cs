@@ -7,7 +7,7 @@ namespace Jobify.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Student")]
+[Authorize]
 public class NotificationsController : ControllerBase
 {
     private readonly NotificationService _notificationService;
