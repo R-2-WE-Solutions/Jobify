@@ -1,6 +1,8 @@
 :root {
     --bg: #f6f7fb;
     --card: #ffffff;
+    --card-soft: #f8fafc;
+    --surface-2: #f1f5f9;
     --text: #0f172a;
     --muted: #64748b;
     --border: #e5e7eb;
@@ -11,6 +13,30 @@
     --radius: 16px;
     --header-h: 72px;
     --sidebar-w: 240px;
+    --hover-bg: #f1f5ff;
+    --icon-bg: #f1f5f9;
+    --input-bg: linear-gradient(180deg, #ffffff, #f8fafc);
+    --menu-shadow: 0 10px 24px rgba(0, 0, 0, 0.10);
+    --danger: #dc2626;
+}
+
+.dark {
+    --bg: #0f172a;
+    --card: #111827;
+    --card-soft: #1e293b;
+    --surface-2: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: #334155;
+    --blue: #3b82f6;
+    --blue2: #2563eb;
+    --shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    --shadow2: 0 16px 40px rgba(0, 0, 0, 0.35);
+    --hover-bg: rgba(59, 130, 246, 0.12);
+    --icon-bg: #1f2937;
+    --input-bg: linear-gradient(180deg, #111827, #1e293b);
+    --menu-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+    --danger: #f87171;
 }
 
 * {
@@ -30,6 +56,8 @@ body {
 
 .al-shell {
     min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
 }
 
 .al-header {
@@ -37,16 +65,16 @@ body {
     top: 0;
     z-index: 50;
     height: var(--header-h);
-    background: #fff;
+    background: var(--card);
     border-bottom: 1px solid var(--border);
     transition: background 180ms ease, box-shadow 180ms ease, backdrop-filter 180ms ease;
 }
 
-    .al-header.isScrolled {
-        background: rgba(255, 255, 255, 0.40);
-        backdrop-filter: blur(14px);
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-    }
+.al-header.isScrolled {
+    background: color-mix(in srgb, var(--card) 78%, transparent);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow2);
+}
 
 .al-headerInner {
     height: 100%;
@@ -63,16 +91,17 @@ body {
     gap: 10px;
 }
 
-    .al-headerSide.al-left {
-        justify-content: flex-start;
-    }
+.al-headerSide.al-left {
+    justify-content: flex-start;
+}
 
-    .al-headerSide.al-right {
-        justify-content: flex-end;
-    }
+.al-headerSide.al-right {
+    justify-content: flex-end;
+}
 
 .al-headerCenter {
     display: flex;
+    justify-content: center;
     justify-content: center;
     align-items: center;
     min-width: 0;
@@ -106,30 +135,35 @@ body {
     min-width: 260px;
 }
 
-    .al-search input {
-        width: 100%;
-        height: 44px;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 0 90px 0 44px;
-        outline: none;
-        background: linear-gradient(180deg, #ffffff, #f8fafc);
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-        transition: box-shadow 140ms ease, border-color 140ms ease, transform 140ms ease;
-    }
+.al-search input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0 90px 0 44px;
+    outline: none;
+    background: var(--input-bg);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transition: box-shadow 140ms ease, border-color 140ms ease, transform 140ms ease, background 140ms ease, color 140ms ease;
+}
 
-        .al-search input:focus {
-            border-color: rgba(37, 99, 235, 0.55);
-            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.22);
-            transform: translateY(-1px);
-        }
+.al-search input::placeholder {
+    color: var(--muted);
+}
+
+.al-search input:focus {
+    border-color: rgba(37, 99, 235, 0.55);
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.22);
+    transform: translateY(-1px);
+}
 
 .al-searchIcon {
     position: absolute;
     left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--muted);
 }
 
 .al-kbd {
@@ -140,8 +174,8 @@ body {
     padding: 6px 10px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.78);
-    color: #64748b;
+    background: var(--card);
+    color: var(--muted);
     font-size: 12px;
     font-weight: 800;
 }
@@ -151,25 +185,65 @@ body {
     height: 42px;
     border-radius: 14px;
     border: 1px solid var(--border);
-    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    background: var(--input-bg);
+    color: var(--text);
     display: grid;
     place-items: center;
     cursor: pointer;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    box-shadow: var(--shadow);
+    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
-    .al-iconBtn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
-        border-color: rgba(37, 99, 235, 0.25);
-    }
+.al-iconBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow2);
+    border-color: rgba(37, 99, 235, 0.25);
+}
+
+.al-profileMenuWrap {
+    position: relative;
+    display: inline-block;
+}
+
+.al-profileMenu {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    width: 170px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--menu-shadow);
+    padding: 8px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.al-profileMenuItem {
+    border: none;
+    background: var(--card);
+    color: var(--text);
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    width: 100%;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.al-profileMenuItem:hover {
+    background: var(--surface-2);
+}
 
 .al-body {
     display: grid;
     grid-template-columns: var(--sidebar-w) 1fr;
     align-items: start;
     min-height: calc(100vh - var(--header-h));
+    background: var(--bg);
 }
 
 .al-sidebar {
@@ -177,7 +251,7 @@ body {
     top: var(--header-h);
     width: var(--sidebar-w);
     height: calc(100vh - var(--header-h));
-    background: #fff;
+    background: var(--card);
     border-right: 1px solid var(--border);
     padding: 14px 12px;
     display: flex;
@@ -201,7 +275,7 @@ body {
     text-decoration: none;
     color: var(--text);
     font-weight: 800;
-    transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease, color 120ms ease;
 }
 
 .al-linkIcon {
@@ -210,20 +284,20 @@ body {
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: #f1f5f9;
+    background: var(--icon-bg);
     border: 1px solid var(--border);
     transition: background 120ms ease, border-color 120ms ease;
 }
 
 .al-link:hover {
-    background: #f1f5ff;
+    background: var(--hover-bg);
     transform: translateY(-1px);
 }
 
-    .al-link:hover .al-linkIcon {
-        border-color: rgba(37, 99, 235, 0.25);
-        background: rgba(37, 99, 235, 0.08);
-    }
+.al-link:hover .al-linkIcon {
+    border-color: rgba(37, 99, 235, 0.25);
+    background: rgba(37, 99, 235, 0.08);
+}
 
 .al-link.isActive {
     background: linear-gradient(135deg, var(--blue), var(--blue2));
@@ -231,14 +305,14 @@ body {
     box-shadow: 0 16px 34px rgba(37, 99, 235, 0.28);
 }
 
-    .al-link.isActive .al-linkIcon {
-        background: rgba(255, 255, 255, 0.16);
-        border-color: rgba(255, 255, 255, 0.22);
-    }
+.al-link.isActive .al-linkIcon {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.22);
+}
 
-    .al-link.isActive svg {
-        color: #fff;
-    }
+.al-link.isActive svg {
+    color: #fff;
+}
 
 .al-sidebarBottom {
     margin-top: auto;
@@ -252,8 +326,8 @@ body {
     padding: 10px;
     border-radius: 16px;
     border: 1px solid var(--border);
-    background: linear-gradient(180deg, #ffffff, #f8fafc);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    background: var(--input-bg);
+    box-shadow: var(--shadow);
 }
 
 .al-userAvatar {
@@ -277,19 +351,27 @@ body {
     font-weight: 800;
 }
 
+.al-errorText {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
 .al-main {
     min-width: 0;
     display: flex;
     flex-direction: column;
+    background: var(--bg);
 }
 
 .al-content {
     padding: 22px;
     flex: 1;
+    color: var(--text);
 }
 
 .al-footer {
-    background: #fff;
+    background: var(--card);
     border-top: 1px solid var(--border);
     padding: 24px 22px;
 }
@@ -338,16 +420,16 @@ body {
     font-weight: 650;
 }
 
-    .al-footerList li {
-        cursor: pointer;
-        width: fit-content;
-        transition: color 140ms ease, transform 140ms ease;
-    }
+.al-footerList li {
+    cursor: pointer;
+    width: fit-content;
+    transition: color 140ms ease, transform 140ms ease;
+}
 
-        .al-footerList li:hover {
-            color: var(--blue);
-            transform: translateX(3px);
-        }
+.al-footerList li:hover {
+    color: var(--blue);
+    transform: translateX(3px);
+}
 
 .al-footerBottom {
     text-align: center;
@@ -377,6 +459,9 @@ body {
 
     .al-hamburger {
         display: inline-flex;
+    .al-headerSide.al-left,
+    .al-headerSide.al-right {
+        display: none;
     }
 
     .al-search {

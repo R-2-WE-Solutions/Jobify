@@ -16,8 +16,7 @@ import {
     TrendingUp, Building2, Settings, ShieldCheck, BarChart3,
     Plus, X, Edit, Trash2, Upload, CheckCircle, AlertCircle,
     Clock, Camera, Moon, Sun, Info, Save, ExternalLink,
-    Target, Lightbulb, ChevronDown, Phone, MapPin, Mail, Download,
-    GraduationCap as ProofIcon
+    Target, Lightbulb, Phone, MapPin, Mail, Download
 } from 'lucide-react';
 import './styles/profile.css';
 
@@ -34,18 +33,14 @@ const ProfilePage = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
     const [formData, setFormData] = useState({});
-    const [darkMode, setDarkMode] = useState(false);
     const [bannerDismissed, setBannerDismissed] = useState(false);
 
     const [skillsRefreshKey, setSkillsRefreshKey] = useState(0);
+    
 
     useEffect(() => {
         fetchProfileData();
     }, []);
-
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', darkMode);
-    }, [darkMode]);
 
     const fetchProfileData = async () => {
         try {
@@ -116,29 +111,18 @@ const ProfilePage = () => {
 
     return (
         <div className="pf-page">
-            {/* ── Header ── */}
             <header className="pf-header">
-                <div className="pf-header__inner">
-                    <button
-                        className="pf-theme-toggle"
-                        onClick={() => setDarkMode(d => !d)}
-                        aria-label="Toggle theme"
-                    >
-                        {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
-
-                    <div className="pf-header__body">
-                        {/* Avatar */}
+    <div className="pf-header__inner">
+        <div className="pf-header__body">
                         <div className="pf-avatar-wrap">
                             <div className="pf-avatar">
                                 <span>{(profile.fullName || profile.companyName || '?').charAt(0).toUpperCase()}</span>
                             </div>
-                            <button className="pf-avatar__cam" aria-label="Change photo">
+                            <button className="pf-avatar__cam" aria-label="Change photo" type="button">
                                 <Camera size={16} />
                             </button>
                         </div>
 
-                        {/* Info */}
                         <div className="pf-header__info">
                             <h1 className="pf-header__name">
                                 {profile.fullName || profile.companyName || 'Your Profile'}
@@ -169,10 +153,7 @@ const ProfilePage = () => {
                 </div>
             </header>
 
-            {/* ── Main ── */}
             <main className="pf-main">
-
-                {/* Welcome banner */}
                 {!bannerDismissed && (
                     <div className="pf-banner">
                         <Info size={16} className="pf-banner__icon" />
@@ -183,17 +164,15 @@ const ProfilePage = () => {
                                 : 'Complete your organization details and hiring preferences to attract the right candidates.'
                             }</p>
                         </div>
-                        <button className="pf-banner__close" onClick={() => setBannerDismissed(true)}>
+                        <button className="pf-banner__close" onClick={() => setBannerDismissed(true)} type="button">
                             <X size={16} />
                         </button>
                     </div>
                 )}
 
-                {/* Alerts */}
                 {error && <div className="pf-alert pf-alert--error">{error}</div>}
                 {success && <div className="pf-alert pf-alert--success">Profile updated successfully!</div>}
 
-                {/* Sections */}
                 {isStudent ? (
                     <StudentSections
                         profile={profile}
@@ -207,9 +186,8 @@ const ProfilePage = () => {
                     <RecruiterSections profile={profile} formData={formData} onChange={handleInputChange} />
                 )}
 
-                {/* Save */}
                 <div className="pf-save-row">
-                    <button className="pf-btn pf-btn--primary pf-btn--lg" onClick={handleSave} disabled={saving}>
+                    <button className="pf-btn pf-btn--primary pf-btn--lg" onClick={handleSave} disabled={saving} type="button">
                         <Save size={18} />
                         {saving ? 'Saving…' : 'Save Changes'}
                     </button>
@@ -854,7 +832,6 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
     const [error, setError] = useState(null);
     const fileRef = useRef();
 
-
     const handleFile = async (e) => {
         const f = e.target.files?.[0];
         if (!f) return;
@@ -864,15 +841,12 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
         setProgress("Uploading CV...");
 
         try {
-            // 1) SAVE resume file (backend)
             const saved = await uploadResume(f);
 
-            // 2) EXTRACT skills
             setProgress("Extracting skills...");
             const extracted = await extractSkillsFromCv(f);
             const extractedSkills = (extracted.skills || []).map(normalizeSkill);
 
-            // 3) Save skills to DB (avoid duplicates)
             setProgress("Saving skills...");
             const existing = await getSkills();
             const existingSet = new Set(existing.map(x => normalizeSkill(x.name)));
@@ -883,14 +857,10 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
                 existingSet.add(sk);
             }
 
-            // ✅ 4) ONLY NOW update UI to show resume is “on file”
             setHasResume(true);
             setUploadedAt(saved.profile?.resumeUploadedAtUtc || new Date().toISOString());
             onProfileUpdate?.(prev => ({ ...prev, hasResume: true }));
-
-            // refresh skills card UI
             onSkillsUpdated?.();
-
         } catch (err) {
             setError(err.message || "Upload failed");
         } finally {
@@ -899,8 +869,9 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
             fileRef.current.value = "";
         }
     };
+
     const deleteAllSkills = async () => {
-        const skills = await getSkills(); // [{id, name, ...}]
+        const skills = await getSkills();
         await Promise.all(skills.map(s => deleteSkill(s.id)));
     };
 
@@ -911,20 +882,13 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
         setError(null);
 
         try {
-            // delete resume
             await deleteResume();
-
-            // delete skills (from DB)
             await deleteAllSkills();
 
-            // update UI
             setHasResume(false);
             setUploadedAt(null);
             onProfileUpdate?.(prev => ({ ...prev, hasResume: false }));
-
-            // refresh skills card
             onSkillsUpdated?.();
-
         } catch (err) {
             setError(err.message || "Delete failed");
         } finally {
@@ -1188,7 +1152,7 @@ const HiringPrefsCard = () => {
     const [skillInput, setSkillInput] = useState('');
 
     const toggle = (l) => setFocus(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]);
-    const addSkill = () => {
+    const addSkillLocal = () => {
         if (skillInput.trim() && !skills.includes(skillInput.trim())) {
             setSkills(prev => [...prev, skillInput.trim()]);
             setSkillInput('');
@@ -1217,8 +1181,8 @@ const HiringPrefsCard = () => {
                 <label className="pf-label">Skills Frequently Assessed</label>
                 <div className="pf-skill-add">
                     <input className="pf-input pf-input--flex" value={skillInput} onChange={e => setSkillInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} placeholder="Add a skill" />
-                    <button className="pf-btn pf-btn--primary" onClick={addSkill}><Plus size={14} /> Add</button>
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkillLocal())} placeholder="Add a skill" />
+                    <button className="pf-btn pf-btn--primary" onClick={addSkillLocal}><Plus size={14} /> Add</button>
                 </div>
                 {skills.length > 0 && (
                     <div className="pf-tags">

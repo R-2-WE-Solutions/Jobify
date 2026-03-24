@@ -107,10 +107,8 @@ export default function SignupPage() {
         window.location.href = `${API_URL}/api/Auth/external/GitHub`;
     };
 
-    /** Theme state (local UI only) */
-    const { darkMode, setDarkMode } = useTheme();
-
-    const toggleDarkMode = () => setDarkMode(d => !d);
+    /** Theme state (local UI only) //global now */
+    const { darkMode, toggleTheme } = useTheme();
 
     /** Role selection controls which fields are shown and validated */
     const [userRole, setUserRole] = useState("candidate");
@@ -446,7 +444,7 @@ export default function SignupPage() {
                             <div className="lp-darktoggle-desktop">
                                 <button
                                     className="lp-iconbtn"
-                                    onClick={toggleDarkMode}
+                                    onClick={toggleTheme}
                                     type="button"
                                     aria-label="Toggle theme"
                                 >
