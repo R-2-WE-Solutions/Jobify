@@ -31,12 +31,9 @@ export default function AppLayout() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const profileMenuRef = useRef(null);
-  const notificationsRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -52,13 +49,6 @@ export default function AppLayout() {
         !profileMenuRef.current.contains(event.target)
       ) {
         setShowProfileMenu(false);
-      }
-
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(event.target)
-      ) {
-        setShowNotifications(false);
       }
     }
 
@@ -106,50 +96,18 @@ export default function AppLayout() {
   }, []);
 
   useEffect(() => {
-    async function loadNotifications() {
+    async function loadUnreadCount() {
       try {
-        const [notificationsRes, unreadRes] = await Promise.all([
-          api.get("/Notifications"),
-          api.get("/Notifications/unread-count"),
-        ]);
-
-        setNotifications(
-          Array.isArray(notificationsRes.data) ? notificationsRes.data : []
-        );
+        const unreadRes = await api.get("/Notifications/unread-count");
         setUnreadCount(unreadRes.data?.unreadCount ?? 0);
       } catch (err) {
-        console.error("Failed to load notifications:", err);
-        setNotifications([]);
+        console.error("Failed to load unread count:", err);
         setUnreadCount(0);
       }
     }
 
-    loadNotifications();
+    loadUnreadCount();
   }, []);
-
-  async function handleNotificationClick(notification) {
-    try {
-      if (!notification.isRead) {
-        await api.put(`/Notifications/${notification.id}/read`);
-
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, isRead: true } : n
-          )
-        );
-
-        setUnreadCount((prev) => Math.max(prev - 1, 0));
-      }
-
-      setShowNotifications(false);
-
-      if (notification.opportunityId) {
-        navigate(`/opportunities/${notification.opportunityId}`);
-      }
-    } catch (err) {
-      console.error("Failed to update notification:", err);
-    }
-  }
 
   function handleLogout() {
     setShowProfileMenu(false);
@@ -197,52 +155,18 @@ export default function AppLayout() {
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            <div ref={notificationsRef} className="al-notifWrap">
+            <div className="al-notifWrap">
               <button
                 className="al-iconBtn"
                 type="button"
                 title="Notifications"
-                onClick={() => setShowNotifications((prev) => !prev)}
+                onClick={() => navigate("/notifications")}
               >
                 <Bell size={18} />
                 {unreadCount > 0 && (
                   <span className="notif-badge">{unreadCount}</span>
                 )}
               </button>
-
-              {showNotifications && (
-                <div className="notif-dropdown">
-                  <div className="notif-dropdownHeader">Notifications</div>
-
-                  {notifications.length === 0 ? (
-                    <p className="notif-empty">No notifications</p>
-                  ) : (
-                    <>
-                      {notifications.slice(0, 5).map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`notif-item ${notification.isRead ? "" : "unread"}`}
-                          onClick={() => handleNotificationClick(notification)}
-                        >
-                          <strong>{notification.title}</strong>
-                          <p>{notification.message}</p>
-                        </div>
-                      ))}
-
-                      <button
-                        type="button"
-                        className="notif-viewAll"
-                        onClick={() => {
-                          setShowNotifications(false);
-                          navigate("/notifications");
-                        }}
-                      >
-                        View all notifications
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
 
             <div ref={profileMenuRef} className="al-profileMenuWrap">
@@ -346,16 +270,6 @@ export default function AppLayout() {
                 <span className="al-linkText">Matches</span>
               </NavLink>
             )}
-
-            <NavLink
-              to="/notifications"
-              className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-            >
-              <span className="al-linkIcon">
-                <Bell size={18} />
-              </span>
-              <span className="al-linkText">Notifications</span>
-            </NavLink>
 
             <NavLink
               to="/profile"
