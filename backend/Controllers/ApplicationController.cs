@@ -216,7 +216,6 @@ public class ApplicationController : ControllerBase
         public string Base64Jpeg { get; set; } = "";
     }
 
-    // GET my applications
     [Authorize(Roles = "Student")]
     [HttpGet("me")]
     public async Task<ActionResult<List<MyApplicationDto>>> GetMyApplications()
@@ -227,7 +226,9 @@ public class ApplicationController : ControllerBase
         var apps = await _db.Applications
             .AsNoTracking()
             .Include(a => a.Opportunity)
-            .Where(a => a.UserId == userId && a.Status != ApplicationStatus.Withdrawn)
+            .Where(a =>
+                (a.UserId == userId || a.StudentUserId == userId) &&
+                a.Status != ApplicationStatus.Withdrawn)
             .OrderByDescending(a => a.CreatedAtUtc)
             .Select(a => new MyApplicationDto
             {
@@ -244,7 +245,6 @@ public class ApplicationController : ControllerBase
         return Ok(apps);
     }
 
-    // GET application details incl. public assessment + expiry
     [Authorize(Roles = "Student")]
     [HttpGet("{applicationId:int}")]
     public async Task<IActionResult> GetMyApplication(int applicationId)
@@ -255,7 +255,9 @@ public class ApplicationController : ControllerBase
         var app = await _db.Applications
             .AsNoTracking()
             .Include(a => a.Opportunity)
-            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+            .FirstOrDefaultAsync(a =>
+                a.Id == applicationId &&
+                (a.UserId == userId || a.StudentUserId == userId));
 
         if (app == null) return NotFound();
 
@@ -295,17 +297,14 @@ public class ApplicationController : ControllerBase
                 attempt.WebcamConsent,
                 attempt.Flagged,
                 attempt.FlagReason,
-
                 mcqCount = attempt.McqCountSnapshot,
                 challengeCount = attempt.ChallengeCountSnapshot,
                 timeLimitSeconds = attempt.TimeLimitSeconds,
-
                 savedAnswers
             }
         });
     }
 
-    // Start assessment
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/start")]
     public async Task<IActionResult> StartAssessment(int applicationId, [FromBody] StartAssessmentDto dto)
@@ -315,7 +314,9 @@ public class ApplicationController : ControllerBase
 
         var app = await _db.Applications
             .Include(a => a.Opportunity)
-            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+            .FirstOrDefaultAsync(a =>
+                a.Id == applicationId &&
+                (a.UserId == userId || a.StudentUserId == userId));
 
         if (app == null) return NotFound();
         if (app.Status == ApplicationStatus.Withdrawn) return BadRequest("Application is withdrawn.");
@@ -330,6 +331,7 @@ public class ApplicationController : ControllerBase
         {
             if (existing.SubmittedAtUtc != null)
                 return Ok(new { attemptId = existing.Id, alreadySubmitted = true, expiresAtUtc = existing.ExpiresAtUtc });
+
             if (IsExpired(existing))
             {
                 _db.ApplicationAssessments.Remove(existing);
@@ -397,10 +399,8 @@ public class ApplicationController : ControllerBase
             StartedAtUtc = DateTime.UtcNow,
             TimeLimitSeconds = timeLimitSeconds,
             ExpiresAtUtc = DateTime.UtcNow.AddSeconds(timeLimitSeconds),
-
             McqCountSnapshot = mcqCount,
             ChallengeCountSnapshot = challengeCount,
-
             RandomSeed = seed,
             QuestionOrderJson = JsonSerializer.Serialize(order),
             WebcamConsent = dto.WebcamConsent,
@@ -427,7 +427,9 @@ public class ApplicationController : ControllerBase
 
         var attempt = await _db.ApplicationAssessments
             .Include(x => x.Application)
-            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+            .FirstOrDefaultAsync(x =>
+                x.ApplicationId == applicationId &&
+                (x.Application.UserId == userId || x.Application.StudentUserId == userId));
 
         if (attempt == null) return NotFound("Assessment not started.");
         if (attempt.SubmittedAtUtc != null) return BadRequest("Already submitted.");
@@ -450,7 +452,9 @@ public class ApplicationController : ControllerBase
 
         var attempt = await _db.ApplicationAssessments
             .Include(x => x.Application)
-            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+            .FirstOrDefaultAsync(x =>
+                x.ApplicationId == applicationId &&
+                (x.Application.UserId == userId || x.Application.StudentUserId == userId));
 
         if (attempt == null) return NotFound("Assessment not started.");
         if (attempt.SubmittedAtUtc != null) return NoContent();
@@ -473,9 +477,8 @@ public class ApplicationController : ControllerBase
         if (isTabEvent) attempt.TabSwitchCount++;
         if (isSuspicious) attempt.SuspiciousCount++;
 
-        // Soft warning thresholds
-        var warnTabAt = 1;   // first tab switch -> warn
-        var flagTabAt = 3;   // your current flag threshold
+        var warnTabAt = 1;
+        var flagTabAt = 3;
 
         string? message = null;
 
@@ -511,7 +514,6 @@ public class ApplicationController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        // If you want it to feel like an "error" once flagged:
         if (attempt.Flagged)
         {
             return StatusCode(StatusCodes.Status429TooManyRequests, new
@@ -544,7 +546,9 @@ public class ApplicationController : ControllerBase
 
         var attempt = await _db.ApplicationAssessments
             .Include(x => x.Application)
-            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+            .FirstOrDefaultAsync(x =>
+                x.ApplicationId == applicationId &&
+                (x.Application.UserId == userId || x.Application.StudentUserId == userId));
 
         if (attempt == null) return NotFound("Assessment not started.");
         if (!attempt.WebcamConsent) return BadRequest("No webcam consent.");
@@ -592,7 +596,9 @@ public class ApplicationController : ControllerBase
         var attempt = await _db.ApplicationAssessments
             .Include(x => x.Application)
                 .ThenInclude(a => a.Opportunity)
-            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+            .FirstOrDefaultAsync(x =>
+                x.ApplicationId == applicationId &&
+                (x.Application.UserId == userId || x.Application.StudentUserId == userId));
 
         if (attempt == null) return NotFound("Assessment not started.");
         if (attempt.SubmittedAtUtc != null) return BadRequest("Already submitted.");
@@ -646,18 +652,19 @@ public class ApplicationController : ControllerBase
                 mode = "custom",
                 results = new[]
                 {
-            new {
-                stdin = dto.StdinOverride,
-                expected = (string?)null,
-                stdout = res["stdout"],
-                stderr = res["stderr"],
-                compile_output = res["compile_output"],
-                message = res["message"],
-                status = res["status"]
+                new {
+                    stdin = dto.StdinOverride,
+                    expected = (string?)null,
+                    stdout = res["stdout"],
+                    stderr = res["stderr"],
+                    compile_output = res["compile_output"],
+                    message = res["message"],
+                    status = res["status"]
+                }
             }
-        }
             });
         }
+
         var results = new List<object>();
 
         if (qEl.TryGetProperty("publicTests", out var pts) && pts.ValueKind == JsonValueKind.Array)
@@ -687,7 +694,6 @@ public class ApplicationController : ControllerBase
             mode = "public",
             results
         });
-
     }
 
 
@@ -705,7 +711,9 @@ public class ApplicationController : ControllerBase
         var attempt = await _db.ApplicationAssessments
             .Include(x => x.Application)
                 .ThenInclude(a => a.Opportunity)
-            .FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.Application.UserId == userId);
+            .FirstOrDefaultAsync(x =>
+                x.ApplicationId == applicationId &&
+                (x.Application.UserId == userId || x.Application.StudentUserId == userId));
 
         if (attempt == null) return NotFound("Assessment not started.");
         if (attempt.SubmittedAtUtc != null) return BadRequest("Already submitted.");
@@ -726,6 +734,7 @@ public class ApplicationController : ControllerBase
         {
             answersRoot = JsonDocument.Parse("{}").RootElement.Clone();
         }
+
         var mcqScore = ComputeMcqScore(assessmentJson, attempt.AnswersJson);
         var (codeScore, codeDetails) = await GradeCodeQuestions(assessmentJson, answersRoot);
         var hasMcq = HasQuestionType(assessmentJson, "mcq");
@@ -958,30 +967,40 @@ public class ApplicationController : ControllerBase
         public bool HasAssessment { get; set; }
         public decimal? AssessmentScore { get; set; }
         public string? Note { get; set; }
+        public int MatchPercentage { get; set; }
+        public DateTime? InterviewScheduledAtUtc { get; set; }
+        public bool HasActiveInterview { get; set; }
     }
 
     public class ResendRejectionDto
     {
         public string? RejectionReason { get; set; }
     }
-
-    // ── GET /api/applications/recruiter/{opportunityId} ───────────────────────
-    // PB_19: see all applicants + their current status for a given opportunity
     [Authorize(Roles = "Recruiter")]
     [HttpGet("recruiter/opportunity/{opportunityId:int}")]
     public async Task<ActionResult<List<RecruiterAppListDto>>> GetApplicationsForOpportunity(int opportunityId)
     {
         var recruiterId = CurrentUserId();
-        if (string.IsNullOrEmpty(recruiterId)) return Unauthorized();
+        if (string.IsNullOrEmpty(recruiterId))
+            return Unauthorized();
 
         var opp = await _db.Opportunities
             .AsNoTracking()
+            .Include(o => o.OpportunitySkills)
+                .ThenInclude(os => os.Skill)
             .FirstOrDefaultAsync(o => o.Id == opportunityId);
 
-        if (opp == null) return NotFound("Opportunity not found.");
+        if (opp == null)
+            return NotFound("Opportunity not found.");
 
         if (opp.RecruiterUserId != recruiterId)
             return Forbid();
+
+        var opportunitySkills = opp.OpportunitySkills
+            .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
+            .Select(os => os.Skill!.Name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         var apps = await _db.Applications
             .AsNoTracking()
@@ -994,27 +1013,73 @@ public class ApplicationController : ControllerBase
 
         foreach (var app in apps)
         {
-            var user = await _db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == app.UserId);
+            var candidateUserId = !string.IsNullOrWhiteSpace(app.UserId)
+                ? app.UserId
+                : app.StudentUserId;
 
-            var student = await _db.StudentProfiles.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.UserId == app.UserId);
+            var user = string.IsNullOrWhiteSpace(candidateUserId)
+                ? null
+                : await _db.Users.AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == candidateUserId);
+
+            var student = string.IsNullOrWhiteSpace(candidateUserId)
+                ? null
+                : await _db.StudentProfiles.AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.UserId == candidateUserId);
 
             var assessment = await _db.ApplicationAssessments
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
 
+            var studentSkills = string.IsNullOrWhiteSpace(candidateUserId)
+                ? new List<string>()
+                : await _db.StudentSkills
+                    .AsNoTracking()
+                    .Where(ss => ss.StudentUserId == candidateUserId && ss.SkillId != null)
+                    .Join(
+                        _db.Skills,
+                        ss => ss.SkillId,
+                        s => s.Id,
+                        (ss, s) => s.Name
+                    )
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name.Trim())
+                    .Distinct()
+                    .ToListAsync();
+            var latestInterview = await _db.Interviews
+    .AsNoTracking()
+    .Where(i => i.ApplicationId == app.Id && !i.IsCancelled)
+    .OrderByDescending(i => i.ScheduledAtUtc)
+    .FirstOrDefaultAsync();
+
+            var hasActiveInterview =
+                latestInterview != null &&
+                latestInterview.ScheduledAtUtc.AddHours(1) > DateTime.UtcNow;
+
+            var matchPercentage = CalculateMatchPercentage(studentSkills, opportunitySkills);
+
             result.Add(new RecruiterAppListDto
             {
                 ApplicationId = app.Id,
-                CandidateName = student?.FullName ?? user?.UserName ?? "Unknown",
-                CandidateEmail = user?.Email ?? "",
+                CandidateName =
+        !string.IsNullOrWhiteSpace(student?.FullName) ? student.FullName! :
+        !string.IsNullOrWhiteSpace(student?.Email) ? student.Email.Split('@')[0] :
+        !string.IsNullOrWhiteSpace(user?.UserName) ? user.UserName! :
+        !string.IsNullOrWhiteSpace(user?.Email) ? user.Email!.Split('@')[0] :
+        "Unknown",
+                CandidateEmail =
+        !string.IsNullOrWhiteSpace(student?.Email) ? student.Email :
+        !string.IsNullOrWhiteSpace(user?.Email) ? user.Email! :
+        "No email",
                 Status = app.Status.ToString(),
                 CreatedAtUtc = app.CreatedAtUtc,
                 UpdatedAtUtc = app.UpdatedAtUtc,
                 HasAssessment = !string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson),
                 AssessmentScore = assessment?.Score,
-                Note = app.Note
+                Note = app.Note,
+                MatchPercentage = matchPercentage,
+                InterviewScheduledAtUtc = latestInterview?.ScheduledAtUtc,
+                HasActiveInterview = hasActiveInterview
             });
         }
 
@@ -1033,7 +1098,9 @@ public class ApplicationController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Status))
             return BadRequest("Status is required.");
 
-        if (!Enum.TryParse<ApplicationStatus>(dto.Status, ignoreCase: true, out var newStatus))
+        var normalizedStatus = dto.Status?.Trim().Replace(" ", "");
+
+        if (!Enum.TryParse<ApplicationStatus>(normalizedStatus, ignoreCase: true, out var newStatus))
         {
             var valid = string.Join(", ", Enum.GetNames<ApplicationStatus>());
             return BadRequest($"Invalid status. Valid values: {valid}");
@@ -1326,11 +1393,9 @@ public class ApplicationController : ControllerBase
         });
     }
 
-
-    // Get all Applications per Student
-    [Authorize(Roles= "Admin")]
+    [Authorize(Roles = "Admin")]
     [HttpGet("by-student/{userId}")]
-    public async Task<IActionResult> GetApplicationsByStudent (string userId)
+    public async Task<IActionResult> GetApplicationsByStudent(string userId)
     {
         var applications = await _db.Applications.AsNoTracking()
             .Include(a => a.Opportunity)
@@ -1347,8 +1412,6 @@ public class ApplicationController : ControllerBase
 
         return Ok(applications);
     }
-
-
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
@@ -1376,6 +1439,33 @@ public class ApplicationController : ControllerBase
         mail.To.Add(to);
 
         await client.SendMailAsync(mail);
+    }
+
+    private static int CalculateMatchPercentage(
+    List<string> studentSkills,
+    List<string> opportunitySkills)
+    {
+        if (opportunitySkills == null || opportunitySkills.Count == 0)
+            return 0;
+
+        if (studentSkills == null || studentSkills.Count == 0)
+            return 0;
+
+        var studentSet = new HashSet<string>(
+            studentSkills.Select(s => s.Trim().ToLower())
+        );
+
+        var opportunitySet = new HashSet<string>(
+            opportunitySkills.Select(s => s.Trim().ToLower())
+        );
+
+        var matched = opportunitySet.Count(skill => studentSet.Contains(skill));
+
+        var percentage = (int)Math.Round(
+            (double)matched / opportunitySet.Count * 100
+        );
+
+        return percentage;
     }
 
     private static string BuildRejectionEmail(
