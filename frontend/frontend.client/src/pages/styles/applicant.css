@@ -421,3 +421,218 @@ body {
     color: #7c3aed;
     border: 1px solid #ddd6fe;
 }
+
+/* overlay */
+.org-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 24px;
+}
+
+/* modal */
+.org-modal {
+    width: 100%;
+    max-width: 720px;
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 36px;
+    box-shadow: 0 25px 70px rgba(15, 23, 42, 0.18);
+    border: 1px solid #eef2f7;
+    animation: modalPop 0.18s ease;
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.org-modal h2 {
+    margin: 0 0 10px;
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.org-modal p {
+    margin: 0 0 22px;
+    font-size: 15px;
+    color: #64748b;
+}
+
+/* textarea */
+.org-textarea {
+    width: 100%;
+    min-height: 170px;
+    border: 1px solid #dbe3ee;
+    border-radius: 18px;
+    padding: 16px 18px;
+    font-size: 15px;
+    line-height: 1.6;
+    font-family: inherit;
+    color: #0f172a;
+    background: #f8fafc;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-sizing: border-box;
+}
+
+    .org-textarea::placeholder {
+        color: #94a3b8;
+    }
+
+    .org-textarea:focus {
+        background: #ffffff;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+/* actions */
+.org-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 24px;
+}
+
+/* optional modal button polish */
+.org-modal .org-btn {
+    min-width: 150px;
+    height: 52px;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* mobile */
+@media (max-width: 640px) {
+    .org-modal {
+        padding: 24px;
+        border-radius: 22px;
+    }
+
+        .org-modal h2 {
+            font-size: 22px;
+        }
+
+    .org-modal-actions {
+        flex-direction: column;
+    }
+
+    .org-modal .org-btn {
+        width: 100%;
+    }
+}
+.org-textarea.small {
+    min-height: 110px;
+}
+
+.org-rejection-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eef2f7;
+}
+
+    .org-rejection-section .org-form-group {
+        margin-bottom: 12px;
+    }
+
+/* Base pill */
+.status-pill {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+    /* Draft (grey) */
+    .status-pill.draft {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    /* Pending (blue-ish) */
+    .status-pill.applied {
+        background: #e0ecff;
+        color: #2563eb;
+    }
+
+    /* In Review (light blue/purple) */
+    .status-pill.review {
+        background: #e6f0ff;
+        color: #3b82f6;
+    }
+
+    /* Shortlisted (purple) */
+    .status-pill.shortlisted {
+        background: #ede9fe;
+        color: #7c3aed;
+    }
+
+    /* Accepted (green) */
+    .status-pill.offer {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    /* Rejected (red) */
+    .status-pill.rejected {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+.org-filters-row {
+    margin: 18px 0 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.org-stage-filter {
+    min-width: 190px;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #dbe1ea;
+    border-radius: 14px;
+    background: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    color: #0f172a;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+    .org-stage-filter:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+.applicant-link-button {
+    border: none;
+    background: transparent;
+    padding: 0;
+    color: #2563eb;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    font: inherit;
+}
+
+    .applicant-link-button:hover {
+        text-decoration: underline;
+    }
