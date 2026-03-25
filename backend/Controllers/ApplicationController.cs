@@ -1051,9 +1051,9 @@ public class ApplicationController : ControllerBase
 
         foreach (var app in apps)
         {
-            var candidateUserId = !string.IsNullOrWhiteSpace(app.UserId)
-                ? app.UserId
-                : app.StudentUserId;
+            var candidateUserId = !string.IsNullOrWhiteSpace(app.StudentUserId)
+                ? app.StudentUserId
+                : app.UserId;
 
             var user = string.IsNullOrWhiteSpace(candidateUserId)
                 ? null
@@ -1423,37 +1423,49 @@ public class ApplicationController : ControllerBase
         if (app.Opportunity == null || app.Opportunity.RecruiterUserId != recruiterId)
             return Forbid();
 
-        var studentUserId = app.StudentUserId ?? app.UserId;
-        if (string.IsNullOrEmpty(studentUserId))
-            return Ok(new { app.Id });
+        var possibleUserIds = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(app.StudentUserId))
+            possibleUserIds.Add(app.StudentUserId);
+
+        if (!string.IsNullOrWhiteSpace(app.UserId) &&
+            !possibleUserIds.Contains(app.UserId))
+            possibleUserIds.Add(app.UserId);
+
+        if (possibleUserIds.Count == 0)
+            return Ok(new { applicationId = app.Id });
 
         var profile = await _db.StudentProfiles
-            .FirstOrDefaultAsync(p => p.UserId == studentUserId);
+            .FirstOrDefaultAsync(p => possibleUserIds.Contains(p.UserId));
+
+        // this is the real id under which the profile data exists
+        var profileUserId = profile?.UserId
+            ?? possibleUserIds.First();
 
         var education = await _db.StudentEducations
-            .Where(e => e.StudentUserId == studentUserId)
+            .Where(e => e.StudentUserId == profileUserId)
             .OrderByDescending(e => e.GraduationYear)
             .ToListAsync();
 
         var experience = await _db.StudentExperiences
-            .Where(e => e.StudentUserId == studentUserId)
+            .Where(e => e.StudentUserId == profileUserId)
             .OrderByDescending(e => e.Id)
             .ToListAsync();
 
         var projects = await _db.StudentProjects
-            .Where(p => p.StudentUserId == studentUserId)
+            .Where(p => p.StudentUserId == profileUserId)
             .OrderByDescending(p => p.Id)
             .ToListAsync();
 
         var interests = await _db.StudentInterests
-            .Where(i => i.StudentUserId == studentUserId)
+            .Where(i => i.StudentUserId == profileUserId)
             .Select(i => i.Interest)
             .Where(i => !string.IsNullOrWhiteSpace(i))
             .Distinct()
             .ToListAsync();
 
         var dbSkills = await _db.StudentSkills
-            .Where(ss => ss.StudentUserId == studentUserId)
+            .Where(ss => ss.StudentUserId == profileUserId)
             .Join(
                 _db.Skills,
                 ss => ss.SkillId,
@@ -1476,16 +1488,33 @@ public class ApplicationController : ControllerBase
             .OrderBy(x => x)
             .ToList();
 
+        var user = await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => possibleUserIds.Contains(u.Id));
+
         var dto = new
         {
             applicationId = app.Id,
-            userId = studentUserId,
+
+            // send both ids
+            userId = profileUserId,
+            studentUserId = app.StudentUserId,
+            applicationUserId = app.UserId,
+
             opportunityTitle = app.Opportunity.Title,
             status = app.Status.ToString(),
             createdAtUtc = app.CreatedAtUtc,
 
-            fullName = profile?.FullName,
-            email = profile?.Email,
+            fullName =
+                !string.IsNullOrWhiteSpace(profile?.FullName) ? profile.FullName :
+                !string.IsNullOrWhiteSpace(user?.UserName) ? user.UserName :
+                !string.IsNullOrWhiteSpace(user?.Email) ? user.Email.Split('@')[0] :
+                "Applicant",
+
+            email =
+                !string.IsNullOrWhiteSpace(profile?.Email) ? profile.Email :
+                user?.Email,
+
             phoneNumber = profile?.PhoneNumber,
             location = profile?.Location,
             bio = profile?.Bio,
