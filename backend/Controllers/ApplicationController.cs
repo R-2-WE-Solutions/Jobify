@@ -53,89 +53,197 @@ public class ApplicationController : ControllerBase
 
     private static object? MakePublicAssessment(string? assessmentJson, List<string>? questionOrder = null)
     {
-        if (string.IsNullOrWhiteSpace(assessmentJson)) return null;
+        if (string.IsNullOrWhiteSpace(assessmentJson))
+            return null;
 
-        using var doc = JsonDocument.Parse(assessmentJson);
-        var root = doc.RootElement;
-
-        int timeLimitSeconds = root.TryGetProperty("timeLimitSeconds", out var tl) && tl.ValueKind == JsonValueKind.Number
-            ? tl.GetInt32()
-            : 1800;
-
-        bool randomize = root.TryGetProperty("randomize", out var r) && r.ValueKind == JsonValueKind.True;
-
-        if (!root.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array)
+        try
         {
-            return new { timeLimitSeconds, randomize, questions = new List<object>() };
-        }
+            using var doc = JsonDocument.Parse(assessmentJson);
+            var root = doc.RootElement;
 
-        var map = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var q in qs.EnumerateArray())
-        {
-            var id = q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String ? idEl.GetString() : null;
-            if (string.IsNullOrWhiteSpace(id)) continue;
-
-            var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String ? tEl.GetString() : "mcq";
-
-            if (string.Equals(type, "mcq", StringComparison.OrdinalIgnoreCase))
+            // ✅ OLD FORMAT (already has questions)
+            if ((root.TryGetProperty("questions", out var oldQs) && oldQs.ValueKind == JsonValueKind.Array) ||
+                (root.TryGetProperty("Questions", out oldQs) && oldQs.ValueKind == JsonValueKind.Array))
             {
-                var prompt = q.TryGetProperty("prompt", out var pEl) && pEl.ValueKind == JsonValueKind.String ? pEl.GetString() : "";
-                var options = new List<string?>();
-
-                if (q.TryGetProperty("options", out var optEl) && optEl.ValueKind == JsonValueKind.Array)
-                    foreach (var o in optEl.EnumerateArray())
-                        options.Add(o.ValueKind == JsonValueKind.String ? o.GetString() : null);
-
-                map[id] = new { id, type = "mcq", prompt, options };
+                return JsonSerializer.Deserialize<object>(
+                    assessmentJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
-            else if (string.Equals(type, "code", StringComparison.OrdinalIgnoreCase))
+
+            // ✅ NEW FORMAT → convert to student format
+            int timeLimitSeconds = 1800;
+
+            if (root.TryGetProperty("timeLimitMinutes", out var tlm) && tlm.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tlm.GetInt32() * 60;
+            else if (root.TryGetProperty("TimeLimitMinutes", out var tlmPascal) && tlmPascal.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tlmPascal.GetInt32() * 60;
+            else if (root.TryGetProperty("timeLimitSeconds", out var tls) && tls.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tls.GetInt32();
+            else if (root.TryGetProperty("TimeLimitSeconds", out var tlsPascal) && tlsPascal.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tlsPascal.GetInt32();
+
+            var questions = new List<Dictionary<string, object?>>();
+
+            // 🔹 MCQs
+            if (root.TryGetProperty("mcqs", out var mcqs) && mcqs.ValueKind == JsonValueKind.Array)
             {
-                var title = q.TryGetProperty("title", out var ti) && ti.ValueKind == JsonValueKind.String ? ti.GetString() : "";
-                var prompt = q.TryGetProperty("prompt", out var pEl) && pEl.ValueKind == JsonValueKind.String ? pEl.GetString() : "";
-                var starterCode = q.TryGetProperty("starterCode", out var sc) && sc.ValueKind == JsonValueKind.String ? sc.GetString() : "";
-
-                var allowed = new List<int>();
-                if (q.TryGetProperty("languageIdsAllowed", out var langs) && langs.ValueKind == JsonValueKind.Array)
-                    foreach (var l in langs.EnumerateArray())
-                        if (l.ValueKind == JsonValueKind.Number) allowed.Add(l.GetInt32());
-
-                var publicTests = new List<object>();
-                if (q.TryGetProperty("publicTests", out var pts) && pts.ValueKind == JsonValueKind.Array)
+                int i = 0;
+                foreach (var q in mcqs.EnumerateArray())
                 {
-                    foreach (var pt in pts.EnumerateArray())
+                    var prompt =
+                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                        "";
+
+                    var options = new List<string>();
+
+                    if (q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
                     {
-                        var stdin = pt.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() : "";
-                        var expected = pt.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : "";
-                        publicTests.Add(new { stdin, expected });
+                        foreach (var opt in opts.EnumerateArray())
+                            if (opt.ValueKind == JsonValueKind.String)
+                                options.Add(opt.GetString() ?? "");
                     }
+                    else if (q.TryGetProperty("Options", out var opts2) && opts2.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var opt in opts2.EnumerateArray())
+                            if (opt.ValueKind == JsonValueKind.String)
+                                options.Add(opt.GetString() ?? "");
+                    }
+
+                    questions.Add(new Dictionary<string, object?>
+                    {
+                        ["id"] = $"mcq-{i++}",
+                        ["type"] = "mcq",
+                        ["prompt"] = prompt,
+                        ["options"] = options
+                    });
                 }
-
-                map[id] = new
-                {
-                    id,
-                    type = "code",
-                    title,
-                    prompt,
-                    starterCode,
-                    languageIdsAllowed = allowed,
-                    publicTests
-                };
             }
-        }
+            else if (root.TryGetProperty("Mcqs", out var mcqsPascal) && mcqsPascal.ValueKind == JsonValueKind.Array)
+            {
+                int i = 0;
+                foreach (var q in mcqsPascal.EnumerateArray())
+                {
+                    var prompt =
+                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                        "";
 
-        var ordered = new List<object>();
-        if (questionOrder != null && questionOrder.Count > 0)
-        {
-            foreach (var qid in questionOrder)
-                if (map.TryGetValue(qid, out var pq)) ordered.Add(pq);
-        }
-        else
-        {
-            ordered = map.Values.ToList();
-        }
+                    var options = new List<string>();
 
-        return new { timeLimitSeconds, randomize, questions = ordered };
+                    if (q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var opt in opts.EnumerateArray())
+                            if (opt.ValueKind == JsonValueKind.String)
+                                options.Add(opt.GetString() ?? "");
+                    }
+                    else if (q.TryGetProperty("Options", out var opts2) && opts2.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var opt in opts2.EnumerateArray())
+                            if (opt.ValueKind == JsonValueKind.String)
+                                options.Add(opt.GetString() ?? "");
+                    }
+
+                    questions.Add(new Dictionary<string, object?>
+                    {
+                        ["id"] = $"mcq-{i++}",
+                        ["type"] = "mcq",
+                        ["prompt"] = prompt,
+                        ["options"] = options
+                    });
+                }
+            }
+
+            // 🔹 Coding
+            if (root.TryGetProperty("codingChallenges", out var coding) && coding.ValueKind == JsonValueKind.Array)
+            {
+                int i = 0;
+                foreach (var q in coding.EnumerateArray())
+                {
+                    var title =
+                        q.TryGetProperty("title", out var t) ? t.GetString() ?? "" :
+                        q.TryGetProperty("Title", out var t2) ? t2.GetString() ?? "" :
+                        "Coding Question";
+
+                    var prompt =
+                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                        "";
+
+                    var starterCode =
+                        q.TryGetProperty("starterCode", out var s) ? s.GetString() ?? "" :
+                        q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
+                        "";
+
+                    questions.Add(new Dictionary<string, object?>
+                    {
+                        ["id"] = $"code-{i++}",
+                        ["type"] = "code",
+                        ["title"] = title,
+                        ["prompt"] = prompt,
+                        ["starterCode"] = starterCode,
+                        ["languageIdsAllowed"] = new List<int> { 71, 63, 62, 51, 54 },
+                        ["publicTests"] = new List<object>()
+                    });
+                }
+            }
+            else if (root.TryGetProperty("CodingChallenges", out var codingPascal) && codingPascal.ValueKind == JsonValueKind.Array)
+            {
+                int i = 0;
+                foreach (var q in codingPascal.EnumerateArray())
+                {
+                    var title =
+                        q.TryGetProperty("title", out var t) ? t.GetString() ?? "" :
+                        q.TryGetProperty("Title", out var t2) ? t2.GetString() ?? "" :
+                        "Coding Question";
+
+                    var prompt =
+                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                        "";
+
+                    var starterCode =
+                        q.TryGetProperty("starterCode", out var s) ? s.GetString() ?? "" :
+                        q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
+                        "";
+
+                    questions.Add(new Dictionary<string, object?>
+                    {
+                        ["id"] = $"code-{i++}",
+                        ["type"] = "code",
+                        ["title"] = title,
+                        ["prompt"] = prompt,
+                        ["starterCode"] = starterCode,
+                        ["languageIdsAllowed"] = new List<int> { 71, 63, 62, 51, 54 },
+                        ["publicTests"] = new List<object>()
+                    });
+                }
+            }
+
+            // 🔹 Apply order if exists
+            if (questionOrder != null && questionOrder.Count > 0)
+            {
+                questions = questions
+                    .OrderBy(q =>
+                    {
+                        var id = q.TryGetValue("id", out var val) ? val?.ToString() : "";
+                        var idx = questionOrder.IndexOf(id ?? "");
+                        return idx >= 0 ? idx : int.MaxValue;
+                    })
+                    .ToList();
+            }
+
+            return new
+            {
+                timeLimitSeconds,
+                randomize = true,
+                questions
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static decimal ComputeMcqScore(string assessmentJson, string answersJson)
@@ -366,7 +474,14 @@ public class ApplicationController : ControllerBase
         if (existing != null)
         {
             if (existing.SubmittedAtUtc != null)
-                return Ok(new { attemptId = existing.Id, alreadySubmitted = true, expiresAtUtc = existing.ExpiresAtUtc });
+            {
+                return Ok(new
+                {
+                    attemptId = existing.Id,
+                    alreadySubmitted = true,
+                    expiresAtUtc = existing.ExpiresAtUtc
+                });
+            }
 
             if (IsExpired(existing))
             {
@@ -379,7 +494,11 @@ public class ApplicationController : ControllerBase
                 existing.WebcamConsent = dto.WebcamConsent;
                 await _db.SaveChangesAsync();
 
-                return Ok(new { attemptId = existing.Id, expiresAtUtc = existing.ExpiresAtUtc });
+                return Ok(new
+                {
+                    attemptId = existing.Id,
+                    expiresAtUtc = existing.ExpiresAtUtc
+                });
             }
         }
 
@@ -387,20 +506,32 @@ public class ApplicationController : ControllerBase
         bool randomize = true;
         var questionIds = new List<string>();
 
-        int mcqCount = 0;
-        int challengeCount = 0;
-
         using (var doc = JsonDocument.Parse(app.Opportunity.AssessmentJson))
         {
             var root = doc.RootElement;
 
-            if (root.TryGetProperty("timeLimitSeconds", out var tl) && tl.ValueKind == JsonValueKind.Number)
-                timeLimitSeconds = tl.GetInt32();
+            // time limit: support camelCase + PascalCase + old format
+            if (root.TryGetProperty("timeLimitMinutes", out var tlm) && tlm.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tlm.GetInt32() * 60;
+            else if (root.TryGetProperty("TimeLimitMinutes", out var tlmPascal) && tlmPascal.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tlmPascal.GetInt32() * 60;
+            else if (root.TryGetProperty("timeLimitSeconds", out var tls) && tls.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tls.GetInt32();
+            else if (root.TryGetProperty("TimeLimitSeconds", out var tlsPascal) && tlsPascal.ValueKind == JsonValueKind.Number)
+                timeLimitSeconds = tlsPascal.GetInt32();
 
             if (root.TryGetProperty("randomize", out var r) &&
                 (r.ValueKind == JsonValueKind.True || r.ValueKind == JsonValueKind.False))
-                randomize = r.ValueKind == JsonValueKind.True;
+            {
+                randomize = r.GetBoolean();
+            }
+            else if (root.TryGetProperty("Randomize", out var rPascal) &&
+                     (rPascal.ValueKind == JsonValueKind.True || rPascal.ValueKind == JsonValueKind.False))
+            {
+                randomize = rPascal.GetBoolean();
+            }
 
+            // OLD FORMAT
             if (root.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array)
             {
                 foreach (var q in qs.EnumerateArray())
@@ -408,48 +539,95 @@ public class ApplicationController : ControllerBase
                     if (q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String)
                     {
                         var id = idEl.GetString();
-                        if (!string.IsNullOrWhiteSpace(id)) questionIds.Add(id!);
+                        if (!string.IsNullOrWhiteSpace(id))
+                            questionIds.Add(id!);
                     }
+                    else if (q.TryGetProperty("Id", out var idPascal) && idPascal.ValueKind == JsonValueKind.String)
+                    {
+                        var id = idPascal.GetString();
+                        if (!string.IsNullOrWhiteSpace(id))
+                            questionIds.Add(id!);
+                    }
+                }
+            }
+            else if (root.TryGetProperty("Questions", out var qsPascal) && qsPascal.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var q in qsPascal.EnumerateArray())
+                {
+                    if (q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String)
+                    {
+                        var id = idEl.GetString();
+                        if (!string.IsNullOrWhiteSpace(id))
+                            questionIds.Add(id!);
+                    }
+                    else if (q.TryGetProperty("Id", out var idPascal) && idPascal.ValueKind == JsonValueKind.String)
+                    {
+                        var id = idPascal.GetString();
+                        if (!string.IsNullOrWhiteSpace(id))
+                            questionIds.Add(id!);
+                    }
+                }
+            }
+            // NEW FORMAT
+            else
+            {
+                if (root.TryGetProperty("mcqs", out var mcqs) && mcqs.ValueKind == JsonValueKind.Array)
+                {
+                    int i = 0;
+                    foreach (var _ in mcqs.EnumerateArray())
+                        questionIds.Add($"mcq-{i++}");
+                }
+                else if (root.TryGetProperty("Mcqs", out var mcqsPascal) && mcqsPascal.ValueKind == JsonValueKind.Array)
+                {
+                    int i = 0;
+                    foreach (var _ in mcqsPascal.EnumerateArray())
+                        questionIds.Add($"mcq-{i++}");
+                }
 
-                    var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String
-                        ? tEl.GetString()
-                        : "mcq";
-
-                    if (string.Equals(type, "mcq", StringComparison.OrdinalIgnoreCase)) mcqCount++;
-                    else if (string.Equals(type, "code", StringComparison.OrdinalIgnoreCase)) challengeCount++;
+                if (root.TryGetProperty("codingChallenges", out var coding) && coding.ValueKind == JsonValueKind.Array)
+                {
+                    int i = 0;
+                    foreach (var _ in coding.EnumerateArray())
+                        questionIds.Add($"code-{i++}");
+                }
+                else if (root.TryGetProperty("CodingChallenges", out var codingPascal) && codingPascal.ValueKind == JsonValueKind.Array)
+                {
+                    int i = 0;
+                    foreach (var _ in codingPascal.EnumerateArray())
+                        questionIds.Add($"code-{i++}");
                 }
             }
         }
 
-        if (questionIds.Count == 0) return BadRequest("Assessment has no questions.");
+        if (questionIds.Count == 0)
+            return BadRequest("Assessment has no questions.");
 
-        var seed = SecureSeed();
-        var order = randomize ? Shuffle(questionIds, seed) : questionIds;
+        if (randomize)
+            questionIds = questionIds.OrderBy(_ => Guid.NewGuid()).ToList();
 
-        app.Status = ApplicationStatus.InAssessment;
+        var startedAt = DateTime.UtcNow;
 
         var attempt = new ApplicationAssessment
         {
             ApplicationId = app.Id,
+            StartedAtUtc = startedAt,
+            ExpiresAtUtc = startedAt.AddSeconds(timeLimitSeconds),
+            QuestionOrderJson = JsonSerializer.Serialize(questionIds),
             AnswersJson = "{}",
-            StartedAtUtc = DateTime.UtcNow,
-            TimeLimitSeconds = timeLimitSeconds,
-            ExpiresAtUtc = DateTime.UtcNow.AddSeconds(timeLimitSeconds),
-            McqCountSnapshot = mcqCount,
-            ChallengeCountSnapshot = challengeCount,
-            RandomSeed = seed,
-            QuestionOrderJson = JsonSerializer.Serialize(order),
-            WebcamConsent = dto.WebcamConsent,
-            CopyPasteCount = 0,
-            TabSwitchCount = 0,
-            SuspiciousCount = 0,
-            Flagged = false
+            WebcamConsent = dto.WebcamConsent
         };
 
         _db.ApplicationAssessments.Add(attempt);
+
+        app.Status = ApplicationStatus.InAssessment;
+
         await _db.SaveChangesAsync();
 
-        return Ok(new { attemptId = attempt.Id, expiresAtUtc = attempt.ExpiresAtUtc });
+        return Ok(new
+        {
+            attemptId = attempt.Id,
+            expiresAtUtc = attempt.ExpiresAtUtc
+        });
     }
 
 
@@ -1007,6 +1185,9 @@ public class ApplicationController : ControllerBase
         public DateTime? InterviewScheduledAtUtc { get; set; }
         public bool HasActiveInterview { get; set; }
         public string UserId { get; set; } = "";
+        public int? InterviewId { get; set; }
+        public string? MeetingLink { get; set; }
+        public string? Location { get; set; }
     }
 
     public class ResendRejectionDto
@@ -1084,11 +1265,12 @@ public class ApplicationController : ControllerBase
                     .Select(name => name.Trim())
                     .Distinct()
                     .ToListAsync();
+
             var latestInterview = await _db.Interviews
-    .AsNoTracking()
-    .Where(i => i.ApplicationId == app.Id && !i.IsCancelled)
-    .OrderByDescending(i => i.ScheduledAtUtc)
-    .FirstOrDefaultAsync();
+                .AsNoTracking()
+                .Where(i => i.ApplicationId == app.Id && !i.IsCancelled)
+                .OrderByDescending(i => i.ScheduledAtUtc)
+                .FirstOrDefaultAsync();
 
             var hasActiveInterview =
                 latestInterview != null &&
@@ -1100,16 +1282,19 @@ public class ApplicationController : ControllerBase
             {
                 ApplicationId = app.Id,
                 UserId = candidateUserId,
+
                 CandidateName =
-        !string.IsNullOrWhiteSpace(student?.FullName) ? student.FullName! :
-        !string.IsNullOrWhiteSpace(student?.Email) ? student.Email.Split('@')[0] :
-        !string.IsNullOrWhiteSpace(user?.UserName) ? user.UserName! :
-        !string.IsNullOrWhiteSpace(user?.Email) ? user.Email!.Split('@')[0] :
-        "Unknown",
+                    !string.IsNullOrWhiteSpace(student?.FullName) ? student.FullName! :
+                    !string.IsNullOrWhiteSpace(student?.Email) ? student.Email.Split('@')[0] :
+                    !string.IsNullOrWhiteSpace(user?.UserName) ? user.UserName! :
+                    !string.IsNullOrWhiteSpace(user?.Email) ? user.Email!.Split('@')[0] :
+                    "Unknown",
+
                 CandidateEmail =
-        !string.IsNullOrWhiteSpace(student?.Email) ? student.Email :
-        !string.IsNullOrWhiteSpace(user?.Email) ? user.Email! :
-        "No email",
+                    !string.IsNullOrWhiteSpace(student?.Email) ? student.Email :
+                    !string.IsNullOrWhiteSpace(user?.Email) ? user.Email! :
+                    "No email",
+
                 Status = app.Status.ToString(),
                 CreatedAtUtc = app.CreatedAtUtc,
                 UpdatedAtUtc = app.UpdatedAtUtc,
@@ -1117,7 +1302,11 @@ public class ApplicationController : ControllerBase
                 AssessmentScore = assessment?.Score,
                 Note = app.Note,
                 MatchPercentage = matchPercentage,
+
+                InterviewId = latestInterview?.Id,
                 InterviewScheduledAtUtc = latestInterview?.ScheduledAtUtc,
+                MeetingLink = latestInterview?.MeetingLink,
+                Location = latestInterview?.Location,
                 HasActiveInterview = hasActiveInterview
             });
         }
