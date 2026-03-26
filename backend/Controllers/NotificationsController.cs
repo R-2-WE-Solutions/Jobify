@@ -22,6 +22,9 @@ public class NotificationsController : ControllerBase
         return User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
+    // =========================
+    // GET ACTIVE NOTIFICATIONS
+    // =========================
     [HttpGet]
     public async Task<IActionResult> GetMyNotifications()
     {
@@ -33,6 +36,23 @@ public class NotificationsController : ControllerBase
         return Ok(notifications);
     }
 
+    // =========================
+    // GET ARCHIVED NOTIFICATIONS
+    // =========================
+    [HttpGet("archived")]
+    public async Task<IActionResult> GetArchivedNotifications()
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var notifications = await _notificationService.GetArchivedNotificationsAsync(userId);
+        return Ok(notifications);
+    }
+
+    // =========================
+    // UNREAD COUNT
+    // =========================
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount()
     {
@@ -44,6 +64,9 @@ public class NotificationsController : ControllerBase
         return Ok(new { unreadCount = count });
     }
 
+    // =========================
+    // MARK AS READ
+    // =========================
     [HttpPut("{id}/read")]
     public async Task<IActionResult> MarkAsRead(int id)
     {
@@ -55,6 +78,9 @@ public class NotificationsController : ControllerBase
         return NoContent();
     }
 
+    // =========================
+    // ARCHIVE NOTIFICATION
+    // =========================
     [HttpPut("{id}/archive")]
     public async Task<IActionResult> ArchiveNotification(int id)
     {
