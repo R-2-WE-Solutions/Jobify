@@ -93,13 +93,21 @@ public class InterviewsController : ControllerBase
             .Where(i =>
                 !i.IsCancelled &&
                 i.Application != null &&
+                i.Application.Opportunity != null &&
                 (i.Application.UserId == studentUserId || i.Application.StudentUserId == studentUserId))
-            .OrderBy(i => i.ScheduledAtUtc)
+            .OrderByDescending(i => i.ScheduledAtUtc)
             .ToListAsync();
+
+        // keep only ONE interview per opportunity/job (latest one)
+        var latestPerOpportunity = interviews
+            .GroupBy(i => i.Application!.OpportunityId)
+            .Select(g => g.OrderByDescending(x => x.ScheduledAtUtc).First())
+            .OrderBy(x => x.ScheduledAtUtc)
+            .ToList();
 
         var result = new List<object>();
 
-        foreach (var i in interviews)
+        foreach (var i in latestPerOpportunity)
         {
             var app = i.Application;
             if (app == null || app.Opportunity == null) continue;
@@ -124,6 +132,7 @@ public class InterviewsController : ControllerBase
             {
                 id = i.Id,
                 applicationId = i.ApplicationId,
+                opportunityId = app.OpportunityId,
                 candidateName =
                     !string.IsNullOrWhiteSpace(student?.FullName) ? student.FullName :
                     !string.IsNullOrWhiteSpace(user?.UserName) ? user.UserName :
@@ -158,12 +167,19 @@ public class InterviewsController : ControllerBase
                 i.Application.Opportunity != null &&
                 i.Application.Opportunity.RecruiterUserId == recruiterUserId
             )
-            .OrderBy(i => i.ScheduledAtUtc)
+            .OrderByDescending(i => i.ScheduledAtUtc)
             .ToListAsync();
+
+        // keep only ONE interview per opportunity/job (latest one)
+        var latestPerOpportunity = interviews
+            .GroupBy(i => i.Application!.OpportunityId)
+            .Select(g => g.OrderByDescending(x => x.ScheduledAtUtc).First())
+            .OrderBy(x => x.ScheduledAtUtc)
+            .ToList();
 
         var result = new List<object>();
 
-        foreach (var i in interviews)
+        foreach (var i in latestPerOpportunity)
         {
             var app = i.Application;
             if (app == null || app.Opportunity == null) continue;
@@ -188,6 +204,7 @@ public class InterviewsController : ControllerBase
             {
                 id = i.Id,
                 applicationId = i.ApplicationId,
+                opportunityId = app.OpportunityId,
                 candidateName =
                     !string.IsNullOrWhiteSpace(student?.FullName) ? student.FullName :
                     !string.IsNullOrWhiteSpace(user?.UserName) ? user.UserName :
@@ -203,5 +220,34 @@ public class InterviewsController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    [Authorize(Roles = "Recruiter")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateInterviewDto dto)
+    {
+        var recruiterUserId = GetUserId();
+        if (string.IsNullOrWhiteSpace(recruiterUserId))
+            return Unauthorized();
+
+        var interview = await _db.Interviews
+            .Include(i => i.Application)
+                .ThenInclude(a => a!.Opportunity)
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        if (interview == null)
+            return NotFound("Interview not found.");
+
+        if (interview.Application?.Opportunity?.RecruiterUserId != recruiterUserId)
+            return Forbid();
+
+        interview.ScheduledAtUtc = dto.ScheduledAtUtc;
+        interview.MeetingLink = dto.MeetingLink;
+        interview.Location = dto.Location;
+        interview.Notes = dto.Notes;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Interview updated successfully." });
     }
 }
