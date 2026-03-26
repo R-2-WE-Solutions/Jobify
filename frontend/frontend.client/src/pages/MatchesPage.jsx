@@ -236,9 +236,12 @@ export default function MatchesPage() {
             }
 
             // keep the one with the higher step
-            if ((app.step ?? 0) > (existing.step ?? 0)) {
+            // always keep the MOST RECENT application
+            if (
+                new Date(app.createdAtUtc || 0) >
+                new Date(existing.createdAtUtc || 0)
+            ) {
                 dedupedMap.set(key, app);
-                continue;
             }
 
             // if same step, keep the most recent one
