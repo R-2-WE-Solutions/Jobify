@@ -62,6 +62,7 @@ export default function NotificationsPage() {
 
     async function handleArchive(notificationId, isRead) {
         try {
+            setError("");
             await api.put(`/Notifications/${notificationId}/archive`);
 
             setNotifications((prev) =>
