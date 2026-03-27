@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/api";
-import { Plus, Trash2, ArrowLeft, Clock3, Save, Code2, ListChecks } from "lucide-react";
+import {
+    Plus,
+    Trash2,
+    ArrowLeft,
+    Clock3,
+    Save,
+    Code2,
+    ListChecks,
+} from "lucide-react";
 import "./styles/assesmentbuilder.css";
 
 const emptyMcq = () => ({
@@ -17,6 +25,169 @@ const emptyCode = () => ({
     starterCode: "",
     expectedOutput: "",
 });
+
+function normalizeMcq(mcq = {}) {
+    return {
+        prompt: mcq.prompt || "",
+        options:
+            Array.isArray(mcq.options) && mcq.options.length > 0
+                ? mcq.options
+                : ["", "", "", ""],
+        correctIndex:
+            typeof mcq.correctIndex === "number" ? mcq.correctIndex : 0,
+    };
+}
+
+function normalizeCode(code = {}) {
+    return {
+        title: code.title || "",
+        prompt: code.prompt || "",
+        language: code.language || "javascript",
+        starterCode: code.starterCode || "",
+        expectedOutput: code.expectedOutput || "",
+    };
+}
+
+function mapLanguageToJudge0Id(language) {
+    switch ((language || "").toLowerCase()) {
+        case "javascript":
+            return 63;
+        case "python":
+            return 71;
+        case "csharp":
+            return 51;
+        case "java":
+            return 62;
+        case "cpp":
+            return 54;
+        default:
+            return 71;
+    }
+}
+
+function buildPublicTestsFromExpectedOutput(expectedOutput) {
+    const trimmed = String(expectedOutput || "").trim();
+    if (!trimmed) return [];
+
+    return [
+        {
+            stdin: "",
+            expected: trimmed,
+        },
+    ];
+}
+
+function toLegacyAssessmentFormat(timeLimitMinutes, mcqs, codingChallenges) {
+    const questions = [
+        ...mcqs.map((q, index) => ({
+            id: `mcq-${index}`,
+            type: "mcq",
+            prompt: String(q.prompt || "").trim(),
+            options: Array.isArray(q.options) ? q.options.map((x) => String(x || "").trim()) : [],
+            correctIndex:
+                typeof q.correctIndex === "number" ? q.correctIndex : 0,
+        })),
+        ...codingChallenges.map((q, index) => ({
+            id: `code-${index}`,
+            type: "code",
+            title: String(q.title || "").trim() || `Coding Question ${index + 1}`,
+            prompt: String(q.prompt || "").trim(),
+            starterCode: q.starterCode || "",
+            language: q.language || "python",
+            languageId: mapLanguageToJudge0Id(q.language),
+            languageIdsAllowed: [71, 63, 62, 51, 54],
+            publicTests: buildPublicTestsFromExpectedOutput(q.expectedOutput),
+            hiddenTests: [],
+            expectedOutput: String(q.expectedOutput || "").trim(),
+        })),
+    ];
+
+    return {
+        timeLimitSeconds: Math.max(60, Number(timeLimitMinutes || 30) * 60),
+        randomize: true,
+        questions,
+    };
+}
+
+function fromOpportunityAssessment(assessment, assessmentTimeLimitSeconds) {
+    if (!assessment) {
+        return {
+            timeLimitMinutes: Math.max(
+                1,
+                Math.floor((assessmentTimeLimitSeconds || 1800) / 60)
+            ),
+            mcqs: [],
+            codingChallenges: [],
+        };
+    }
+
+    if (Array.isArray(assessment.mcqs) || Array.isArray(assessment.codingChallenges)) {
+        return {
+            timeLimitMinutes:
+                assessment.timeLimitMinutes ||
+                Math.max(1, Math.floor((assessmentTimeLimitSeconds || 1800) / 60)),
+            mcqs: Array.isArray(assessment.mcqs)
+                ? assessment.mcqs.map(normalizeMcq)
+                : [],
+            codingChallenges: Array.isArray(assessment.codingChallenges)
+                ? assessment.codingChallenges.map(normalizeCode)
+                : [],
+        };
+    }
+
+    if (Array.isArray(assessment.questions)) {
+        const questions = assessment.questions;
+
+        const mcqs = questions
+            .filter((q) => String(q.type || "").toLowerCase() === "mcq")
+            .map((q) =>
+                normalizeMcq({
+                    prompt: q.prompt || "",
+                    options: Array.isArray(q.options) ? q.options : ["", "", "", ""],
+                    correctIndex:
+                        typeof q.correctIndex === "number" ? q.correctIndex : 0,
+                })
+            );
+
+        const codingChallenges = questions
+            .filter((q) => {
+                const type = String(q.type || "").toLowerCase();
+                return type === "code" || type === "coding";
+            })
+            .map((q) =>
+                normalizeCode({
+                    title: q.title || "",
+                    prompt: q.prompt || "",
+                    language: q.language || "javascript",
+                    starterCode: q.starterCode || "",
+                    expectedOutput:
+                        q.expectedOutput ||
+                        (Array.isArray(q.publicTests) &&
+                            q.publicTests.length > 0 &&
+                            q.publicTests[0]?.expectedOutput
+                            ? q.publicTests[0].expectedOutput
+                            : ""),
+                })
+            );
+
+        return {
+            timeLimitMinutes: assessment.timeLimitSeconds
+                ? Math.max(1, Math.floor(assessment.timeLimitSeconds / 60))
+                : Math.max(1, Math.floor((assessmentTimeLimitSeconds || 1800) / 60)),
+            mcqs,
+            codingChallenges,
+        };
+    }
+
+    return {
+        timeLimitMinutes: Math.max(
+            1,
+            Math.floor((assessmentTimeLimitSeconds || 1800) / 60)
+        ),
+        mcqs: [],
+        codingChallenges: [],
+    };
+}
 
 export default function AssessmentBuilderPage() {
     const { id } = useParams();
@@ -34,30 +205,20 @@ export default function AssessmentBuilderPage() {
         async function loadOpportunity() {
             try {
                 setLoading(true);
+
                 const res = await api.get(`/opportunities/${id}`);
                 const opp = res.data;
 
                 setJobTitle(opp.title || "");
 
-                if (opp.assessment) {
-                    setTimeLimitMinutes(
-                        opp.assessment.timeLimitMinutes ||
-                        Math.max(1, Math.floor((opp.assessmentTimeLimitSeconds || 1800) / 60))
-                    );
+                const parsed = fromOpportunityAssessment(
+                    opp.assessment,
+                    opp.assessmentTimeLimitSeconds
+                );
 
-                    setMcqs(Array.isArray(opp.assessment.mcqs) ? opp.assessment.mcqs : []);
-                    setCodingChallenges(
-                        Array.isArray(opp.assessment.codingChallenges)
-                            ? opp.assessment.codingChallenges
-                            : []
-                    );
-                } else {
-                    setTimeLimitMinutes(
-                        Math.max(1, Math.floor((opp.assessmentTimeLimitSeconds || 1800) / 60))
-                    );
-                    setMcqs([]);
-                    setCodingChallenges([]);
-                }
+                setTimeLimitMinutes(parsed.timeLimitMinutes);
+                setMcqs(parsed.mcqs);
+                setCodingChallenges(parsed.codingChallenges);
             } catch (err) {
                 console.error(err);
                 alert("Failed to load opportunity.");
@@ -84,7 +245,9 @@ export default function AssessmentBuilderPage() {
     }
 
     function updateMcq(index, patch) {
-        setMcqs((prev) => prev.map((q, i) => (i === index ? { ...q, ...patch } : q)));
+        setMcqs((prev) =>
+            prev.map((q, i) => (i === index ? { ...q, ...patch } : q))
+        );
     }
 
     function updateMcqOption(qIndex, optIndex, value) {
@@ -93,7 +256,9 @@ export default function AssessmentBuilderPage() {
                 i === qIndex
                     ? {
                         ...q,
-                        options: q.options.map((opt, j) => (j === optIndex ? value : opt)),
+                        options: q.options.map((opt, j) =>
+                            j === optIndex ? value : opt
+                        ),
                     }
                     : q
             )
@@ -109,31 +274,60 @@ export default function AssessmentBuilderPage() {
     }
 
     function updateCode(index, patch) {
-        setCodingChallenges((prev) => prev.map((q, i) => (i === index ? { ...q, ...patch } : q)));
+        setCodingChallenges((prev) =>
+            prev.map((q, i) => (i === index ? { ...q, ...patch } : q))
+        );
     }
 
     function validateAssessment() {
         for (let i = 0; i < mcqs.length; i++) {
             const q = mcqs[i];
-            if (!q.prompt.trim()) return `MCQ ${i + 1}: question is required.`;
+
+            if (!String(q.prompt || "").trim()) {
+                return `MCQ ${i + 1}: question is required.`;
+            }
+
             if (!Array.isArray(q.options) || q.options.length < 2) {
                 return `MCQ ${i + 1}: add at least 2 options.`;
             }
-            if (q.options.some((x) => !String(x).trim())) {
+
+            if (q.options.some((x) => !String(x || "").trim())) {
                 return `MCQ ${i + 1}: all options must be filled.`;
             }
-            if (q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+
+            if (
+                typeof q.correctIndex !== "number" ||
+                q.correctIndex < 0 ||
+                q.correctIndex >= q.options.length
+            ) {
                 return `MCQ ${i + 1}: choose a valid correct answer.`;
             }
         }
 
         for (let i = 0; i < codingChallenges.length; i++) {
             const q = codingChallenges[i];
-            if (!q.title.trim()) return `Coding question ${i + 1}: title is required.`;
-            if (!q.prompt.trim()) return `Coding question ${i + 1}: prompt is required.`;
+
+            if (!String(q.title || "").trim()) {
+                return `Coding question ${i + 1}: title is required.`;
+            }
+
+            if (!String(q.prompt || "").trim()) {
+                return `Coding question ${i + 1}: prompt is required.`;
+            }
+
+            if (!String(q.expectedOutput || "").trim()) {
+                return `Coding question ${i + 1}: expected output is required.`;
+            }
         }
 
-        if (timeLimitMinutes <= 0) return "Time limit must be greater than 0.";
+        if (Number(timeLimitMinutes) <= 0) {
+            return "Time limit must be greater than 0.";
+        }
+
+        if (mcqs.length === 0 && codingChallenges.length === 0) {
+            return "Add at least one question.";
+        }
+
         return null;
     }
 
@@ -169,11 +363,13 @@ export default function AssessmentBuilderPage() {
                 skills: opp.skills || [],
                 latitude: opp.latitude,
                 longitude: opp.longitude,
-                assessment: {
+
+                // IMPORTANT: save in backend-compatible legacy format
+                assessment: toLegacyAssessmentFormat(
                     timeLimitMinutes,
                     mcqs,
-                    codingChallenges,
-                },
+                    codingChallenges
+                ),
             };
 
             await api.put(`/opportunities/${id}`, payload);
@@ -188,9 +384,12 @@ export default function AssessmentBuilderPage() {
     }
 
     async function removeAssessment() {
-        if (!window.confirm("Remove this assessment from the opportunity?")) return;
+        if (!window.confirm("Remove this assessment from the opportunity?")) {
+            return;
+        }
 
         setSaving(true);
+
         try {
             const oppRes = await api.get(`/opportunities/${id}`);
             const opp = oppRes.data;
@@ -229,21 +428,30 @@ export default function AssessmentBuilderPage() {
     }
 
     if (loading) {
-        return <div className="assessment-page"><div className="assessment-card">Loading assessment...</div></div>;
+        return (
+            <div className="assessment-page">
+                <div className="assessment-card">Loading assessment.</div>
+            </div>
+        );
     }
 
     return (
         <div className="assessment-page">
             <div className="assessment-card">
                 <div className="assessment-topbar">
-                    <button className="assessment-back" onClick={() => navigate("/organization")}>
+                    <button
+                        className="assessment-back"
+                        onClick={() => navigate("/organization")}
+                    >
                         <ArrowLeft size={16} />
                         Back
                     </button>
 
                     <div>
                         <h1 className="assessment-title">Assessment Builder</h1>
-                        <p className="assessment-subtitle">{jobTitle || "Opportunity Assessment"}</p>
+                        <p className="assessment-subtitle">
+                            {jobTitle || "Opportunity Assessment"}
+                        </p>
                     </div>
                 </div>
 
@@ -279,29 +487,38 @@ export default function AssessmentBuilderPage() {
                         min="1"
                         className="assessment-input"
                         value={timeLimitMinutes}
-                        onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
+                        onChange={(e) =>
+                            setTimeLimitMinutes(Number(e.target.value))
+                        }
                     />
                 </div>
 
                 <div className="assessment-section">
                     <div className="assessment-section-header">
                         <h2>MCQ Questions</h2>
-                        <button className="assessment-btn assessment-btn-outline" onClick={addMcq}>
+                        <button
+                            type="button"
+                            className="assessment-btn assessment-btn-outline"
+                            onClick={addMcq}
+                        >
                             <Plus size={15} />
                             Add MCQ
                         </button>
                     </div>
 
                     {mcqs.length === 0 && (
-                        <div className="assessment-empty">No MCQs added yet.</div>
+                        <div className="assessment-empty">
+                            No MCQs added yet.
+                        </div>
                     )}
 
                     {mcqs.map((q, index) => (
                         <div key={index} className="assessment-question-card">
-                            <div className="assessment-question-top">
+                            <div className="assessment-question-head">
                                 <h3>MCQ {index + 1}</h3>
                                 <button
-                                    className="assessment-icon-btn danger"
+                                    type="button"
+                                    className="assessment-icon-btn"
                                     onClick={() => removeMcq(index)}
                                 >
                                     <Trash2 size={15} />
@@ -313,34 +530,50 @@ export default function AssessmentBuilderPage() {
                                 <textarea
                                     className="assessment-textarea"
                                     value={q.prompt}
-                                    onChange={(e) => updateMcq(index, { prompt: e.target.value })}
+                                    onChange={(e) =>
+                                        updateMcq(index, { prompt: e.target.value })
+                                    }
                                 />
                             </div>
 
-                            <div className="assessment-options">
-                                {q.options.map((opt, optIndex) => (
-                                    <div key={optIndex} className="assessment-option-row">
+                            <div className="assessment-field">
+                                <label>Options</label>
+                                <div className="assessment-options">
+                                    {q.options.map((opt, optIndex) => (
                                         <input
+                                            key={optIndex}
                                             className="assessment-input"
-                                            placeholder={`Option ${optIndex + 1}`}
                                             value={opt}
+                                            placeholder={`Option ${optIndex + 1}`}
                                             onChange={(e) =>
-                                                updateMcqOption(index, optIndex, e.target.value)
+                                                updateMcqOption(
+                                                    index,
+                                                    optIndex,
+                                                    e.target.value
+                                                )
                                             }
                                         />
-                                        <label className="assessment-radio-label">
-                                            <input
-                                                type="radio"
-                                                name={`correct-${index}`}
-                                                checked={q.correctIndex === optIndex}
-                                                onChange={() =>
-                                                    updateMcq(index, { correctIndex: optIndex })
-                                                }
-                                            />
-                                            Correct
-                                        </label>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="assessment-field">
+                                <label>Correct Answer</label>
+                                <select
+                                    className="assessment-input"
+                                    value={q.correctIndex}
+                                    onChange={(e) =>
+                                        updateMcq(index, {
+                                            correctIndex: Number(e.target.value),
+                                        })
+                                    }
+                                >
+                                    {q.options.map((_, optIndex) => (
+                                        <option key={optIndex} value={optIndex}>
+                                            Option {optIndex + 1}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     ))}
@@ -348,23 +581,30 @@ export default function AssessmentBuilderPage() {
 
                 <div className="assessment-section">
                     <div className="assessment-section-header">
-                        <h2>Coding Challenges</h2>
-                        <button className="assessment-btn assessment-btn-outline" onClick={addCode}>
+                        <h2>Coding Questions</h2>
+                        <button
+                            type="button"
+                            className="assessment-btn assessment-btn-outline"
+                            onClick={addCode}
+                        >
                             <Plus size={15} />
-                            Add Coding Question
+                            Add Coding
                         </button>
                     </div>
 
                     {codingChallenges.length === 0 && (
-                        <div className="assessment-empty">No coding challenges added yet.</div>
+                        <div className="assessment-empty">
+                            No coding questions added yet.
+                        </div>
                     )}
 
                     {codingChallenges.map((q, index) => (
                         <div key={index} className="assessment-question-card">
-                            <div className="assessment-question-top">
-                                <h3>Coding Question {index + 1}</h3>
+                            <div className="assessment-question-head">
+                                <h3>Coding {index + 1}</h3>
                                 <button
-                                    className="assessment-icon-btn danger"
+                                    type="button"
+                                    className="assessment-icon-btn"
                                     onClick={() => removeCode(index)}
                                 >
                                     <Trash2 size={15} />
@@ -376,7 +616,9 @@ export default function AssessmentBuilderPage() {
                                 <input
                                     className="assessment-input"
                                     value={q.title}
-                                    onChange={(e) => updateCode(index, { title: e.target.value })}
+                                    onChange={(e) =>
+                                        updateCode(index, { title: e.target.value })
+                                    }
                                 />
                             </div>
 
@@ -385,7 +627,9 @@ export default function AssessmentBuilderPage() {
                                 <textarea
                                     className="assessment-textarea"
                                     value={q.prompt}
-                                    onChange={(e) => updateCode(index, { prompt: e.target.value })}
+                                    onChange={(e) =>
+                                        updateCode(index, { prompt: e.target.value })
+                                    }
                                 />
                             </div>
 
@@ -394,7 +638,9 @@ export default function AssessmentBuilderPage() {
                                 <select
                                     className="assessment-input"
                                     value={q.language}
-                                    onChange={(e) => updateCode(index, { language: e.target.value })}
+                                    onChange={(e) =>
+                                        updateCode(index, { language: e.target.value })
+                                    }
                                 >
                                     <option value="javascript">JavaScript</option>
                                     <option value="python">Python</option>
@@ -410,7 +656,9 @@ export default function AssessmentBuilderPage() {
                                     className="assessment-code"
                                     value={q.starterCode}
                                     onChange={(e) =>
-                                        updateCode(index, { starterCode: e.target.value })
+                                        updateCode(index, {
+                                            starterCode: e.target.value,
+                                        })
                                     }
                                 />
                             </div>
@@ -421,7 +669,9 @@ export default function AssessmentBuilderPage() {
                                     className="assessment-textarea"
                                     value={q.expectedOutput}
                                     onChange={(e) =>
-                                        updateCode(index, { expectedOutput: e.target.value })
+                                        updateCode(index, {
+                                            expectedOutput: e.target.value,
+                                        })
                                     }
                                 />
                             </div>
@@ -430,11 +680,17 @@ export default function AssessmentBuilderPage() {
                 </div>
 
                 <div className="assessment-actions">
-                    <button className="assessment-btn assessment-btn-danger" onClick={removeAssessment}>
+                    <button
+                        type="button"
+                        className="assessment-btn assessment-btn-danger"
+                        onClick={removeAssessment}
+                        disabled={saving}
+                    >
                         Remove Assessment
                     </button>
 
                     <button
+                        type="button"
                         className="assessment-btn assessment-btn-primary"
                         onClick={saveAssessment}
                         disabled={saving}

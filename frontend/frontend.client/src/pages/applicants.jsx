@@ -125,11 +125,11 @@
                 : null;
 
             if (scheduled && !Number.isNaN(scheduled.getTime())) {
-                const yyyy = scheduled.getFullYear();
-                const mm = String(scheduled.getMonth() + 1).padStart(2, "0");
-                const dd = String(scheduled.getDate()).padStart(2, "0");
-                const hh = String(scheduled.getHours()).padStart(2, "0");
-                const min = String(scheduled.getMinutes()).padStart(2, "0");
+                const yyyy = scheduled.getUTCFullYear();
+                const mm = String(scheduled.getUTCMonth() + 1).padStart(2, "0");
+                const dd = String(scheduled.getUTCDate()).padStart(2, "0");
+                const hh = String(scheduled.getUTCHours()).padStart(2, "0");
+                const min = String(scheduled.getUTCMinutes()).padStart(2, "0");
 
                 setDate(`${yyyy}-${mm}-${dd}`);
                 setTime(`${hh}:${min}`);
@@ -352,7 +352,7 @@
     }
 
     function buildInterviewDateTime(date, time) {
-        return new Date(`${date}T${time}:00`).toISOString();
+        return `${date}T${time}:00Z`;
     }
 
     function hasActiveInterview(item) {
@@ -486,22 +486,23 @@
                     continue;
                 }
 
-                const existingScore = existing.matchPercentage ?? 0;
-                const currentScore = applicant.matchPercentage ?? 0;
+                const existingInterview = existing.interviewScheduledAtUtc
+                    ? new Date(existing.interviewScheduledAtUtc).getTime()
+                    : 0;
 
-                if (currentScore > existingScore) {
+                const currentInterview = applicant.interviewScheduledAtUtc
+                    ? new Date(applicant.interviewScheduledAtUtc).getTime()
+                    : 0;
+
+                if (currentInterview > existingInterview) {
                     byUser.set(key, applicant);
                     continue;
                 }
 
-                const existingHasAssessment =
-                    existing.assessmentScore !== null &&
-                    existing.assessmentScore !== undefined;
-                const currentHasAssessment =
-                    applicant.assessmentScore !== null &&
-                    applicant.assessmentScore !== undefined;
+                const existingScore = existing.matchPercentage ?? 0;
+                const currentScore = applicant.matchPercentage ?? 0;
 
-                if (!existingHasAssessment && currentHasAssessment) {
+                if (currentInterview === existingInterview && currentScore > existingScore) {
                     byUser.set(key, applicant);
                 }
             }
@@ -535,11 +536,20 @@
                     meetingLink: meetingLink || null,
                 };
 
+                const existingInterviewId =
+                    applicant.interviewId ??
+                    applicant.InterviewId ??
+                    null;
+
                 console.log("INTERVIEW APPLICANT:", applicant);
                 console.log("INTERVIEW PAYLOAD:", payload);
+                console.log("EDIT CHECK:", {
+                    hasActiveInterview: applicant.hasActiveInterview,
+                    interviewId: existingInterviewId,
+                });
 
-                if (applicant.interviewId) {
-                    await api.put(`/Interviews/${applicant.interviewId}`, payload);
+                if (applicant.hasActiveInterview && existingInterviewId) {
+                    await api.put(`/Interviews/${existingInterviewId}`, payload);
                     alert("Interview updated successfully.");
                 } else {
                     await api.post("/Interviews", payload);
@@ -547,13 +557,11 @@
                 }
 
                 await fetchApplicantsForOpportunity(selectedOpportunityId);
-
                 setModalOpen(false);
                 setSelectedApplicant(null);
             } catch (err) {
-                console.error("Failed to save interview:", err);
-                console.error("Backend response:", err?.response?.data);
-                alert(err?.response?.data || "Failed to save interview.");
+                console.error("Interview save failed:", err);
+                alert("Failed to save interview.");
             } finally {
                 setScheduling(false);
             }
