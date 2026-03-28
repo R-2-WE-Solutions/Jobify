@@ -16,6 +16,7 @@ import {
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
 import "../pages/styles/layout.css";
+import "../pages/styles/footer.css";
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -30,8 +31,8 @@ export default function AppLayout() {
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [unreadCount, setUnreadCount] = useState(0);
+  const [openFooter, setOpenFooter] = useState(null);
 
   const profileMenuRef = useRef(null);
 
@@ -120,6 +121,10 @@ export default function AppLayout() {
   function handleGoToChangePassword() {
     setShowProfileMenu(false);
     navigate("/change-password");
+  }
+
+  function toggleFooter(section) {
+    setOpenFooter((prev) => (prev === section ? null : section));
   }
 
   return (
@@ -317,18 +322,79 @@ export default function AppLayout() {
             <div>
               <div className="al-footerTitle">Company</div>
               <ul className="al-footerList">
-                <li>About Us</li>
-                <li>Careers</li>
-                <li>Contact</li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => toggleFooter("about")}
+                    className={`footer-toggle ${openFooter === "about" ? "open" : ""}`}
+                  >
+                    <span>About</span>
+                    <span className="footer-arrow">⌄</span>
+                  </button>
+                  <div className={`footer-dropdown ${openFooter === "about" ? "open" : ""}`}>
+                    <div className="footer-dropdownContent">
+                      Jobify is a smart platform that matches students and
+                      professionals with opportunities using AI-powered skill
+                      analysis and recommendations.
+                    </div>
+                  </div>
+                </li>
+
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => toggleFooter("contact")}
+                    className={`footer-toggle ${openFooter === "contact" ? "open" : ""}`}
+                  >
+                    <span>Contact</span>
+                    <span className="footer-arrow">⌄</span>
+                  </button>
+                  <div className={`footer-dropdown ${openFooter === "contact" ? "open" : ""}`}>
+                    <div className="footer-dropdownContent">
+                      For support or questions, use the platform features or
+                      contact the project team.
+                    </div>
+                  </div>
+                </li>
               </ul>
             </div>
 
             <div>
               <div className="al-footerTitle">Legal</div>
               <ul className="al-footerList">
-                <li>Terms of Service</li>
-                <li>Privacy Policy</li>
-                <li>Cookie Policy</li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => toggleFooter("terms")}
+                    className={`footer-toggle ${openFooter === "terms" ? "open" : ""}`}
+                  >
+                    <span>Terms of Service</span>
+                    <span className="footer-arrow">⌄</span>
+                  </button>
+                  <div className={`footer-dropdown ${openFooter === "terms" ? "open" : ""}`}>
+                    <div className="footer-dropdownContent">
+                      By using Jobify, you agree to use the platform
+                      responsibly and for its intended purpose.
+                    </div>
+                  </div>
+                </li>
+
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => toggleFooter("privacy")}
+                    className={`footer-toggle ${openFooter === "privacy" ? "open" : ""}`}
+                  >
+                    <span>Privacy Policy</span>
+                    <span className="footer-arrow">⌄</span>
+                  </button>
+                  <div className={`footer-dropdown ${openFooter === "privacy" ? "open" : ""}`}>
+                    <div className="footer-dropdownContent">
+                      Jobify respects your privacy and protects your personal
+                      information.
+                    </div>
+                  </div>
+                </li>
               </ul>
             </div>
           </div>
