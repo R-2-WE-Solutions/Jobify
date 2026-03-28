@@ -343,9 +343,8 @@ export default function AppLayout() {
                   Contact
                   {openFooter === "contact" && (
                     <div className="footer-dropdown">
-                      Email: jobify@example.com
-                      <br />
-                      For inquiries, reach out to the Jobify team.
+                      For support or questions, use the platform features or
+                      contact the project team.
                     </div>
                   )}
                 </li>
