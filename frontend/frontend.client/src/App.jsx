@@ -49,12 +49,6 @@ import Applicants from "./pages/applicants";
 import NotificationsPage from "./pages/NotificationsPage";
 import ApplicantProfilePage from "./pages/ApplicantsProfilePage";
 
-// footer pages
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import TermsPage from "./pages/TermsPage";
-
 // ─────────────────────────────────────────────
 // AUTH HELPERS
 // ─────────────────────────────────────────────
@@ -123,12 +117,6 @@ export default function App() {
         <Route path="/browse" element={<BrowseOpportunities />} />
         <Route path="/match" element={<MatchesPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-
-        {/* FOOTER PAGES */}
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
 
         {/* ORGANIZATION */}
         <Route path="/organization" element={<OrganizationDashboard />} />
