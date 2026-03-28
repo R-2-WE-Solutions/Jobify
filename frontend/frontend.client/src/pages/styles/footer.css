@@ -88,3 +88,21 @@
   font-size: 13px;
   color: var(--text-secondary);
 }
+/* clickable footer items */
+.footer-click {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.footer-click:hover {
+  color: var(--primary);
+}
+
+/* dropdown content */
+.footer-dropdown {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  padding-left: 4px;
+}
