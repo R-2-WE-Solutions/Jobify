@@ -31,8 +31,8 @@ export default function AppLayout() {
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [unreadCount, setUnreadCount] = useState(0);
+  const [openFooter, setOpenFooter] = useState(null);
 
   const profileMenuRef = useRef(null);
 
@@ -121,6 +121,10 @@ export default function AppLayout() {
   function handleGoToChangePassword() {
     setShowProfileMenu(false);
     navigate("/change-password");
+  }
+
+  function toggleFooter(section) {
+    setOpenFooter((prev) => (prev === section ? null : section));
   }
 
   return (
@@ -318,11 +322,32 @@ export default function AppLayout() {
             <div>
               <div className="al-footerTitle">Company</div>
               <ul className="al-footerList">
-                <li>
-                  <NavLink to="/about">About</NavLink>
+                <li
+                  onClick={() => toggleFooter("about")}
+                  className="footer-click"
+                >
+                  About
+                  {openFooter === "about" && (
+                    <div className="footer-dropdown">
+                      Jobify is a smart platform that matches students and
+                      professionals with opportunities using AI-powered skill
+                      analysis and recommendations.
+                    </div>
+                  )}
                 </li>
-                <li>
-                  <NavLink to="/contact">Contact</NavLink>
+
+                <li
+                  onClick={() => toggleFooter("contact")}
+                  className="footer-click"
+                >
+                  Contact
+                  {openFooter === "contact" && (
+                    <div className="footer-dropdown">
+                      Email: jobify@example.com
+                      <br />
+                      For inquiries, reach out to the Jobify team.
+                    </div>
+                  )}
                 </li>
               </ul>
             </div>
@@ -330,11 +355,30 @@ export default function AppLayout() {
             <div>
               <div className="al-footerTitle">Legal</div>
               <ul className="al-footerList">
-                <li>
-                  <NavLink to="/terms">Terms of Service</NavLink>
+                <li
+                  onClick={() => toggleFooter("terms")}
+                  className="footer-click"
+                >
+                  Terms of Service
+                  {openFooter === "terms" && (
+                    <div className="footer-dropdown">
+                      By using Jobify, you agree to use the platform
+                      responsibly and for its intended purpose.
+                    </div>
+                  )}
                 </li>
-                <li>
-                  <NavLink to="/privacy">Privacy Policy</NavLink>
+
+                <li
+                  onClick={() => toggleFooter("privacy")}
+                  className="footer-click"
+                >
+                  Privacy Policy
+                  {openFooter === "privacy" && (
+                    <div className="footer-dropdown">
+                      Jobify respects your privacy and protects your personal
+                      information.
+                    </div>
+                  )}
                 </li>
               </ul>
             </div>
