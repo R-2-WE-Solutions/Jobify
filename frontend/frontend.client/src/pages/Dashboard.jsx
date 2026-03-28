@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCandidateDashboard } from "../services/dashboardService";
 import { api } from "../api/api";
-import "../pages/styles/dashboard.css";
+// import "../pages/styles/dashboard.css";
+import "./styles/dashboard.css";
 
 export default function Dashboard() {
     const [role, setRole] = useState(null);

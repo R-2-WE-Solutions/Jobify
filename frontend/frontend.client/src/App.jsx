@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 
 // QA and Interviews pages
 import QAPage from "./pages/QAPage";
-import RecruiterInterviewsPage from "./pages/RecruiterInterviewPage";
+import RecruiterInterviewsPage from "./pages/RecruiterInterviewsPage";
 
 // login pages
 import LoginPage from "./pages/LoginPage/LoginPage";
@@ -47,7 +47,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Dashboard from "./pages/Dashboard";
 
 import Applicants from "./pages/applicants";
-import NotificationsPage from "./pages/NotificationPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import ApplicantProfilePage from "./pages/ApplicantsProfilePage";
 
 // ─────────────────────────────────────────────
