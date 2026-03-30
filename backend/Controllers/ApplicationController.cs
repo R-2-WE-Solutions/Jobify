@@ -376,7 +376,7 @@ public class ApplicationController : ControllerBase
         public string? MeetingLink { get; set; }
         public string? Location { get; set; }
     }
-
+// add timestamp
     [Authorize(Roles = "Student")]
     [HttpGet("me")]
     public async Task<ActionResult<List<MyApplicationDto>>> GetMyApplications()
