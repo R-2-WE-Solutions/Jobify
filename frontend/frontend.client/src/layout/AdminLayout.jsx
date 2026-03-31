@@ -1,11 +1,12 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Briefcase, Users, Building2, Settings, Shield, LogOut } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Building2, AlertTriangle, Shield, LogOut } from "lucide-react";
 
 const navItems = [
     { to: "/admin/", label: "Dashboard", icon: LayoutDashboard },
     { to: "/admin/recruiters", label: "Recruiters", icon: Briefcase },
     { to: "/admin/students", label: "Students", icon: Users },
     { to: "/admin/companies", label: "Companies", icon: Building2 },
+    { to: "/admin/reported-opportunities", label: "Reported Opportunities", icon: AlertTriangle },
 ];
 
 export default function AdminLayout() {

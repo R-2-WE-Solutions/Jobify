@@ -34,6 +34,7 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminRecruiters from "./pages/admin/AdminRecruiters";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminReportedOpportunities from "./pages/admin/AdminReportedOpportunities";
 
 // Layouts
 import AppLayout from "./layout/AppLayout";
@@ -96,7 +97,7 @@ export default function App() {
                 <Route path="/admin/students" element={<AdminStudents />} />
                 <Route path="/admin/recruiters" element={<AdminRecruiters />} />
                 <Route path="/admin/companies" element={<AdminCompanies />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
+                <Route path="/admin/reported-opportunities" element={<AdminReportedOpportunities />} />
             </Route>
 
             {/* App routes */}
