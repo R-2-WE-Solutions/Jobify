@@ -1,8 +1,8 @@
 
 .reviewPage {
-    background: #fff;
+    background: #ffffff; 
     min-height: 100vh;
-    padding: 32px 18px 140px; 
+    padding: 32px 18px 140px;
 }
 
 .reviewShell {
@@ -22,20 +22,25 @@
     color: #6b7280;
 }
 
-
 .card {
-    background: #fff;
-    border: 1px solid #eef1f6;
+    background: #ffffff;
+    border: 1px solid #eef2f7;
     border-radius: 18px;
     padding: 22px;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
     margin-bottom: 18px;
+    transition: all 0.2s ease;
 }
+
+    .card:hover {
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    }
 
 .cardTitle {
     font-size: 22px;
     font-weight: 750;
     margin-bottom: 16px;
+    color: #0f172a;
 }
 
 .personalRow {
@@ -56,13 +61,14 @@
     border-radius: 999px;
     display: grid;
     place-items: center;
-    background: #eaf2ff;
+    background: linear-gradient(145deg, #eaf2ff, #dbeafe);
     color: #2563eb;
     font-weight: 800;
     font-size: 20px;
-    border: 3px solid #fff;
-    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.12);
+    border: 3px solid #ffffff;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
 }
+
 
 .kvGrid {
     display: grid;
@@ -90,11 +96,13 @@
     font-size: 20px;
     font-weight: 800;
     color: #0f172a;
+    margin-bottom: 8px;
 }
 
 .muted {
     color: #6b7280;
     margin-top: 6px;
+    margin-bottom: 14px;
 }
 
 .chips {
@@ -111,7 +119,13 @@
     border-radius: 999px;
     font-weight: 700;
     border: 1px solid #dbeafe;
+    transition: all 0.2s ease;
 }
+
+    .chip:hover {
+        background: #e0ecff;
+    }
+
 
 .detailGrid {
     margin-top: 18px;
@@ -121,11 +135,16 @@
 }
 
 .detail {
-    border: 1px solid #eef1f6;
+    border: 1px solid #eef2f7;
     border-radius: 14px;
     padding: 14px;
     background: #fbfcfe;
+    transition: all 0.2s ease;
 }
+
+    .detail:hover {
+        background: #f4f7fc;
+    }
 
     .detail .v {
         margin-top: 2px;
@@ -133,8 +152,9 @@
         font-weight: 650;
     }
 
+
 .summary {
-    border: 1px solid #eef1f6;
+    border: 1px solid #eef2f7;
     background: #fbfcfe;
     border-radius: 14px;
     padding: 14px;
@@ -142,18 +162,24 @@
     color: #0f172a;
 }
 
+
 .docRow {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     width: 100%;
-    border: 1px solid #eef1f6;
+    border: 1px solid #eef2f7;
     border-radius: 14px;
     padding: 14px 16px;
-    background: #fbfcfe;
+    background: #ffffff;
     margin-top: 12px;
+    transition: all 0.2s ease;
 }
+
+    .docRow:hover {
+        background: #f8fbff;
+    }
 
 .docLeft {
     display: flex;
@@ -166,8 +192,8 @@
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    border: 1px solid #eef1f6;
-    background: #fff;
+    border: 1px solid #eef2f7;
+    background: #f9fafb;
     display: grid;
     place-items: center;
     flex: 0 0 auto;
@@ -176,12 +202,14 @@
 
     .docIcon.ok {
         color: #16a34a;
-        outline: 3px solid rgba(34, 197, 94, 0.12);
+        background: #ecfdf5;
+        border-color: #bbf7d0;
     }
 
     .docIcon.no {
         color: #ef4444;
-        outline: 3px solid rgba(239, 68, 68, 0.10);
+        background: #fef2f2;
+        border-color: #fecaca;
     }
 
 .docTitle {
@@ -198,12 +226,12 @@
 }
 
 .badge {
-    flex: 0 0 auto; 
+    flex: 0 0 auto;
     align-self: center;
     font-size: 13px;
     font-weight: 900;
     padding: 8px 12px;
-    border-radius: 999px; 
+    border-radius: 999px;
     letter-spacing: 0.02em;
     border: 1px solid;
 }
@@ -221,9 +249,8 @@
 }
 
 .bottomBar {
-    position: static; 
-    background: transparent; 
-    border-top: 1px solid #e9edf5;
+    position: static;
+    background: transparent;
     padding: 18px 0 0;
     margin-top: 18px;
 }
@@ -235,7 +262,12 @@
     justify-content: space-between;
     align-items: center;
     gap: 14px;
-    flex-wrap: nowrap;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e9edf5;
+    border-radius: 14px;
+    padding: 10px 14px; 
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
 }
 
 .btnOutline {
@@ -248,25 +280,31 @@
     color: #0f172a;
     cursor: pointer;
     flex: 0 0 auto;
+    transition: all 0.2s ease;
 }
+
+    .btnOutline:hover {
+        background: #f8fafc;
+    }
 
 .btnPrimary {
     height: 48px;
     padding: 0 26px;
     border-radius: 14px;
     border: none;
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: white;
     font-weight: 900;
     cursor: pointer;
     box-shadow: 0 14px 26px rgba(37, 99, 235, 0.25);
     flex: 0 0 auto;
+    transition: all 0.2s ease;
 }
 
     .btnPrimary:hover {
-        filter: brightness(0.98);
+        filter: brightness(0.97);
+        transform: translateY(-1px);
     }
-
 
 @media (max-width: 720px) {
     .kvGrid {
@@ -288,11 +326,30 @@
     }
 }
 
+.bottomBar {
+    position: sticky;
+    bottom: 18px;
+    margin-top: 28px;
+    z-index: 10;
+}
 
-/*this is the assesmentsrule*/
+.bottomInner {
+    max-width: 980px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e9edf5;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
 
 .rulesPage {
-    background: #fff;
+    background: #ffffff;
     min-height: 100vh;
     padding: 40px 18px 60px;
 }
@@ -302,7 +359,6 @@
     margin: 0 auto;
 }
 
-/* Header */
 .rulesHeader h1 {
     margin: 0 0 8px;
     font-size: 38px;
@@ -315,6 +371,7 @@
     margin: 0 0 24px;
     color: #64748b;
     font-size: 15.5px;
+    line-height: 1.5;
 }
 
 .rulesCard {
@@ -323,46 +380,40 @@
     border-radius: 18px;
     padding: 22px;
     margin-bottom: 18px;
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(15, 23, 42, 0.02);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
+
+    .rulesCard:hover {
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+        transform: translateY(-1px);
+    }
 
     .rulesCard h2 {
         margin: 0 0 12px;
         font-size: 20px;
         font-weight: 850;
         color: #0f172a;
+        letter-spacing: -0.2px;
     }
+
+.muted {
+    color: #6b7280;
+    font-size: 14.5px;
+    line-height: 1.5;
+}
 
 .rulesList {
     margin: 0;
     padding-left: 18px;
-    line-height: 1.7;
+    line-height: 1.75;
     color: #0f172a;
+    font-size: 15px;
 }
 
     .rulesList li {
         margin-bottom: 6px;
     }
-
-.placeholder {
-    margin-top: 16px;
-    border: 1px dashed #d7deea;
-    border-radius: 14px;
-    padding: 14px;
-    background: #f8fafc;
-}
-
-.placeholderTitle {
-    font-weight: 900;
-    margin-bottom: 4px;
-    color: #0f172a;
-}
-
-.placeholderText {
-    font-size: 14px;
-    color: #64748b;
-}
-
 .checkRow {
     display: flex;
     gap: 14px;
@@ -373,11 +424,13 @@
     border-radius: 14px;
     background: #f9fbff;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
     .checkRow:hover {
         background: #eef5ff;
+        border-color: rgba(37, 99, 235, 0.25);
+        transform: translateY(-1px);
     }
 
 .checkTitle {
@@ -405,6 +458,48 @@ input[type="checkbox"] {
     gap: 14px;
     margin-top: 12px;
 }
+.btnOutline {
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid #d7deea;
+    background: #fff;
+    font-weight: 800;
+    color: #0f172a;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+    .btnOutline:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 18px rgba(15, 23, 42, 0.07);
+    }
+
+.btnPrimary {
+    height: 48px;
+    padding: 0 26px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 14px 26px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .btnPrimary:hover {
+        filter: brightness(0.97);
+        transform: translateY(-1px);
+    }
+
+    .btnPrimary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
 
 @media (max-width: 720px) {
     .rulesActions {
