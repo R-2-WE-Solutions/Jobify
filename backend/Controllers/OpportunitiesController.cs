@@ -1037,4 +1037,19 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
 
         return Ok(result);
     }
+
+    // Admin: Resolve a selected report
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("admin/resolve-report/{reportId}")]
+    public async Task<IActionResult> ResolveReport(int reportId)
+    {
+        var report = await _db.OpportunityReports.FindAsync(reportId);
+
+        if (report == null)
+            return NotFound();
+
+        report.IsResolved = True;
+
+        return Ok();
+    }
 }
