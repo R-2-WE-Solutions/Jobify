@@ -600,7 +600,13 @@ export default function JobDetailsPage() {
                                 </div>
                             )}
 
-                            {embedUrl ? (
+                            {isRemote ? (
+                                <div className="remoteMapPlaceholder">
+                                    <Globe size={40} />
+                                    <h4>Remote Opportunity</h4>
+                                    <p>This position can be performed from anywhere.</p>
+                                </div>
+                            ) : embedUrl ? (
                                 <iframe
                                     className="mapFrame"
                                     src={embedUrl}
@@ -609,7 +615,7 @@ export default function JobDetailsPage() {
                                     title="Map"
                                 />
                             ) : (
-                                <div className="mapPlaceholder">—</div>
+                                <div className="mapPlaceholder">No location provided</div>
                             )}
 
                             <div className="mapChip">{isRemote ? "Remote" : job.location || "—"}</div>
