@@ -997,4 +997,23 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
 
         return Ok(new { message = "Report submitted" });
     }
+
+    // Admin: Get Reported Opportunities
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/reported-opportunities")]
+    public async Task<IActionResult> GetReportedOpportunities()
+    {
+        var result = await _db.OpportunityReports
+            .Include(r => r.Opportunity)
+            .GroupBy(r => r.OpportunityId)
+            .Select(g => new
+                {
+                    opportunityId = g.Key,
+                    opportunityTitle = g.First().Opportunity!.Title,
+                    reportsCount = g.Count()
+                })
+            .ToListAsync();
+
+        return Ok(result);
+    }
 }
