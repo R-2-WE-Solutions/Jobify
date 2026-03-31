@@ -128,6 +128,18 @@ function getLogoColor(name) {
     return colors[n % colors.length];
 }
 
+function canWithdrawApplication(rawStatus) {
+    return !["Withdrawn", "Accepted", "Rejected"].includes(rawStatus);
+}
+
+function getWithdrawWarning(rawStatus) {
+    if (rawStatus === "Draft") {
+        return "Are you sure you want to withdraw this application? You will still be able to reapply to this opportunity later.";
+    }
+
+    return "Are you sure you want to withdraw this application? If you continue, you will not be able to reapply to this opportunity.";
+}
+
 export default function MatchesPage() {
     const navigate = useNavigate();
 
@@ -147,6 +159,7 @@ export default function MatchesPage() {
     const [applications, setApplications] = useState([]);
     const [applicationsLoading, setApplicationsLoading] = useState(false);
     const [applicationsError, setApplicationsError] = useState("");
+    const [withdrawingId, setWithdrawingId] = useState(null);
 
     async function fetchOpportunities() {
         try {
@@ -193,6 +206,41 @@ export default function MatchesPage() {
         }
     }
 
+    async function handleWithdrawApplication(application) {
+        if (!application?.id || !application?.canWithdraw || withdrawingId === application.id) {
+            return;
+        }
+
+        const confirmed = window.confirm(application.withdrawWarning);
+        if (!confirmed) return;
+
+        try {
+            setWithdrawingId(application.id);
+
+            const res = await api.post(`/application/${application.id}/withdraw`);
+            const canReapply = res?.data?.canReapply;
+
+            await fetchApplications();
+
+            if (canReapply === true) {
+                window.alert("Application withdrawn successfully. You may reapply to this opportunity later.");
+            } else if (canReapply === false) {
+                window.alert("Application withdrawn successfully. You will not be able to reapply to this opportunity.");
+            } else {
+                window.alert("Application withdrawn successfully.");
+            }
+        } catch (error) {
+            console.error("Failed to withdraw application.", error);
+            window.alert(
+                error?.response?.data ||
+                error?.message ||
+                "Failed to withdraw application."
+            );
+        } finally {
+            setWithdrawingId(null);
+        }
+    }
+
     useEffect(() => {
         fetchOpportunities();
         fetchApplications();
@@ -201,6 +249,8 @@ export default function MatchesPage() {
     const mappedApplications = useMemo(() => {
         const mapped = applications.map((application) => {
             const normalizedStatus = normalizeApplicationStatus(application.status);
+            const isDraftStage = application.status === "Draft";
+            const canWithdraw = canWithdrawApplication(application.status);
 
             return {
                 id: application.applicationId,
@@ -218,6 +268,13 @@ export default function MatchesPage() {
                 rawStatus: application.status,
                 hasAssessment: application.hasAssessment,
                 createdAtUtc: application.createdAtUtc,
+                updatedAtUtc: application.updatedAtUtc,
+                note: application.note ?? null,
+
+                canWithdraw,
+                isDraftStage,
+                withdrawWarning: getWithdrawWarning(application.status),
+                isWithdrawing: withdrawingId === application.applicationId,
             };
         });
 
@@ -235,16 +292,14 @@ export default function MatchesPage() {
                 continue;
             }
 
-            // keep the one with the higher step
-            // always keep the MOST RECENT application
             if (
                 new Date(app.createdAtUtc || 0) >
                 new Date(existing.createdAtUtc || 0)
             ) {
                 dedupedMap.set(key, app);
+                continue;
             }
 
-            // if same step, keep the most recent one
             if (
                 (app.step ?? 0) === (existing.step ?? 0) &&
                 new Date(app.createdAtUtc || 0) > new Date(existing.createdAtUtc || 0)
@@ -254,7 +309,7 @@ export default function MatchesPage() {
         }
 
         return Array.from(dedupedMap.values());
-    }, [applications]);
+    }, [applications, withdrawingId]);
 
     const mappedOpportunities = useMemo(() => {
         return opportunities.map((opportunity) => {
@@ -349,6 +404,7 @@ export default function MatchesPage() {
                         onPrepare={(item) => {
                             navigate(`/interviews/${item.id}/prepare`);
                         }}
+                        onWithdrawApplication={handleWithdrawApplication}
                     />
                 )}
             </div>
