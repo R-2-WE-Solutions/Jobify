@@ -1016,4 +1016,25 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
 
         return Ok(result);
     }
+
+    // Admin: Get Reports for an Opportunity
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/get-reports/{opportunityId}")]
+    public async Task<IActionResult> GetOpportunityReports(int opportunityId)
+    {
+        var reports = await _db.GetOpportunityReports
+            .Where(r => r.OpportunityId == opportunityId)
+            .ToListAsync();
+
+        var result = reports.Select(r => new
+            {
+                studentId = r.ReporterUserId,
+                reason = r.Reason,
+                details = r.Details,
+                createdAt = r.CreatedAt,
+                isResolved = r.IsResolved
+            });
+
+        return Ok(result);
+    }
 }
