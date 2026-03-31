@@ -107,7 +107,17 @@ export default function JobDetailsPage() {
             }
 
             const data = await res.json();
-            navigate(`/apply/${data.applicationId}/review`);
+
+            const hasAssessment =
+                data.hasAssessment ||
+                (data.assessmentMcqCount ?? 0) > 0 ||
+                (data.assessmentChallengeCount ?? 0) > 0;
+
+            if (hasAssessment) {
+                navigate(`/apply/${data.applicationId}/review`);
+            } else {
+                navigate(`/application/${data.applicationId}/result`);
+            }
         } catch (e) {
             console.error(e);
             alert("Failed to apply. Try again.");
@@ -141,6 +151,7 @@ export default function JobDetailsPage() {
 
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
+
 
 
 
