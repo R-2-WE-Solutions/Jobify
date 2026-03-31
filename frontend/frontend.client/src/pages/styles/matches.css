@@ -435,7 +435,8 @@
 .app-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
 .status-pill {
@@ -809,6 +810,39 @@
     background: var(--matches-blue);
     border-color: var(--matches-blue);
     color: #fff;
+}
+/* withdraw button */
+.withdraw-btn {
+    border: 1px solid var(--matches-red-soft);
+    background: transparent;
+    color: var(--matches-red-deep);
+    padding: 9px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+    white-space: nowrap;
+}
+
+.withdraw-btn:hover {
+    background: var(--matches-red-soft);
+    border-color: var(--matches-red);
+}
+
+.withdraw-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.dark .withdraw-btn {
+    border-color: rgba(248, 113, 113, 0.35);
+    color: var(--matches-red);
+}
+
+.dark .withdraw-btn:hover {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fecaca;
 }
 
 @media (max-width: 1000px) {
@@ -1343,4 +1377,22 @@
     font-size: 12px;
     font-weight: 600;
     height: 32px; 
+}
+/* media after withdraw button */
+@media (max-width: 1000px) {
+    .app-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 520px) {
+    .app-right {
+        gap: 8px;
+    }
+
+    .withdraw-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
 }
