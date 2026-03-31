@@ -209,9 +209,8 @@ export function OpportunitiesTab({ matches = [] }) {
     );
 }
 
-export function ApplicationsTab({ matches = [] }) {
+export function ApplicationsTab({ matches = [], onWithdrawApplication }) {
     const applications = matches.filter((m) => m.type === "application");
-
     const navigate = useNavigate();
 
     if (!applications.length) {
@@ -258,9 +257,28 @@ export function ApplicationsTab({ matches = [] }) {
                         </div>
 
                         <div className="app-right">
+                            {match.canWithdraw && (
+                                <button
+                                    type="button"
+                                    className="withdraw-btn"
+                                    onClick={() => onWithdrawApplication?.(match)}
+                                    disabled={match.isWithdrawing}
+                                    title={
+                                        match.isDraftStage
+                                            ? "Withdraw and reapply later"
+                                            : "Withdraw permanently from this opportunity"
+                                    }
+                                >
+                                    {match.isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                                </button>
+                            )}
+
                             <button
+                                type="button"
                                 className="arrow-btn"
                                 onClick={() => navigate(`/apply/${match.id}/review`)}
+                                aria-label="Open application"
+                                title="Open application"
                             >
                                 →
                             </button>
