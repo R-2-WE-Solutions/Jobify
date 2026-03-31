@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/JobDetailsPage.css";
-import { api } from "../../api/api";
 
 import {
     MapPin,
@@ -17,10 +16,13 @@ import {
     Briefcase,
     Users,
     ChevronRight,
+    Star,
     MessageSquare,
     Bookmark,
     ArrowRight,
 } from "lucide-react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Badge({ children, variant = "neutral" }) {
     return <span className={`badge badge--${variant}`}>{children}</span>;
@@ -77,8 +79,10 @@ function CompanyLogo({ name, size = 64, logoUrl }) {
     );
 }
 
+
 export default function JobDetailsPage() {
     const { id } = useParams();
+
     const navigate = useNavigate();
 
     const handleApply = async () => {
@@ -109,11 +113,8 @@ export default function JobDetailsPage() {
                 (data.assessmentMcqCount ?? 0) > 0 ||
                 (data.assessmentChallengeCount ?? 0) > 0;
 
-            if (hasAssessment) {
-                navigate(`/apply/${data.applicationId}/review`);
-            } else {
-                navigate(`/application/${data.applicationId}/result`);
-            }
+            // ALWAYS go to profile review first
+            navigate(`/apply/${data.applicationId}/review`);
         } catch (e) {
             console.error(e);
             alert("Failed to apply. Try again.");
@@ -131,6 +132,7 @@ export default function JobDetailsPage() {
     const [similarLoading, setSimilarLoading] = useState(true);
     const [similarErr, setSimilarErr] = useState("");
 
+
     const [askOpen, setAskOpen] = useState(false);
     const [questionText, setQuestionText] = useState("");
     const [askLoading, setAskLoading] = useState(false);
@@ -147,26 +149,7 @@ export default function JobDetailsPage() {
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
 
-    const handleApply = async () => {
-        const token = localStorage.getItem("jobify_token");
-        if (!token) {
-            navigate("/login");
-            return;
-        }
 
-        try {
-            const res = await api.post(`/opportunities/${id}/apply`);
-            const data = res.data;
-            navigate(`/apply/${data.applicationId}/review`);
-        } catch (e) {
-            console.error(e);
-            const message =
-                e?.response?.data ||
-                e?.message ||
-                "Failed to apply. Try again.";
-            alert(message);
-        }
-    };
 
 
     useEffect(() => {
@@ -177,11 +160,19 @@ export default function JobDetailsPage() {
                 setLoading(true);
                 setErr("");
 
-                const res = await api.get(`/opportunities/${id}`, {
+                const token = localStorage.getItem("jobify_token");
+
+                const res = await fetch(`${API_URL}/opportunities/${id}`, {
                     signal: controller.signal,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                    },
                 });
 
-                const data = res.data;
+                if (!res.ok) throw new Error(`Failed to load opportunity (${res.status})`);
+
+                const data = await res.json();
 
                 setJob({
                     ...data,
@@ -195,9 +186,9 @@ export default function JobDetailsPage() {
                         : [],
                 });
             } catch (e) {
-                if (e?.name !== "CanceledError" && e?.name !== "AbortError") {
+                if (e?.name !== "AbortError") {
                     console.error(e);
-                    setErr(e?.response?.data || e?.message || "Failed to load opportunity");
+                    setErr(e?.message || "Failed to load opportunity");
                     setJob(null);
                 }
             } finally {
@@ -205,10 +196,7 @@ export default function JobDetailsPage() {
             }
         };
 
-        if (id) {
-            fetchDetails();
-        }
-
+        fetchDetails();
         return () => controller.abort();
     }, [id]);
 
@@ -220,16 +208,19 @@ export default function JobDetailsPage() {
                 setSimilarLoading(true);
                 setSimilarErr("");
 
-                const res = await api.get(`/opportunities/${id}/similar?take=4`, {
+                const res = await fetch(`${API_URL}/opportunities/${id}/similar?take=4`, {
                     signal: controller.signal,
+                    headers: { "Content-Type": "application/json" },
                 });
 
-                const data = res.data;
+                if (!res.ok) throw new Error(`Failed to load similar (${res.status})`);
+
+                const data = await res.json();
                 setSimilar(Array.isArray(data) ? data : []);
             } catch (e) {
-                if (e?.name !== "CanceledError" && e?.name !== "AbortError") {
+                if (e?.name !== "AbortError") {
                     console.error(e);
-                    setSimilarErr(e?.response?.data || e?.message || "Failed to load similar opportunities");
+                    setSimilarErr(e?.message || "Failed to load similar opportunities");
                     setSimilar([]);
                 }
             } finally {
@@ -237,12 +228,10 @@ export default function JobDetailsPage() {
             }
         };
 
-        if (id) {
-            loadSimilar();
-        }
-
+        if (id) loadSimilar();
         return () => controller.abort();
     }, [id]);
+
 
     const submitQuestion = async () => {
         try {
@@ -263,29 +252,39 @@ export default function JobDetailsPage() {
 
             setAskLoading(true);
 
-            await api.post(`/opportunities/${id}/questions`, { question: q });
+            const res = await fetch(`${API_URL}/opportunities/${id}/questions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ question: q }),
+            });
+
+            if (!res.ok) {
+                let msg = `Failed to submit question (${res.status})`;
+                try {
+                    const t = await res.text();
+                    if (t) msg = t;
+                } catch { }
+                setAskErr(msg);
+                return;
+            }
 
             setAskOk("Question submitted!");
             setQuestionText("");
             setAskOpen(false);
 
-            const refreshed = await api.get(`/opportunities/${id}`);
-            const data = refreshed.data;
-
-            setJob({
-                ...data,
-                skills: Array.isArray(data.skills)
-                    ? data.skills
-                    : Array.isArray(data.skillsRequired)
-                        ? data.skillsRequired
-                        : [],
-                preferredSkills: Array.isArray(data.preferredSkills)
-                    ? data.preferredSkills
-                    : [],
+            const refreshed = await fetch(`${API_URL}/opportunities/${id}`, {
+                headers: { "Content-Type": "application/json" },
             });
+            if (refreshed.ok) {
+                const data = await refreshed.json();
+                setJob(data);
+            }
         } catch (e) {
             console.error(e);
-            setAskErr(e?.response?.data || e?.message || "Failed to submit question");
+            setAskErr(e?.message || "Failed to submit question");
         } finally {
             setAskLoading(false);
         }
@@ -312,10 +311,27 @@ export default function JobDetailsPage() {
 
             setReportLoading(true);
 
-            await api.post(`/opportunities/${id}/report`, {
-                reason,
-                details: details || null,
+            const res = await fetch(`${API_URL}/opportunities/${id}/report`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    reason,
+                    details: details || null,
+                }),
             });
+
+            if (!res.ok) {
+                let msg = `Failed to submit report (${res.status})`;
+                try {
+                    const t = await res.text();
+                    if (t) msg = t;
+                } catch { }
+                setReportErr(msg);
+                return;
+            }
 
             setReportOk("Report submitted successfully.");
             setReportReason("");
@@ -327,7 +343,7 @@ export default function JobDetailsPage() {
             }, 1000);
         } catch (e) {
             console.error(e);
-            setReportErr(e?.response?.data || e?.message || "Failed to submit report");
+            setReportErr(e?.message || "Failed to submit report");
         } finally {
             setReportLoading(false);
         }
@@ -367,9 +383,10 @@ export default function JobDetailsPage() {
     const isRemote = !!job?.isRemote;
 
     const embedUrl = useMemo(() => {
-        if (job?.latitude == null || job?.longitude == null || isRemote) return "";
+        if (!job?.latitude || !job?.longitude || isRemote) return "";
         return `https://www.google.com/maps?q=${job.latitude},${job.longitude}&output=embed`;
     }, [job, isRemote]);
+
 
     const mapsUrl = useMemo(() => {
         if (!location || isRemote) return "";
@@ -443,6 +460,7 @@ export default function JobDetailsPage() {
     const requiredSkills = job?.skillsRequired || job?.skills || [];
     const preferredSkills = job?.preferredSkills || [];
 
+
     return (
         <div className="page">
             <main className="container">
@@ -452,8 +470,11 @@ export default function JobDetailsPage() {
                     <div className="heroTop">
                         <div className="heroLeft">
                             <div className="logoWrap">
-                                <CompanyLogo name={job.companyName} size={64} />
+                                <div className="companyLogo">
+                                    <Building2 size={30} strokeWidth={1.8} />
+                                </div>
                             </div>
+
 
                             <div className="heroInfo">
                                 <h1 className="heroTitle">{job.title}</h1>
@@ -667,6 +688,7 @@ export default function JobDetailsPage() {
                             <button className="btnPrimary full" onClick={handleApply}>
                                 Apply Now <ArrowRight size={18} />
                             </button>
+
                         </div>
 
                        
@@ -804,7 +826,6 @@ export default function JobDetailsPage() {
                         </div>
                     </div>
                 </div>
-
                 <div className="similarWrap">
                     <div className="similarHeader">
                         <h2 className="similarTitle">Similar Opportunities</h2>
@@ -851,6 +872,7 @@ export default function JobDetailsPage() {
                                             title="Save"
                                             onClick={(e) => {
                                                 e.stopPropagation();
+
                                             }}
                                         >
                                             <Bookmark size={20} />
@@ -867,6 +889,7 @@ export default function JobDetailsPage() {
                             ))
                         )}
                     </div>
+
                 </div>
 
                 {reportOpen ? (
