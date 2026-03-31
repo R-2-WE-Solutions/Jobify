@@ -66,14 +66,20 @@ namespace Jobify.Api.Services.Dashboard
 
             var topRecommended = recommendationResults
                 .Take(5)
-                .Select(r => new DashboardOpportunityDto
+                .Select(r =>
                 {
-                    Id = r.OpportunityId,
-                    Title = r.Title,
-                    CompanyName = allOpenOpportunities.FirstOrDefault(o => o.Id == r.OpportunityId)?.CompanyName ?? "",
-                    Location = GetOpportunityLocation(allOpenOpportunities.First(o => o.Id == r.OpportunityId)),
-                    WorkMode = allOpenOpportunities.First(o => o.Id == r.OpportunityId).WorkMode.ToString(),
-                    MatchScore = Math.Round((decimal)(r.Score * 100), 0)
+                    var opportunity = allOpenOpportunities.First(o => o.Id == r.OpportunityId);
+
+                    return new DashboardOpportunityDto
+                    {
+                        Id = r.OpportunityId,
+                        Title = r.Title,
+                        CompanyName = opportunity.CompanyName,
+                        Location = GetOpportunityLocation(opportunity),
+                        WorkMode = opportunity.WorkMode.ToString(),
+                        MatchScore = Math.Round((decimal)(r.Score * 100), 0),
+                        DeadlineUtc = opportunity.DeadlineUtc
+                    };
                 })
                 .ToList();
 
@@ -85,7 +91,8 @@ namespace Jobify.Api.Services.Dashboard
                     CompanyName = o.CompanyName,
                     Location = GetOpportunityLocation(o),
                     WorkMode = o.WorkMode.ToString(),
-                    MatchScore = null
+                    MatchScore = null,
+                    DeadlineUtc = o.DeadlineUtc
                 })
                 .ToList();
 
@@ -103,7 +110,7 @@ namespace Jobify.Api.Services.Dashboard
             };
         }
 
-        private static int CalculateProfileCompletion(Models.StudentProfile profile, int skillsCount)
+        private static int CalculateProfileCompletion(StudentProfile profile, int skillsCount)
         {
             int score = 0;
 
@@ -123,7 +130,7 @@ namespace Jobify.Api.Services.Dashboard
             return score;
         }
 
-        private static string GetOpportunityLocation(Models.Opportunity opportunity)
+        private static string GetOpportunityLocation(Opportunity opportunity)
         {
             if (!string.IsNullOrWhiteSpace(opportunity.LocationName))
                 return opportunity.LocationName;
