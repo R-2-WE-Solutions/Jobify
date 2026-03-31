@@ -5,9 +5,18 @@ import {
     CVReviewTab,
 } from "./MatchCard";
 
-export function MatchesTabs({ activeTab, matches }) {
+export function MatchesTabs({
+    activeTab,
+    matches,
+    onWithdrawApplication
+}) {
     if (activeTab === "applications") {
-        return <ApplicationsTab matches={matches} />;
+        return (
+            <ApplicationsTab
+                matches={matches}
+                onWithdrawApplication={onWithdrawApplication}
+            />
+        );
     }
 
     if (activeTab === "interviews") {

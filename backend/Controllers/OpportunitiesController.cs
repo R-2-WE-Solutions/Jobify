@@ -297,7 +297,6 @@ public class OpportunitiesController : ControllerBase
             matchPercentage = CalculateMatchPercentage(studentSkillNames, opportunitySkills);
         }
 
-        // 🔥 THIS IS THE IMPORTANT PART
         var assessment = ReadAssessmentForBuilder(o.AssessmentJson);
 
         return Ok(new OpportunityDetailsDto
@@ -322,10 +321,7 @@ public class OpportunitiesController : ControllerBase
             Responsibilities = ReadList(o.ResponsibilitiesJson),
             PreferredSkills = ReadList(o.PreferredSkillsJson),
             Benefits = ReadList(o.BenefitsJson),
-
-            // ✅ FIXED
             Assessment = assessment,
-
             AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
             AssessmentMcqCount = o.AssessmentMcqCount,
             AssessmentChallengeCount = o.AssessmentChallengeCount,
@@ -782,27 +778,62 @@ public class OpportunitiesController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
 
-        var oppExists = await _db.Opportunities.AnyAsync(o => o.Id == id);
-        if (!oppExists) return NotFound("Opportunity not found.");
+        var opportunity = await _db.Opportunities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == id);
 
-        var existing = await _db.Applications
-            .FirstOrDefaultAsync(a => a.OpportunityId == id && a.StudentUserId == userId && a.Status != ApplicationStatus.Withdrawn);
+        if (opportunity == null)
+            return NotFound("Opportunity not found.");
 
-        if (existing != null)
-            return Ok(new { applicationId = existing.Id, status = existing.Status.ToString() });
+        if (opportunity.IsClosed)
+            return BadRequest("This opportunity is closed.");
+
+        var existingActive = await _db.Applications
+            .FirstOrDefaultAsync(a =>
+                a.OpportunityId == id &&
+                (a.StudentUserId == userId || a.UserId == userId) &&
+                a.Status != ApplicationStatus.Withdrawn);
+
+        if (existingActive != null)
+        {
+            return Ok(new
+            {
+                applicationId = existingActive.Id,
+                status = existingActive.Status.ToString()
+            });
+        }
+
+        var blockedReapply = await _db.Applications
+            .AnyAsync(a =>
+                a.OpportunityId == id &&
+                (a.StudentUserId == userId || a.UserId == userId) &&
+                a.Status == ApplicationStatus.Withdrawn &&
+                !a.CanReapplyAfterWithdraw);
+
+        if (blockedReapply)
+        {
+            return BadRequest("You cannot reapply to this opportunity after withdrawing at this stage.");
+        }
 
         var app = new Application
         {
             OpportunityId = id,
             StudentUserId = userId,
+            UserId = userId,
             Status = ApplicationStatus.Draft,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+            CanReapplyAfterWithdraw = true
         };
 
         _db.Applications.Add(app);
         await _db.SaveChangesAsync();
 
-        return Ok(new { applicationId = app.Id, status = app.Status.ToString() });
+        return Ok(new
+        {
+            applicationId = app.Id,
+            status = app.Status.ToString()
+        });
     }
 
     private async Task ReplaceSkills(int opportunityId, List<string> skills)
@@ -950,7 +981,7 @@ public class OpportunitiesController : ControllerBase
 
         await _db.SaveChangesAsync();
         return NoContent();
-    } 
+    }
 
     [HttpGet("company/{companyName}")]
     public async Task<ActionResult<List<OpportunityCardDto>>> GetByCompany(string companyName)
@@ -1110,6 +1141,7 @@ public class OpportunitiesController : ControllerBase
 
         return Ok(new { message = "Report submitted" });
     }
+
     private static AssessmentDto? ReadAssessmentForBuilder(string? assessmentJson)
     {
         if (string.IsNullOrWhiteSpace(assessmentJson))
@@ -1120,7 +1152,6 @@ public class OpportunitiesController : ControllerBase
             using var doc = JsonDocument.Parse(assessmentJson);
             var root = doc.RootElement;
 
-            // NEW FORMAT
             if (root.TryGetProperty("mcqs", out _) || root.TryGetProperty("codingChallenges", out _))
             {
                 return JsonSerializer.Deserialize<AssessmentDto>(
@@ -1131,7 +1162,6 @@ public class OpportunitiesController : ControllerBase
                     });
             }
 
-            // OLD FORMAT -> convert to builder format
             var dto = new AssessmentDto();
 
             if (root.TryGetProperty("timeLimitMinutes", out var tlm) && tlm.ValueKind == JsonValueKind.Number)

@@ -1,16 +1,12 @@
 using Jobify.Api.Data;
 using Jobify.Api.DTOs;
 using Jobify.Api.Models;
-using Jobify.Api.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-// using Jobify.Api.DTOs.Applications;
-
-//application and assesment controller -> the assesment is finished, but needs some work with the snapshots
 
 namespace Jobify.Api.Controllers;
 
@@ -61,7 +57,6 @@ public class ApplicationController : ControllerBase
             using var doc = JsonDocument.Parse(assessmentJson);
             var root = doc.RootElement;
 
-            // ✅ OLD FORMAT (already has questions)
             if ((root.TryGetProperty("questions", out var oldQs) && oldQs.ValueKind == JsonValueKind.Array) ||
                 (root.TryGetProperty("Questions", out oldQs) && oldQs.ValueKind == JsonValueKind.Array))
             {
@@ -70,7 +65,6 @@ public class ApplicationController : ControllerBase
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
 
-            // ✅ NEW FORMAT → convert to student format
             int timeLimitSeconds = 1800;
 
             if (root.TryGetProperty("timeLimitMinutes", out var tlm) && tlm.ValueKind == JsonValueKind.Number)
@@ -84,7 +78,6 @@ public class ApplicationController : ControllerBase
 
             var questions = new List<Dictionary<string, object?>>();
 
-            // 🔹 MCQs
             if (root.TryGetProperty("mcqs", out var mcqs) && mcqs.ValueKind == JsonValueKind.Array)
             {
                 int i = 0;
@@ -154,7 +147,6 @@ public class ApplicationController : ControllerBase
                 }
             }
 
-            // 🔹 Coding
             if (root.TryGetProperty("codingChallenges", out var coding) && coding.ValueKind == JsonValueKind.Array)
             {
                 int i = 0;
@@ -220,7 +212,6 @@ public class ApplicationController : ControllerBase
                 }
             }
 
-            // 🔹 Apply order if exists
             if (questionOrder != null && questionOrder.Count > 0)
             {
                 questions = questions
@@ -283,7 +274,6 @@ public class ApplicationController : ControllerBase
         return Math.Round((decimal)correct * 100m / totalMcq, 2);
     }
 
-    //DTOs
     public class MyApplicationDto
     {
         public int ApplicationId { get; set; }
@@ -292,6 +282,8 @@ public class ApplicationController : ControllerBase
         public string CompanyName { get; set; } = "";
         public string Status { get; set; } = "";
         public DateTime CreatedAtUtc { get; set; }
+        public DateTime UpdatedAtUtc { get; set; }
+        public string? Note { get; set; }
         public bool HasAssessment { get; set; }
     }
 
@@ -360,6 +352,31 @@ public class ApplicationController : ControllerBase
         public string? FlagReason { get; set; }
     }
 
+    public class ResendRejectionDto
+    {
+        public string? RejectionReason { get; set; }
+    }
+
+    public class RecruiterAppListDto
+    {
+        public int ApplicationId { get; set; }
+        public string CandidateName { get; set; } = "";
+        public string CandidateEmail { get; set; } = "";
+        public string Status { get; set; } = "";
+        public DateTime CreatedAtUtc { get; set; }
+        public DateTime UpdatedAtUtc { get; set; }
+        public bool HasAssessment { get; set; }
+        public decimal? AssessmentScore { get; set; }
+        public string? Note { get; set; }
+        public int MatchPercentage { get; set; }
+        public DateTime? InterviewScheduledAtUtc { get; set; }
+        public bool HasActiveInterview { get; set; }
+        public string UserId { get; set; } = "";
+        public int? InterviewId { get; set; }
+        public string? MeetingLink { get; set; }
+        public string? Location { get; set; }
+    }
+
     [Authorize(Roles = "Student")]
     [HttpGet("me")]
     public async Task<ActionResult<List<MyApplicationDto>>> GetMyApplications()
@@ -370,9 +387,7 @@ public class ApplicationController : ControllerBase
         var apps = await _db.Applications
             .AsNoTracking()
             .Include(a => a.Opportunity)
-            .Where(a =>
-                (a.UserId == userId || a.StudentUserId == userId) &&
-                a.Status != ApplicationStatus.Withdrawn)
+            .Where(a => a.UserId == userId || a.StudentUserId == userId)
             .OrderByDescending(a => a.CreatedAtUtc)
             .Select(a => new MyApplicationDto
             {
@@ -382,11 +397,52 @@ public class ApplicationController : ControllerBase
                 CompanyName = a.Opportunity.CompanyName,
                 Status = a.Status.ToString(),
                 CreatedAtUtc = a.CreatedAtUtc,
+                UpdatedAtUtc = a.UpdatedAtUtc,
+                Note = a.Note,
                 HasAssessment = a.Opportunity.AssessmentJson != null && a.Opportunity.AssessmentJson != ""
             })
             .ToListAsync();
 
         return Ok(apps);
+    }
+
+    [Authorize(Roles = "Student")]
+    [HttpPut("{applicationId:int}")]
+    public async Task<IActionResult> UpdateMyApplication(int applicationId, [FromBody] UpdateMyApplicationDto dto)
+    {
+        var userId = CurrentUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var app = await _db.Applications
+            .FirstOrDefaultAsync(a =>
+                a.Id == applicationId &&
+                (a.UserId == userId || a.StudentUserId == userId));
+
+        if (app == null) return NotFound();
+
+        var editableStatuses = new[]
+        {
+            ApplicationStatus.Draft,
+            ApplicationStatus.Pending,
+            ApplicationStatus.InReview,
+            ApplicationStatus.Submitted
+        };
+
+        if (!editableStatuses.Contains(app.Status))
+            return BadRequest("This application can no longer be edited.");
+
+        app.Note = string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim();
+        app.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            applicationId = app.Id,
+            status = app.Status.ToString(),
+            note = app.Note,
+            updatedAtUtc = app.UpdatedAtUtc
+        });
     }
 
     [Authorize(Roles = "Student")]
@@ -510,7 +566,6 @@ public class ApplicationController : ControllerBase
         {
             var root = doc.RootElement;
 
-            // time limit: support camelCase + PascalCase + old format
             if (root.TryGetProperty("timeLimitMinutes", out var tlm) && tlm.ValueKind == JsonValueKind.Number)
                 timeLimitSeconds = tlm.GetInt32() * 60;
             else if (root.TryGetProperty("TimeLimitMinutes", out var tlmPascal) && tlmPascal.ValueKind == JsonValueKind.Number)
@@ -531,7 +586,6 @@ public class ApplicationController : ControllerBase
                 randomize = rPascal.GetBoolean();
             }
 
-            // OLD FORMAT
             if (root.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array)
             {
                 foreach (var q in qs.EnumerateArray())
@@ -568,7 +622,6 @@ public class ApplicationController : ControllerBase
                     }
                 }
             }
-            // NEW FORMAT
             else
             {
                 if (root.TryGetProperty("mcqs", out var mcqs) && mcqs.ValueKind == JsonValueKind.Array)
@@ -630,8 +683,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-
-    // Save answers
     [Authorize(Roles = "Student")]
     [HttpPut("{applicationId:int}/assessment")]
     public async Task<IActionResult> SaveAssessment(int applicationId, [FromBody] SaveAssessmentDto dto)
@@ -655,8 +706,6 @@ public class ApplicationController : ControllerBase
         return NoContent();
     }
 
-    // Proctor event (copy/paste/tab switching)
-    // Proctor event (copy/paste/tab switching)
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/proctor-event")]
     public async Task<IActionResult> ProctorEvent(int applicationId, [FromBody] ProctorEventDto dto)
@@ -750,7 +799,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-    // Webcam snapshot upload 
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/snapshot")]
     public async Task<IActionResult> UploadSnapshot(int applicationId, [FromBody] SnapshotDto dto)
@@ -799,7 +847,7 @@ public class ApplicationController : ControllerBase
 
         return Ok(new { saved = true });
     }
-    // Judge0: RUN code against PUBLIC tests only
+
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/run")]
     public async Task<IActionResult> RunCode(int applicationId, [FromBody] RunCodeDto dto)
@@ -866,16 +914,17 @@ public class ApplicationController : ControllerBase
                 mode = "custom",
                 results = new[]
                 {
-                new {
-                    stdin = dto.StdinOverride,
-                    expected = (string?)null,
-                    stdout = res["stdout"],
-                    stderr = res["stderr"],
-                    compile_output = res["compile_output"],
-                    message = res["message"],
-                    status = res["status"]
+                    new
+                    {
+                        stdin = dto.StdinOverride,
+                        expected = (string?)null,
+                        stdout = res["stdout"],
+                        stderr = res["stderr"],
+                        compile_output = res["compile_output"],
+                        message = res["message"],
+                        status = res["status"]
+                    }
                 }
-            }
             });
         }
 
@@ -910,11 +959,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-
-    // Submit assessment:
-    // - enforce time
-    // - grade MCQ
-    // - grade CODE using HIDDEN tests via Judge0
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/submit")]
     public async Task<IActionResult> Submit(int applicationId)
@@ -978,171 +1022,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-    private static bool HasQuestionType(string assessmentJson, string typeWanted)
-    {
-        using var doc = JsonDocument.Parse(assessmentJson);
-        if (!doc.RootElement.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array) return false;
-        foreach (var q in qs.EnumerateArray())
-        {
-            var type = q.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
-            if (string.Equals(type, typeWanted, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-        return false;
-    }
-
-    private async Task<(decimal score, object details)> GradeCodeQuestions(string assessmentJson, JsonElement answersRoot)
-    {
-        using var doc = JsonDocument.Parse(assessmentJson);
-        var root = doc.RootElement;
-
-        if (!root.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array)
-            return (0, new { });
-
-        int totalCodeQuestions = 0;
-        int totalHiddenTests = 0;
-        int passedHiddenTests = 0;
-
-        var perQuestion = new List<object>();
-
-        foreach (var q in qs.EnumerateArray())
-        {
-            var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String ? tEl.GetString() : "";
-            if (!string.Equals(type, "code", StringComparison.OrdinalIgnoreCase)) continue;
-
-            var qid = q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String ? idEl.GetString() : null;
-            if (string.IsNullOrWhiteSpace(qid)) continue;
-
-            totalCodeQuestions++;
-
-            int languageId = 0;
-            string sourceCode = "";
-
-            if (answersRoot.ValueKind == JsonValueKind.Object && answersRoot.TryGetProperty(qid!, out var aEl) && aEl.ValueKind == JsonValueKind.Object)
-            {
-                if (aEl.TryGetProperty("languageId", out var l) && l.ValueKind == JsonValueKind.Number) languageId = l.GetInt32();
-                if (aEl.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String) sourceCode = c.GetString() ?? "";
-            }
-
-            if (languageId == 0 || string.IsNullOrWhiteSpace(sourceCode))
-            {
-                perQuestion.Add(new { questionId = qid, passed = 0, total = 0, error = "No code submitted." });
-                continue;
-            }
-            int qTotal = 0;
-            int qPassed = 0;
-
-            if (q.TryGetProperty("hiddenTests", out var hts) && hts.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var ht in hts.EnumerateArray())
-                {
-                    var stdin = ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
-                    var expected = ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
-
-                    if (stdin == null) stdin = "";
-                    if (expected == null) expected = "";
-
-                    qTotal++;
-                    totalHiddenTests++;
-
-                    var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
-
-                    var ok = false;
-                    if (res.TryGetValue("status", out var stObj) && stObj is string st)
-                    {
-                        ok = st.Equals("Accepted", StringComparison.OrdinalIgnoreCase);
-                    }
-
-                    if (ok)
-                    {
-                        qPassed++;
-                        passedHiddenTests++;
-                    }
-                }
-            }
-
-            perQuestion.Add(new { questionId = qid, passed = qPassed, total = qTotal });
-        }
-
-        if (totalHiddenTests == 0) return (0, new { perQuestion });
-
-        var score = Math.Round((decimal)passedHiddenTests * 100m / totalHiddenTests, 2);
-        return (score, new { perQuestion, passedHiddenTests, totalHiddenTests });
-    }
-    private static string Norm(string? s)
-    {
-        if (s == null) return "";
-        return s.Replace("\r\n", "\n").TrimEnd();
-    }
-
-    private async Task<Dictionary<string, object?>> Judge0Submit(
-        string sourceCode,
-        int languageId,
-        string stdin,
-        string expectedOutput
-    )
-    {
-        var baseUrl = _config["Judge0:BaseUrl"]?.Trim();
-        if (string.IsNullOrWhiteSpace(baseUrl))
-            throw new InvalidOperationException("Judge0:BaseUrl is not configured.");
-
-        var client = _http.CreateClient();
-        var payload = new
-        {
-            source_code = sourceCode,
-            language_id = languageId,
-            stdin = stdin
-        };
-
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var url = $"{baseUrl.TrimEnd('/')}/submissions?base64_encoded=false&wait=true";
-        var resp = await client.PostAsync(url, content);
-        var body = await resp.Content.ReadAsStringAsync();
-
-        using var doc = JsonDocument.Parse(body);
-        var root = doc.RootElement;
-
-        string status = "";
-        if (root.TryGetProperty("status", out var st) && st.ValueKind == JsonValueKind.Object)
-        {
-            if (st.TryGetProperty("description", out var d) && d.ValueKind == JsonValueKind.String)
-                status = d.GetString() ?? "";
-        }
-
-        string? stdout = root.TryGetProperty("stdout", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString() : null;
-        string? stderr = root.TryGetProperty("stderr", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null;
-        string? compile = root.TryGetProperty("compile_output", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
-        string? message = root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
-        var normExp = Norm(expectedOutput);
-        var normOut = Norm(stdout);
-
-        var finalStatus = status;
-
-        var isError =
-            !string.IsNullOrWhiteSpace(compile) ||
-            !string.IsNullOrWhiteSpace(stderr) ||
-            status.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
-            status.Contains("Time Limit", StringComparison.OrdinalIgnoreCase);
-
-        if (!isError && !string.IsNullOrEmpty(normExp))
-        {
-            finalStatus = (normOut == normExp) ? "Accepted" : "Wrong Answer";
-        }
-
-        return new Dictionary<string, object?>
-        {
-            ["status"] = finalStatus,
-            ["stdout"] = stdout,
-            ["stderr"] = stderr,
-            ["compile_output"] = compile,
-            ["message"] = message,
-            ["expected"] = expectedOutput
-        };
-    }
-
-
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/assessment/reset")]
     public async Task<IActionResult> ResetAssessment(int applicationId)
@@ -1151,7 +1030,9 @@ public class ApplicationController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var app = await _db.Applications
-            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+            .FirstOrDefaultAsync(a =>
+                a.Id == applicationId &&
+                (a.UserId == userId || a.StudentUserId == userId));
 
         if (app == null) return NotFound();
 
@@ -1165,34 +1046,6 @@ public class ApplicationController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { reset = true });
-    }
-
-
-
-
-    public class RecruiterAppListDto
-    {
-        public int ApplicationId { get; set; }
-        public string CandidateName { get; set; } = "";
-        public string CandidateEmail { get; set; } = "";
-        public string Status { get; set; } = "";
-        public DateTime CreatedAtUtc { get; set; }
-        public DateTime UpdatedAtUtc { get; set; }
-        public bool HasAssessment { get; set; }
-        public decimal? AssessmentScore { get; set; }
-        public string? Note { get; set; }
-        public int MatchPercentage { get; set; }
-        public DateTime? InterviewScheduledAtUtc { get; set; }
-        public bool HasActiveInterview { get; set; }
-        public string UserId { get; set; } = "";
-        public int? InterviewId { get; set; }
-        public string? MeetingLink { get; set; }
-        public string? Location { get; set; }
-    }
-
-    public class ResendRejectionDto
-    {
-        public string? RejectionReason { get; set; }
     }
 
     [Authorize(Roles = "Recruiter")]
@@ -1314,14 +1167,11 @@ public class ApplicationController : ControllerBase
         return Ok(result);
     }
 
-    // ── PATCH /api/applications/{applicationId}/status ────────────────────────
-    // PB_19: update application status
-    // PB_24: auto-send rejection email when status = Rejected + SendEmail = true
     [Authorize(Roles = "Recruiter")]
     [HttpPatch("{applicationId:int}/status")]
     public async Task<IActionResult> UpdateApplicationStatus(
-    int applicationId,
-    [FromBody] UpdateApplicationStatusDto dto)
+        int applicationId,
+        [FromBody] UpdateApplicationStatusDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Status))
             return BadRequest("Status is required.");
@@ -1349,7 +1199,6 @@ public class ApplicationController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        // ── PB_24 rejection email ─────────────────────────────────────────────
         string? emailError = null;
         bool emailSent = false;
 
@@ -1363,7 +1212,8 @@ public class ApplicationController : ControllerBase
                     var oppTitle = app.Opportunity?.Title ?? "the position";
                     var companyName = app.Opportunity?.CompanyName ?? "our company";
                     var reason = string.IsNullOrWhiteSpace(dto.RejectionReason)
-                                      ? null : dto.RejectionReason.Trim();
+                        ? null
+                        : dto.RejectionReason.Trim();
 
                     var htmlBody = BuildRejectionEmail(
                         user.UserName ?? "Candidate", oppTitle, companyName, reason);
@@ -1377,7 +1227,7 @@ public class ApplicationController : ControllerBase
                 }
                 catch (Exception ex)
                 {
-                    emailError = ex.Message;   // status update succeeds even if email fails
+                    emailError = ex.Message;
                 }
             }
         }
@@ -1392,8 +1242,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-    // ── POST /api/applications/{applicationId}/rejection-email ────────────────
-    // PB_24: manually (re)send a rejection email at any time
     [Authorize(Roles = "Recruiter")]
     [HttpPost("{applicationId:int}/rejection-email")]
     public async Task<IActionResult> ResendRejectionEmail(
@@ -1413,7 +1261,8 @@ public class ApplicationController : ControllerBase
         var oppTitle = app.Opportunity?.Title ?? "the position";
         var companyName = app.Opportunity?.CompanyName ?? "our company";
         var reason = string.IsNullOrWhiteSpace(dto?.RejectionReason)
-                          ? null : dto!.RejectionReason!.Trim();
+            ? null
+            : dto!.RejectionReason!.Trim();
 
         var htmlBody = BuildRejectionEmail(
             user.UserName ?? "Candidate", oppTitle, companyName, reason);
@@ -1429,7 +1278,6 @@ public class ApplicationController : ControllerBase
         }
     }
 
-    // Recruiter updates application status and add note (optional)
     [Authorize(Roles = "Recruiter")]
     [HttpPatch("{applicationId:int}/recruiter")]
     public async Task<IActionResult> RecruiterUpdateApplication(int applicationId, [FromBody] UpdateApplicationStatusDto dto)
@@ -1437,15 +1285,13 @@ public class ApplicationController : ControllerBase
         var recruiterId = CurrentUserId();
         if (string.IsNullOrEmpty(recruiterId)) return Unauthorized();
 
-        // recruiter profile
         var recruiter = await _db.RecruiterProfiles
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.UserId == recruiterId);
 
         if (recruiter == null)
-            return Forbid(); // recruiter role but no profile
+            return Forbid();
 
-        // application + opportunity
         var app = await _db.Applications
             .Include(a => a.Opportunity)
             .FirstOrDefaultAsync(a => a.Id == applicationId);
@@ -1456,7 +1302,6 @@ public class ApplicationController : ControllerBase
         if (app.Opportunity == null)
             return BadRequest("Opportunity not found for this application.");
 
-        // same company check
         if (app.Opportunity.RecruiterUserId != recruiterId)
             return Forbid();
 
@@ -1481,7 +1326,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-    // GET my application status + recruiter notes (for dashboard)
     [Authorize(Roles = "Student")]
     [HttpGet("{applicationId:int}/summary")]
     public async Task<IActionResult> GetMyApplicationSummary(int applicationId)
@@ -1509,8 +1353,6 @@ public class ApplicationController : ControllerBase
         });
     }
 
-
-    // GET all applications for recruiter's company
     [Authorize(Roles = "Recruiter")]
     [HttpGet("recruiter/applications")]
     public async Task<IActionResult> GetCompanyApplications()
@@ -1545,7 +1387,6 @@ public class ApplicationController : ControllerBase
         return Ok(apps);
     }
 
-    // Withdraw application (student)
     [Authorize(Roles = "Student")]
     [HttpPost("{applicationId:int}/withdraw")]
     public async Task<IActionResult> WithdrawApplication(int applicationId)
@@ -1554,13 +1395,22 @@ public class ApplicationController : ControllerBase
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var app = await _db.Applications
-            .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
+            .FirstOrDefaultAsync(a =>
+                a.Id == applicationId &&
+                (a.UserId == userId || a.StudentUserId == userId));
 
         if (app == null) return NotFound();
 
         if (app.Status == ApplicationStatus.Withdrawn)
             return BadRequest("Application already withdrawn.");
 
+        if (app.Status == ApplicationStatus.Accepted ||
+            app.Status == ApplicationStatus.Rejected)
+            return BadRequest("This application can no longer be withdrawn.");
+
+        var canReapply = app.Status == ApplicationStatus.Draft;
+
+        app.CanReapplyAfterWithdraw = canReapply;
         app.Status = ApplicationStatus.Withdrawn;
         app.WithdrawndAt = DateTime.UtcNow;
         app.UpdatedAtUtc = DateTime.UtcNow;
@@ -1571,7 +1421,8 @@ public class ApplicationController : ControllerBase
         {
             applicationId = app.Id,
             status = app.Status.ToString(),
-            withdrawnAtUtc = app.WithdrawndAt
+            withdrawnAtUtc = app.WithdrawndAt,
+            canReapply = app.CanReapplyAfterWithdraw
         });
     }
 
@@ -1638,9 +1489,7 @@ public class ApplicationController : ControllerBase
         var profile = await _db.StudentProfiles
             .FirstOrDefaultAsync(p => possibleUserIds.Contains(p.UserId));
 
-        // this is the real id under which the profile data exists
-        var profileUserId = profile?.UserId
-            ?? possibleUserIds.First();
+        var profileUserId = profile?.UserId ?? possibleUserIds.First();
 
         var education = await _db.StudentEducations
             .Where(e => e.StudentUserId == profileUserId)
@@ -1695,12 +1544,9 @@ public class ApplicationController : ControllerBase
         var dto = new
         {
             applicationId = app.Id,
-
-            // send both ids
             userId = profileUserId,
             studentUserId = app.StudentUserId,
             applicationUserId = app.UserId,
-
             opportunityTitle = app.Opportunity.Title,
             status = app.Status.ToString(),
             createdAtUtc = app.CreatedAtUtc,
@@ -1746,6 +1592,173 @@ public class ApplicationController : ControllerBase
         return Ok(dto);
     }
 
+    private static bool HasQuestionType(string assessmentJson, string typeWanted)
+    {
+        using var doc = JsonDocument.Parse(assessmentJson);
+        if (!doc.RootElement.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array) return false;
+
+        foreach (var q in qs.EnumerateArray())
+        {
+            var type = q.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
+            if (string.Equals(type, typeWanted, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private async Task<(decimal score, object details)> GradeCodeQuestions(string assessmentJson, JsonElement answersRoot)
+    {
+        using var doc = JsonDocument.Parse(assessmentJson);
+        var root = doc.RootElement;
+
+        if (!root.TryGetProperty("questions", out var qs) || qs.ValueKind != JsonValueKind.Array)
+            return (0, new { });
+
+        int totalCodeQuestions = 0;
+        int totalHiddenTests = 0;
+        int passedHiddenTests = 0;
+
+        var perQuestion = new List<object>();
+
+        foreach (var q in qs.EnumerateArray())
+        {
+            var type = q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String ? tEl.GetString() : "";
+            if (!string.Equals(type, "code", StringComparison.OrdinalIgnoreCase)) continue;
+
+            var qid = q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String ? idEl.GetString() : null;
+            if (string.IsNullOrWhiteSpace(qid)) continue;
+
+            totalCodeQuestions++;
+
+            int languageId = 0;
+            string sourceCode = "";
+
+            if (answersRoot.ValueKind == JsonValueKind.Object &&
+                answersRoot.TryGetProperty(qid!, out var aEl) &&
+                aEl.ValueKind == JsonValueKind.Object)
+            {
+                if (aEl.TryGetProperty("languageId", out var l) && l.ValueKind == JsonValueKind.Number) languageId = l.GetInt32();
+                if (aEl.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String) sourceCode = c.GetString() ?? "";
+            }
+
+            if (languageId == 0 || string.IsNullOrWhiteSpace(sourceCode))
+            {
+                perQuestion.Add(new { questionId = qid, passed = 0, total = 0, error = "No code submitted." });
+                continue;
+            }
+
+            int qTotal = 0;
+            int qPassed = 0;
+
+            if (q.TryGetProperty("hiddenTests", out var hts) && hts.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var ht in hts.EnumerateArray())
+                {
+                    var stdin = ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+                    var expected = ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+
+                    qTotal++;
+                    totalHiddenTests++;
+
+                    var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
+
+                    var ok = false;
+                    if (res.TryGetValue("status", out var stObj) && stObj is string st)
+                    {
+                        ok = st.Equals("Accepted", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    if (ok)
+                    {
+                        qPassed++;
+                        passedHiddenTests++;
+                    }
+                }
+            }
+
+            perQuestion.Add(new { questionId = qid, passed = qPassed, total = qTotal });
+        }
+
+        if (totalHiddenTests == 0) return (0, new { perQuestion });
+
+        var score = Math.Round((decimal)passedHiddenTests * 100m / totalHiddenTests, 2);
+        return (score, new { perQuestion, passedHiddenTests, totalHiddenTests });
+    }
+
+    private static string Norm(string? s)
+    {
+        if (s == null) return "";
+        return s.Replace("\r\n", "\n").TrimEnd();
+    }
+
+    private async Task<Dictionary<string, object?>> Judge0Submit(
+        string sourceCode,
+        int languageId,
+        string stdin,
+        string expectedOutput)
+    {
+        var baseUrl = _config["Judge0:BaseUrl"]?.Trim();
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            throw new InvalidOperationException("Judge0:BaseUrl is not configured.");
+
+        var client = _http.CreateClient();
+        var payload = new
+        {
+            source_code = sourceCode,
+            language_id = languageId,
+            stdin = stdin
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var url = $"{baseUrl.TrimEnd('/')}/submissions?base64_encoded=false&wait=true";
+        var resp = await client.PostAsync(url, content);
+        var body = await resp.Content.ReadAsStringAsync();
+
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement;
+
+        string status = "";
+        if (root.TryGetProperty("status", out var st) && st.ValueKind == JsonValueKind.Object)
+        {
+            if (st.TryGetProperty("description", out var d) && d.ValueKind == JsonValueKind.String)
+                status = d.GetString() ?? "";
+        }
+
+        string? stdout = root.TryGetProperty("stdout", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString() : null;
+        string? stderr = root.TryGetProperty("stderr", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null;
+        string? compile = root.TryGetProperty("compile_output", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
+        string? message = root.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
+
+        var normExp = Norm(expectedOutput);
+        var normOut = Norm(stdout);
+
+        var finalStatus = status;
+
+        var isError =
+            !string.IsNullOrWhiteSpace(compile) ||
+            !string.IsNullOrWhiteSpace(stderr) ||
+            status.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
+            status.Contains("Time Limit", StringComparison.OrdinalIgnoreCase);
+
+        if (!isError && !string.IsNullOrEmpty(normExp))
+        {
+            finalStatus = normOut == normExp ? "Accepted" : "Wrong Answer";
+        }
+
+        return new Dictionary<string, object?>
+        {
+            ["status"] = finalStatus,
+            ["stdout"] = stdout,
+            ["stderr"] = stderr,
+            ["compile_output"] = compile,
+            ["message"] = message,
+            ["expected"] = expectedOutput
+        };
+    }
+
     private static List<string> SplitSkills(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -1758,8 +1771,6 @@ public class ApplicationController : ControllerBase
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
-
-    // ── Private helpers ───────────────────────────────────────────────────────
 
     private async Task SendEmailAsync(string to, string subject, string htmlBody)
     {
@@ -1787,9 +1798,7 @@ public class ApplicationController : ControllerBase
         await client.SendMailAsync(mail);
     }
 
-    private static int CalculateMatchPercentage(
-    List<string> studentSkills,
-    List<string> opportunitySkills)
+    private static int CalculateMatchPercentage(List<string> studentSkills, List<string> opportunitySkills)
     {
         if (opportunitySkills == null || opportunitySkills.Count == 0)
             return 0;
@@ -1929,6 +1938,4 @@ public class ApplicationController : ControllerBase
 </body>
 </html>";
     }
-
-
 }

@@ -102,6 +102,9 @@ namespace Jobify.Migrations
                     b.Property<string>("AssessmentJson")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("CanReapplyAfterWithdraw")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
