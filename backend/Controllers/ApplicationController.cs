@@ -57,14 +57,6 @@ public class ApplicationController : ControllerBase
             using var doc = JsonDocument.Parse(assessmentJson);
             var root = doc.RootElement;
 
-            if ((root.TryGetProperty("questions", out var oldQs) && oldQs.ValueKind == JsonValueKind.Array) ||
-                (root.TryGetProperty("Questions", out oldQs) && oldQs.ValueKind == JsonValueKind.Array))
-            {
-                return JsonSerializer.Deserialize<object>(
-                    assessmentJson,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-
             int timeLimitSeconds = 1800;
 
             if (root.TryGetProperty("timeLimitMinutes", out var tlm) && tlm.ValueKind == JsonValueKind.Number)
@@ -78,21 +70,40 @@ public class ApplicationController : ControllerBase
 
             var questions = new List<Dictionary<string, object?>>();
 
-            if (root.TryGetProperty("mcqs", out var mcqs) && mcqs.ValueKind == JsonValueKind.Array)
+            if ((root.TryGetProperty("questions", out var oldQs) && oldQs.ValueKind == JsonValueKind.Array) ||
+                (root.TryGetProperty("Questions", out oldQs) && oldQs.ValueKind == JsonValueKind.Array))
             {
-                int i = 0;
-                foreach (var q in mcqs.EnumerateArray())
+                foreach (var q in oldQs.EnumerateArray())
                 {
+                    var id =
+                        q.TryGetProperty("id", out var id1) ? id1.GetString() ?? "" :
+                        q.TryGetProperty("Id", out var id2) ? id2.GetString() ?? "" :
+                        "";
+
+                    var type =
+                        q.TryGetProperty("type", out var t1) ? t1.GetString() ?? "mcq" :
+                        q.TryGetProperty("Type", out var t2) ? t2.GetString() ?? "mcq" :
+                        "mcq";
+
+                    var title =
+                        q.TryGetProperty("title", out var tt1) ? tt1.GetString() :
+                        q.TryGetProperty("Title", out var tt2) ? tt2.GetString() :
+                        null;
+
                     var prompt =
-                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                        q.TryGetProperty("prompt", out var p1) ? p1.GetString() ?? "" :
                         q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
                         "";
 
-                    var options = new List<string>();
+                    var starterCode =
+                        q.TryGetProperty("starterCode", out var s1) ? s1.GetString() ?? "" :
+                        q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
+                        "";
 
-                    if (q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+                    var options = new List<string>();
+                    if (q.TryGetProperty("options", out var opts1) && opts1.ValueKind == JsonValueKind.Array)
                     {
-                        foreach (var opt in opts.EnumerateArray())
+                        foreach (var opt in opts1.EnumerateArray())
                             if (opt.ValueKind == JsonValueKind.String)
                                 options.Add(opt.GetString() ?? "");
                     }
@@ -105,110 +116,149 @@ public class ApplicationController : ControllerBase
 
                     questions.Add(new Dictionary<string, object?>
                     {
-                        ["id"] = $"mcq-{i++}",
-                        ["type"] = "mcq",
+                        ["id"] = id,
+                        ["type"] = type,
+                        ["title"] = title,
                         ["prompt"] = prompt,
+                        ["starterCode"] = starterCode,
                         ["options"] = options
                     });
                 }
             }
-            else if (root.TryGetProperty("Mcqs", out var mcqsPascal) && mcqsPascal.ValueKind == JsonValueKind.Array)
+            else
             {
-                int i = 0;
-                foreach (var q in mcqsPascal.EnumerateArray())
+                if (root.TryGetProperty("mcqs", out var mcqs) && mcqs.ValueKind == JsonValueKind.Array)
                 {
-                    var prompt =
-                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
-                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
-                        "";
-
-                    var options = new List<string>();
-
-                    if (q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+                    int i = 0;
+                    foreach (var q in mcqs.EnumerateArray())
                     {
-                        foreach (var opt in opts.EnumerateArray())
-                            if (opt.ValueKind == JsonValueKind.String)
-                                options.Add(opt.GetString() ?? "");
+                        var prompt =
+                            q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                            q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                            "";
+
+                        var options = new List<string>();
+
+                        if (q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var opt in opts.EnumerateArray())
+                                if (opt.ValueKind == JsonValueKind.String)
+                                    options.Add(opt.GetString() ?? "");
+                        }
+                        else if (q.TryGetProperty("Options", out var opts2) && opts2.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var opt in opts2.EnumerateArray())
+                                if (opt.ValueKind == JsonValueKind.String)
+                                    options.Add(opt.GetString() ?? "");
+                        }
+
+                        questions.Add(new Dictionary<string, object?>
+                        {
+                            ["id"] = $"mcq-{i++}",
+                            ["type"] = "mcq",
+                            ["prompt"] = prompt,
+                            ["options"] = options
+                        });
                     }
-                    else if (q.TryGetProperty("Options", out var opts2) && opts2.ValueKind == JsonValueKind.Array)
+                }
+                else if (root.TryGetProperty("Mcqs", out var mcqsPascal) && mcqsPascal.ValueKind == JsonValueKind.Array)
+                {
+                    int i = 0;
+                    foreach (var q in mcqsPascal.EnumerateArray())
                     {
-                        foreach (var opt in opts2.EnumerateArray())
-                            if (opt.ValueKind == JsonValueKind.String)
-                                options.Add(opt.GetString() ?? "");
+                        var prompt =
+                            q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                            q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                            "";
+
+                        var options = new List<string>();
+
+                        if (q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var opt in opts.EnumerateArray())
+                                if (opt.ValueKind == JsonValueKind.String)
+                                    options.Add(opt.GetString() ?? "");
+                        }
+                        else if (q.TryGetProperty("Options", out var opts2) && opts2.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var opt in opts2.EnumerateArray())
+                                if (opt.ValueKind == JsonValueKind.String)
+                                    options.Add(opt.GetString() ?? "");
+                        }
+
+                        questions.Add(new Dictionary<string, object?>
+                        {
+                            ["id"] = $"mcq-{i++}",
+                            ["type"] = "mcq",
+                            ["prompt"] = prompt,
+                            ["options"] = options
+                        });
                     }
-
-                    questions.Add(new Dictionary<string, object?>
-                    {
-                        ["id"] = $"mcq-{i++}",
-                        ["type"] = "mcq",
-                        ["prompt"] = prompt,
-                        ["options"] = options
-                    });
                 }
-            }
 
-            if (root.TryGetProperty("codingChallenges", out var coding) && coding.ValueKind == JsonValueKind.Array)
-            {
-                int i = 0;
-                foreach (var q in coding.EnumerateArray())
+                if (root.TryGetProperty("codingChallenges", out var coding) && coding.ValueKind == JsonValueKind.Array)
                 {
-                    var title =
-                        q.TryGetProperty("title", out var t) ? t.GetString() ?? "" :
-                        q.TryGetProperty("Title", out var t2) ? t2.GetString() ?? "" :
-                        "Coding Question";
-
-                    var prompt =
-                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
-                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
-                        "";
-
-                    var starterCode =
-                        q.TryGetProperty("starterCode", out var s) ? s.GetString() ?? "" :
-                        q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
-                        "";
-
-                    questions.Add(new Dictionary<string, object?>
+                    int i = 0;
+                    foreach (var q in coding.EnumerateArray())
                     {
-                        ["id"] = $"code-{i++}",
-                        ["type"] = "code",
-                        ["title"] = title,
-                        ["prompt"] = prompt,
-                        ["starterCode"] = starterCode,
-                        ["languageIdsAllowed"] = new List<int> { 71, 63, 62, 51, 54 },
-                        ["publicTests"] = new List<object>()
-                    });
+                        var title =
+                            q.TryGetProperty("title", out var t) ? t.GetString() ?? "" :
+                            q.TryGetProperty("Title", out var t2) ? t2.GetString() ?? "" :
+                            "Coding Question";
+
+                        var prompt =
+                            q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                            q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                            "";
+
+                        var starterCode =
+                            q.TryGetProperty("starterCode", out var s) ? s.GetString() ?? "" :
+                            q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
+                            "";
+
+                        questions.Add(new Dictionary<string, object?>
+                        {
+                            ["id"] = $"code-{i++}",
+                            ["type"] = "code",
+                            ["title"] = title,
+                            ["prompt"] = prompt,
+                            ["starterCode"] = starterCode,
+                            ["languageIdsAllowed"] = new List<int> { 71, 63, 62, 51, 54 },
+                            ["publicTests"] = new List<object>()
+                        });
+                    }
                 }
-            }
-            else if (root.TryGetProperty("CodingChallenges", out var codingPascal) && codingPascal.ValueKind == JsonValueKind.Array)
-            {
-                int i = 0;
-                foreach (var q in codingPascal.EnumerateArray())
+                else if (root.TryGetProperty("CodingChallenges", out var codingPascal) && codingPascal.ValueKind == JsonValueKind.Array)
                 {
-                    var title =
-                        q.TryGetProperty("title", out var t) ? t.GetString() ?? "" :
-                        q.TryGetProperty("Title", out var t2) ? t2.GetString() ?? "" :
-                        "Coding Question";
-
-                    var prompt =
-                        q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
-                        q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
-                        "";
-
-                    var starterCode =
-                        q.TryGetProperty("starterCode", out var s) ? s.GetString() ?? "" :
-                        q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
-                        "";
-
-                    questions.Add(new Dictionary<string, object?>
+                    int i = 0;
+                    foreach (var q in codingPascal.EnumerateArray())
                     {
-                        ["id"] = $"code-{i++}",
-                        ["type"] = "code",
-                        ["title"] = title,
-                        ["prompt"] = prompt,
-                        ["starterCode"] = starterCode,
-                        ["languageIdsAllowed"] = new List<int> { 71, 63, 62, 51, 54 },
-                        ["publicTests"] = new List<object>()
-                    });
+                        var title =
+                            q.TryGetProperty("title", out var t) ? t.GetString() ?? "" :
+                            q.TryGetProperty("Title", out var t2) ? t2.GetString() ?? "" :
+                            "Coding Question";
+
+                        var prompt =
+                            q.TryGetProperty("prompt", out var p) ? p.GetString() ?? "" :
+                            q.TryGetProperty("Prompt", out var p2) ? p2.GetString() ?? "" :
+                            "";
+
+                        var starterCode =
+                            q.TryGetProperty("starterCode", out var s) ? s.GetString() ?? "" :
+                            q.TryGetProperty("StarterCode", out var s2) ? s2.GetString() ?? "" :
+                            "";
+
+                        questions.Add(new Dictionary<string, object?>
+                        {
+                            ["id"] = $"code-{i++}",
+                            ["type"] = "code",
+                            ["title"] = title,
+                            ["prompt"] = prompt,
+                            ["starterCode"] = starterCode,
+                            ["languageIdsAllowed"] = new List<int> { 71, 63, 62, 51, 54 },
+                            ["publicTests"] = new List<object>()
+                        });
+                    }
                 }
             }
 
@@ -1541,6 +1591,226 @@ public class ApplicationController : ControllerBase
             .AsNoTracking()
             .FirstOrDefaultAsync(u => possibleUserIds.Contains(u.Id));
 
+        object? assessmentDefinition = null;
+        object? assessmentAnswers = null;
+
+        object? mcqResults = null;
+        object? codeResults = null;
+        List<string> snapshotFiles = new();
+
+        if (app.Assessment != null)
+        {
+            if (app.Assessment != null)
+            {
+                if (!string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson) &&
+                    !string.IsNullOrWhiteSpace(app.Assessment?.AnswersJson))
+                {
+                    try
+                    {
+                        using var assessmentDoc = JsonDocument.Parse(app.Opportunity.AssessmentJson);
+                        using var answersDoc = JsonDocument.Parse(app.Assessment.AnswersJson);
+
+                        var assessmentRoot = assessmentDoc.RootElement;
+                        var answersRoot = answersDoc.RootElement;
+
+                        var mcqList = new List<object>();
+                        var codeList = new List<object>();
+
+                        if (assessmentRoot.TryGetProperty("questions", out var qs) &&
+                            qs.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var q in qs.EnumerateArray())
+                            {
+                                var qid =
+                                    q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String
+                                        ? idEl.GetString()
+                                        : q.TryGetProperty("Id", out var idPascal) && idPascal.ValueKind == JsonValueKind.String
+                                            ? idPascal.GetString()
+                                            : null;
+
+                                var qtype =
+                                    q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String
+                                        ? tEl.GetString()
+                                        : q.TryGetProperty("Type", out var tPascal) && tPascal.ValueKind == JsonValueKind.String
+                                            ? tPascal.GetString()
+                                            : null;
+
+                                if (string.IsNullOrWhiteSpace(qid) || string.IsNullOrWhiteSpace(qtype))
+                                    continue;
+
+                                if (string.Equals(qtype, "mcq", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    int? chosenIndex = null;
+                                    int? correctIndex = null;
+
+                                    if (answersRoot.TryGetProperty(qid, out var chosen) &&
+                                        chosen.ValueKind == JsonValueKind.Number)
+                                    {
+                                        chosenIndex = chosen.GetInt32();
+                                    }
+
+                                    if (q.TryGetProperty("correctIndex", out var cEl) &&
+                                        cEl.ValueKind == JsonValueKind.Number)
+                                    {
+                                        correctIndex = cEl.GetInt32();
+                                    }
+                                    else if (q.TryGetProperty("CorrectIndex", out var cPascal) &&
+                                             cPascal.ValueKind == JsonValueKind.Number)
+                                    {
+                                        correctIndex = cPascal.GetInt32();
+                                    }
+
+                                    mcqList.Add(new
+                                    {
+                                        questionId = qid,
+                                        chosenIndex,
+                                        correctIndex,
+                                        isCorrect = chosenIndex.HasValue &&
+                                                    correctIndex.HasValue &&
+                                                    chosenIndex.Value == correctIndex.Value
+                                    });
+                                }
+                                else if (string.Equals(qtype, "code", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    int languageId = 0;
+                                    string sourceCode = "";
+
+                                    if (answersRoot.TryGetProperty(qid, out var codeAnswer) &&
+                                        codeAnswer.ValueKind == JsonValueKind.Object)
+                                    {
+                                        if (codeAnswer.TryGetProperty("languageId", out var langEl) &&
+                                            langEl.ValueKind == JsonValueKind.Number)
+                                        {
+                                            languageId = langEl.GetInt32();
+                                        }
+
+                                        if (codeAnswer.TryGetProperty("code", out var codeEl) &&
+                                            codeEl.ValueKind == JsonValueKind.String)
+                                        {
+                                            sourceCode = codeEl.GetString() ?? "";
+                                        }
+                                    }
+
+                                    var hiddenResults = new List<object>();
+                                    int passed = 0;
+                                    int total = 0;
+
+                                    if (languageId != 0 &&
+                                        !string.IsNullOrWhiteSpace(sourceCode) &&
+                                        q.TryGetProperty("hiddenTests", out var hiddenTests) &&
+                                        hiddenTests.ValueKind == JsonValueKind.Array)
+                                    {
+                                        foreach (var ht in hiddenTests.EnumerateArray())
+                                        {
+                                            var stdin =
+                                                ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String
+                                                    ? s.GetString() ?? ""
+                                                    : "";
+
+                                            var expected =
+                                                ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String
+                                                    ? e.GetString() ?? ""
+                                                    : "";
+
+                                            var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
+
+                                            var status = res.TryGetValue("status", out var stObj)
+                                                ? stObj?.ToString()
+                                                : null;
+
+                                            var stdout = res.TryGetValue("stdout", out var outObj)
+                                                ? outObj?.ToString()
+                                                : null;
+
+                                            var stderr = res.TryGetValue("stderr", out var errObj)
+                                                ? errObj?.ToString()
+                                                : null;
+
+                                            var compileOutput = res.TryGetValue("compile_output", out var compObj)
+                                                ? compObj?.ToString()
+                                                : null;
+
+                                            var isCorrect = string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase);
+
+                                            total++;
+                                            if (isCorrect) passed++;
+
+                                            hiddenResults.Add(new
+                                            {
+                                                stdin,
+                                                expected,
+                                                stdout,
+                                                stderr,
+                                                compileOutput,
+                                                status,
+                                                isCorrect
+                                            });
+                                        }
+                                    }
+
+                                    codeList.Add(new
+                                    {
+                                        questionId = qid,
+                                        languageId,
+                                        code = sourceCode,
+                                        passed,
+                                        total,
+                                        isCorrect = total > 0 ? passed == total : (bool?)null,
+                                        hiddenResults
+                                    });
+                                }
+                            }
+                        }
+
+                        mcqResults = mcqList;
+                        codeResults = codeList;
+                    }
+                    catch { }
+                }
+
+                var snapshots = await _db.ProctorEvents
+                    .AsNoTracking()
+                    .Where(x => x.ApplicationAssessmentId == app.Assessment.Id && x.Type == "WEBCAM_SNAPSHOT")
+                    .OrderByDescending(x => x.CreatedAtUtc)
+                    .ToListAsync();
+
+                foreach (var s in snapshots)
+                {
+                    if (string.IsNullOrWhiteSpace(s.Details)) continue;
+
+                    try
+                    {
+                        using var d = JsonDocument.Parse(s.Details);
+                        if (d.RootElement.TryGetProperty("file", out var f) && f.ValueKind == JsonValueKind.String)
+                        {
+                            var file = f.GetString();
+                            if (!string.IsNullOrWhiteSpace(file))
+                                snapshotFiles.Add(file!);
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson))
+        {
+            try
+            {
+                assessmentDefinition = MakePublicAssessment(app.Opportunity.AssessmentJson);
+            }
+            catch { }
+        }
+
+        if (!string.IsNullOrWhiteSpace(app.Assessment?.AnswersJson))
+        {
+            try
+            {
+                assessmentAnswers = JsonSerializer.Deserialize<object>(app.Assessment.AnswersJson);
+            }
+            catch { }
+        }
+
         var dto = new
         {
             applicationId = app.Id,
@@ -1550,6 +1820,7 @@ public class ApplicationController : ControllerBase
             opportunityTitle = app.Opportunity.Title,
             status = app.Status.ToString(),
             createdAtUtc = app.CreatedAtUtc,
+
 
             fullName =
                 !string.IsNullOrWhiteSpace(profile?.FullName) ? profile.FullName :
@@ -1586,7 +1857,13 @@ public class ApplicationController : ControllerBase
 
             assessmentScore = app.Assessment?.Score,
             flagged = app.Assessment?.Flagged,
-            flagReason = app.Assessment?.FlagReason
+            flagReason = app.Assessment?.FlagReason,
+            assessmentDefinition = assessmentDefinition,
+            assessmentAnswers = assessmentAnswers,
+            assessmentSubmittedAtUtc = app.Assessment?.SubmittedAtUtc,
+            mcqResults = mcqResults,
+            codeResults = codeResults,
+            snapshotFiles = snapshotFiles
         };
 
         return Ok(dto);
@@ -1848,6 +2125,22 @@ public class ApplicationController : ControllerBase
 
         var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
         return File(bytes, contentType, fileName);
+    }
+
+    [Authorize(Roles = "Recruiter")]
+    [HttpGet("snapshot-file")]
+    public async Task<IActionResult> GetSnapshotFile([FromQuery] string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return BadRequest();
+
+        var fullPath = Path.Combine(_env.ContentRootPath, "Snapshots", fileName);
+
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound();
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+        return File(bytes, "image/jpeg", fileName);
     }
 
     private static string BuildRejectionEmail(
