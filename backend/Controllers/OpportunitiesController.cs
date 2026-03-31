@@ -1022,7 +1022,7 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
     [HttpGet("admin/get-reports/{opportunityId}")]
     public async Task<IActionResult> GetOpportunityReports(int opportunityId)
     {
-        var reports = await _db.GetOpportunityReports
+        var reports = await _db.OpportunityReports
             .Where(r => r.OpportunityId == opportunityId)
             .ToListAsync();
 
