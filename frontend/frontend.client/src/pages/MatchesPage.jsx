@@ -224,7 +224,7 @@ export default function MatchesPage() {
 
         setConfirmWithdraw(application);
     }
-
+// render toasts
     async function confirmWithdrawApplication() {
         const application = confirmWithdraw;
         if (!application?.id) {
