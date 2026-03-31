@@ -149,9 +149,6 @@ function RecruiterDashboard() {
                     .filter((i) => new Date(i.scheduledAtUtc) > now)
                     .sort((a, b) => new Date(a.scheduledAtUtc) - new Date(b.scheduledAtUtc));
 
-                const soonLimit = new Date();
-                soonLimit.setDate(soonLimit.getDate() + 14);
-
                 const activeListings = opportunities.filter((o) => !o.isClosed).length;
 
                 const totalApplications = opportunities.reduce(
@@ -432,8 +429,10 @@ function CandidateDashboard() {
         (job) => (job.matchScore ?? 0) >= MATCH_THRESHOLD
     );
 
+    const now = new Date();
+
     const upcomingDeadlines = recommendedOpportunities
-        .filter((job) => job.deadlineUtc)
+        .filter((job) => job.deadlineUtc && new Date(job.deadlineUtc) >= now)
         .sort((a, b) => new Date(a.deadlineUtc) - new Date(b.deadlineUtc))
         .slice(0, 3);
 
@@ -593,4 +592,3 @@ function DeadlineCard({ job }) {
         </div>
     );
 }
-
