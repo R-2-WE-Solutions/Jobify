@@ -376,7 +376,7 @@ public class ApplicationController : ControllerBase
         public string? MeetingLink { get; set; }
         public string? Location { get; set; }
     }
-// add timestamp
+
     [Authorize(Roles = "Student")]
     [HttpGet("me")]
     public async Task<ActionResult<List<MyApplicationDto>>> GetMyApplications()
@@ -1408,6 +1408,9 @@ public class ApplicationController : ControllerBase
             app.Status == ApplicationStatus.Rejected)
             return BadRequest("This application can no longer be withdrawn.");
 
+        var canReapply = app.Status == ApplicationStatus.Draft;
+
+        app.CanReapplyAfterWithdraw = canReapply;
         app.Status = ApplicationStatus.Withdrawn;
         app.WithdrawndAt = DateTime.UtcNow;
         app.UpdatedAtUtc = DateTime.UtcNow;
@@ -1418,7 +1421,8 @@ public class ApplicationController : ControllerBase
         {
             applicationId = app.Id,
             status = app.Status.ToString(),
-            withdrawnAtUtc = app.WithdrawndAt
+            withdrawnAtUtc = app.WithdrawndAt,
+            canReapply = app.CanReapplyAfterWithdraw
         });
     }
 
