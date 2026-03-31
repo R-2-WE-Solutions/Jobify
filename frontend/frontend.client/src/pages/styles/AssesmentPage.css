@@ -1,16 +1,16 @@
-
 .jobifyAssessment__qCard {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border);
     border-radius: 14px;
-    background: #ffffff;
+    background: var(--surface);
     box-shadow: 0 10px 18px rgba(15, 23, 42, 0.05);
     padding: 16px;
     margin-bottom: 12px;
+    color: var(--text);
 }
 
 .jobifyAssessment__mcqPrompt {
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .jobifyAssessment__mcq {
@@ -25,21 +25,22 @@
     align-items: center;
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    background: #f8fafc;
+    border: 1px solid var(--border);
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
+    color: var(--text);
     cursor: pointer;
     transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
-    .jobifyAssessment__mcqOpt:hover {
-        transform: translateY(-1px);
-        background: rgba(99, 102, 241, 0.06);
-        border-color: rgba(99, 102, 241, 0.25);
-    }
+.jobifyAssessment__mcqOpt:hover {
+    transform: translateY(-1px);
+    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.3);
+}
 
-    .jobifyAssessment__mcqOpt input {
-        accent-color: #6366f1;
-    }
+.jobifyAssessment__mcqOpt input {
+    accent-color: var(--primary);
+}
 
 .jobifyAssessment__qHeader {
     display: flex;
@@ -51,12 +52,12 @@
 .jobifyAssessment__qTitle {
     font-weight: 900;
     font-size: 15px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .jobifyAssessment__qPrompt {
     margin-top: 6px;
-    color: #475569;
+    color: var(--muted);
     line-height: 1.5;
     white-space: pre-wrap;
     font-size: 13.5px;
@@ -66,23 +67,24 @@
     height: 36px;
     padding: 0 10px;
     border-radius: 10px;
-    border: 1px solid #d1d5db;
-    background: #ffffff;
-    color: #0f172a;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     outline: none;
 }
 
-    .jobifyAssessment__select:focus {
-        border-color: rgba(99, 102, 241, 0.7);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-    }
+.jobifyAssessment__select:focus {
+    border-color: rgba(99, 102, 241, 0.7);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
 
 .jobifyAssessment__tests {
     margin-top: 10px;
     padding: 12px;
     border-radius: 12px;
-    border: 1px dashed #d1d5db;
-    background: #f8fafc;
+    border: 1px dashed var(--border);
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
+    color: var(--text);
 }
 
 .jobifyAssessment__testGrid {
@@ -94,21 +96,21 @@
 .jobifyAssessment__testCard {
     padding: 10px;
     border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
+    border: 1px solid var(--border);
+    background: var(--surface);
 }
 
 .jobifyAssessment__testTitle {
     font-weight: 800;
     margin-bottom: 6px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .jobifyAssessment__kv {
     margin-top: 8px;
     display: grid;
     gap: 6px;
-    color: #334155;
+    color: var(--muted);
     font-size: 12.5px;
 }
 
@@ -118,9 +120,9 @@
     word-break: break-word;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 12px;
-    color: #0f172a;
-    background: rgba(15, 23, 42, 0.04);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    color: var(--text);
+    background: var(--surface-soft, rgba(15, 23, 42, 0.06));
+    border: 1px solid var(--border);
     padding: 10px;
     border-radius: 10px;
 }
@@ -133,17 +135,17 @@
     line-height: 1.55;
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid #d1d5db;
-    background: #ffffff;
-    color: #0f172a;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     outline: none;
     resize: vertical;
 }
 
-    .jobifyAssessment__codeArea:focus {
-        border-color: rgba(99, 102, 241, 0.7);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-    }
+.jobifyAssessment__codeArea:focus {
+    border-color: rgba(99, 102, 241, 0.7);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
 
 .jobifyAssessment__stdinWrap {
     margin-top: 10px;
@@ -152,13 +154,13 @@
 .jobifyAssessment__stdinTitle {
     font-weight: 800;
     margin-bottom: 6px;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .jobifyAssessment__hint {
     margin-top: 6px;
     font-size: 12px;
-    color: #64748b;
+    color: var(--muted);
 }
 
 .jobifyAssessment__btnRow {
@@ -168,51 +170,53 @@
     margin-top: 10px;
 }
 
-
 .jobifyBtn {
     padding: 10px 14px;
     border-radius: 12px;
-    border: 1px solid #d1d5db;
-    background: #ffffff;
-    color: #0f172a;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     font-weight: 800;
     cursor: pointer;
     transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
 
-    .jobifyBtn:hover {
-        transform: translateY(-1px);
-        background: rgba(99, 102, 241, 0.06);
-        border-color: rgba(99, 102, 241, 0.25);
-    }
+.jobifyBtn:hover {
+    transform: translateY(-1px);
+    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.3);
+}
 
-    .jobifyBtn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-        transform: none;
-    }
+.jobifyBtn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
 
 .jobifyBtn--primary {
     border-color: rgba(99, 102, 241, 0.45);
     background: rgba(99, 102, 241, 0.12);
+    color: var(--text);
 }
 
 .jobifyBtn--danger {
-    border-color: rgba(239, 68, 68, 0.40);
-    background: rgba(239, 68, 68, 0.10);
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--text);
 }
 
 .jobifyAssessment__results {
     margin-top: 10px;
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
 }
 
 .jobifyAssessment__resultsHead {
     margin-bottom: 10px;
-    color: #334155;
+    color: var(--muted);
     font-size: 13px;
 }
 
@@ -224,8 +228,8 @@
 .jobifyAssessment__resultCard {
     padding: 10px;
     border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    background: #f8fafc;
+    border: 1px solid var(--border);
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
 }
 
 .jobifyAssessment__resultTop {
@@ -238,11 +242,11 @@
 
 .jobifyAssessment__resultName {
     font-weight: 900;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .jobifyAssessment__status {
-    color: #334155;
+    color: var(--muted);
     font-size: 13px;
 }
 
@@ -250,7 +254,7 @@
     padding: 14px 22px;
     border-radius: 14px;
     border: none;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    background: linear-gradient(135deg, var(--primary), #1d4ed8);
     color: white;
     font-weight: 800;
     font-size: 15px;
@@ -260,14 +264,14 @@
     transition: all 180ms ease;
 }
 
-    .jobifySubmitBtn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.45), 0 4px 12px rgba(0, 0, 0, 0.12);
-    }
+.jobifySubmitBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.45), 0 4px 12px rgba(0, 0, 0, 0.12);
+}
 
-    .jobifySubmitBtn:disabled {
-        background: #94a3b8;
-        cursor: not-allowed;
-        box-shadow: none;
-        transform: none;
-    }
+.jobifySubmitBtn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
