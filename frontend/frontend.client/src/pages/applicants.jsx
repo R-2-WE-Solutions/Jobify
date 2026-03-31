@@ -144,9 +144,16 @@
 
         if (!open || !applicant) return null;
 
+        const today = new Date().toISOString().split("T")[0];
+
         const handleSubmit = async () => {
             if (!date || !time) {
                 alert("Please select date and time.");
+                return;
+            }
+
+            if (date < today) {
+                alert("Interview date cannot be in the past.");
                 return;
             }
 
@@ -174,6 +181,7 @@
                         <input
                             type="date"
                             value={date}
+                            min={today}
                             onChange={(e) => setDate(e.target.value)}
                         />
                     </div>
