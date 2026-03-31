@@ -100,11 +100,11 @@ export default function SignupPage() {
 
     // ✅ OAuth redirect helpers
     const loginWithGoogle = () => {
-        window.location.href = `${API_URL}/api/Auth/external/Google`;
+        window.location.href = `${API_URL}/Auth/external/Google`;
     };
 
     const loginWithGitHub = () => {
-        window.location.href = `${API_URL}/api/Auth/external/GitHub`;
+        window.location.href = `${API_URL}/Auth/external/GitHub`;
     };
 
     /** Theme state (local UI only) //global now */
@@ -291,7 +291,7 @@ export default function SignupPage() {
         try {
             setIsLoading(true);
 
-            const res = await fetch(`${API_URL}/api/Auth/register`, {
+            const res = await fetch(`${API_URL}/Auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
