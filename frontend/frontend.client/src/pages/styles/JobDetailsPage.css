@@ -1144,3 +1144,129 @@ body {
         font-size: 14px;
         opacity: .8;
     }
+
+.heroGlow {
+    pointer-events: none;
+}
+
+.heroTop,
+.heroLeft,
+.heroRight,
+.heroActions,
+.btnIcon,
+.btnOutline,
+.btnPrimary {
+    position: relative;
+    z-index: 2;
+}
+
+.reportModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+}
+
+.reportModal {
+    width: min(100%, 520px);
+    background: #fff;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.25);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+}
+
+.reportModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.reportModalTitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.reportCloseBtn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+    .reportCloseBtn:hover {
+        background: #eef2f7;
+    }
+
+.reportModalText {
+    margin: 0 0 14px;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.reportSelect,
+.reportTextarea {
+    width: 100%;
+    border: 1px solid #dbe3ee;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    color: #0f172a;
+    background: #fff;
+    outline: none;
+}
+
+.reportSelect {
+    margin-bottom: 12px;
+}
+
+.reportTextarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+    .reportSelect:focus,
+    .reportTextarea:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    }
+
+.reportFeedback {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.reportError {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.reportSuccess {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.reportModalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
