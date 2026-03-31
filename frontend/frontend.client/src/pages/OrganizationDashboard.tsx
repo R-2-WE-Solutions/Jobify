@@ -284,6 +284,7 @@ export default function OrganizationDashboard() {
         if (!formData.level && formData.employmentType !== "internship") return "Please select experience level.";
         if (!formData.description.trim()) return "Please enter a description.";
         if (!formData.deadline) return "Please pick a deadline.";
+        if (formData.deadline < today) return "Deadline cannot be in the past.";
         if (skillsRequired.length === 0) return "Please add at least 1 required skill.";
 
         const hasLat = formData.latitude.trim() !== "";
@@ -348,6 +349,7 @@ export default function OrganizationDashboard() {
             alert(err?.response?.data || err?.message || "Failed to publish opportunity");
         }
     }
+    const today = new Date().toISOString().split("T")[0];
 
     function saveDraft() {
         if (!formData.title.trim()) {
@@ -576,6 +578,7 @@ export default function OrganizationDashboard() {
                                 <input
                                     className="orgdash-input"
                                     type="date"
+                                    min={today}
                                     value={formData.deadline}
                                     onChange={(e) => setField("deadline", e.target.value)}
                                 />
