@@ -32,6 +32,8 @@ export default function AdminReportedOpportunities() {
 
   // Reports
   const [reports, setReports] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+
 
   // Reported Opportunities Fetching
   async function fetchReportedOpportunities() {
@@ -47,6 +49,23 @@ export default function AdminReportedOpportunities() {
     }
     finally {
         setLoadingOpportunities(false);
+    }
+  }
+
+  // Opportunity Reports Fetching
+  async function fetchOpportunityReports(opportunityId: number) {
+    try {
+        setLoadingReports(true);
+
+        const data = await api.get(`api/opportunities/admin/get-reports/${opportunityId}`);
+
+        return data;
+    }
+    catch (error) {
+        console.error("Error in Fetching Opportunity Reports.")
+    }
+    finally {
+        setLoadingReports(false);
     }
   }
 
