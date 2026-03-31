@@ -18,126 +18,17 @@ interface Opportunity {
   reports: Report[];
 }
 
-const opportunities: Opportunity[] = [
-  {
-    id: "OPP001",
-    title: "Software Engineer Intern",
-    company: "TechCorp Inc.",
-    reportCount: 3,
-    reports: [
-      {
-        id: "REP001",
-        studentName: "Sarah Johnson",
-        studentId: "STU001",
-        comment: "The job description doesn't match the actual role requirements. They're asking for 5 years of experience for an internship.",
-        date: "2025-03-15",
-        resolved: false,
-      },
-      {
-        id: "REP002",
-        studentName: "Michael Chen",
-        studentId: "STU002",
-        comment: "Suspicious salary range - seems too low compared to market standards.",
-        date: "2025-03-18",
-        resolved: false,
-      },
-      {
-        id: "REP003",
-        studentName: "Emily Brown",
-        studentId: "STU003",
-        comment: "Company website link is broken and contact information is invalid.",
-        date: "2025-03-20",
-        resolved: false,
-      },
-    ],
-  },
-  {
-    id: "OPP002",
-    title: "Marketing Coordinator",
-    company: "BrandHub",
-    reportCount: 2,
-    reports: [
-      {
-        id: "REP004",
-        studentName: "David Miller",
-        studentId: "STU004",
-        comment: "The posting contains misleading information about remote work options.",
-        date: "2025-03-22",
-        resolved: false,
-      },
-      {
-        id: "REP005",
-        studentName: "Jessica Lee",
-        studentId: "STU005",
-        comment: "Job requirements are discriminatory and violate equal opportunity policies.",
-        date: "2025-03-23",
-        resolved: false,
-      },
-    ],
-  },
-  {
-    id: "OPP003",
-    title: "Data Analyst",
-    company: "DataHub",
-    reportCount: 1,
-    reports: [
-      {
-        id: "REP006",
-        studentName: "Sarah Johnson",
-        studentId: "STU001",
-        comment: "Application deadline has passed but the posting is still active.",
-        date: "2025-03-25",
-        resolved: false,
-      },
-    ],
-  },
-  {
-    id: "OPP004",
-    title: "Frontend Developer",
-    company: "WebSolutions",
-    reportCount: 4,
-    reports: [
-      {
-        id: "REP007",
-        studentName: "Michael Chen",
-        studentId: "STU002",
-        comment: "Duplicate posting - same job is listed multiple times with different IDs.",
-        date: "2025-03-26",
-        resolved: false,
-      },
-      {
-        id: "REP008",
-        studentName: "Emily Brown",
-        studentId: "STU003",
-        comment: "Company information appears to be fake or fraudulent.",
-        date: "2025-03-27",
-        resolved: false,
-      },
-      {
-        id: "REP009",
-        studentName: "David Miller",
-        studentId: "STU004",
-        comment: "Suspicious application process - asks for banking information upfront.",
-        date: "2025-03-28",
-        resolved: false,
-      },
-      {
-        id: "REP010",
-        studentName: "Jessica Lee",
-        studentId: "STU005",
-        comment: "Job description contains inappropriate or offensive language.",
-        date: "2025-03-29",
-        resolved: false,
-      },
-    ],
-  },
-];
 
 export default function AdminReportedOpportunities() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  const [opportunitiesState, setOpportunitiesState] = useState<Opportunity[]>(opportunities);
+
+  // Opportunities
+  const [opportunitiesState, setOpportunitiesState] = useState<any[]>([]);
+
+  // Reports
+  const [reports, setReports] = useState<any[]>([]);
 
   const filteredOpportunities = opportunitiesState.filter(
     (opp) =>
