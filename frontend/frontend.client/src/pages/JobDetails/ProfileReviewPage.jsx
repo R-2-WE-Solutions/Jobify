@@ -10,7 +10,7 @@ import {
     getExperience,
     getProjects,
     getInterests,
-} from "../../api/studentData";
+} from "../../api/StudentData";
 
 export default function ProfileReviewPage() {
     const { applicationId } = useParams();

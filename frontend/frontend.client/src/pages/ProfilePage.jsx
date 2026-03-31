@@ -10,7 +10,7 @@ import {
     getExperience, addExperience, updateExperience, deleteExperience,
     getProjects, addProject, updateProject, deleteProject,
     getInterests, addInterest, deleteInterest
-} from '../api/studentData';
+} from '../api/StudentData';
 import {
     User, GraduationCap, Briefcase, Heart, Code2, FileText,
     TrendingUp, Building2, Settings, ShieldCheck, BarChart3,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import './styles/profile.css';
 
-import { extractSkillsFromCv } from "../api/cvExtract";
+import { extractSkillsFromCv } from "../api/CvExtract";
 
 /* ─────────────────────────────────────────────
    Top-level ProfilePage — keeps all API logic
