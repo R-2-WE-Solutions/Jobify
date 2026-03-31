@@ -133,6 +133,11 @@ export default function ProfileReviewPage() {
     }, [interests, p.interestsText]);
 
     const startAssessment = () => {
+        if (!profileData?.hasAssessment) {
+            navigate(`/application/${applicationId}/result`);
+            return;
+        }
+
         navigate(`/application/${applicationId}/assessment/rules`);
     };
 
@@ -270,7 +275,7 @@ export default function ProfileReviewPage() {
                         </button>
 
                         <button className="btnPrimary" onClick={startAssessment}>
-                            Continue to Assessment →
+                            Continue →
                         </button>
                     </div>
                 </div>
