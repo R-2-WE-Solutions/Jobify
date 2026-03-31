@@ -788,11 +788,16 @@ public class OpportunitiesController : ControllerBase
         if (opportunity.IsClosed)
             return BadRequest("This opportunity is closed.");
 
-        var existingActive = await _db.Applications
-            .FirstOrDefaultAsync(a =>
+        var existingApplications = await _db.Applications
+            .Where(a =>
                 a.OpportunityId == id &&
-                (a.StudentUserId == userId || a.UserId == userId) &&
-                a.Status != ApplicationStatus.Withdrawn);
+                (a.StudentUserId == userId || a.UserId == userId))
+            .OrderByDescending(a => a.UpdatedAtUtc)
+            .ThenByDescending(a => a.CreatedAtUtc)
+            .ToListAsync();
+
+        var existingActive = existingApplications
+            .FirstOrDefault(a => a.Status != ApplicationStatus.Withdrawn);
 
         if (existingActive != null)
         {
@@ -803,16 +808,31 @@ public class OpportunitiesController : ControllerBase
             });
         }
 
-        var blockedReapply = await _db.Applications
-            .AnyAsync(a =>
-                a.OpportunityId == id &&
-                (a.StudentUserId == userId || a.UserId == userId) &&
-                a.Status == ApplicationStatus.Withdrawn &&
-                !a.CanReapplyAfterWithdraw);
+        var withdrawnApp = existingApplications
+            .FirstOrDefault(a => a.Status == ApplicationStatus.Withdrawn);
 
-        if (blockedReapply)
+        if (withdrawnApp != null)
         {
-            return BadRequest("You cannot reapply to this opportunity after withdrawing at this stage.");
+            if (!withdrawnApp.CanReapplyAfterWithdraw)
+            {
+                return BadRequest("You cannot reapply to this opportunity after withdrawing at this stage.");
+            }
+
+            withdrawnApp.Status = ApplicationStatus.Draft;
+            withdrawnApp.UpdatedAtUtc = DateTime.UtcNow;
+            withdrawnApp.CanReapplyAfterWithdraw = true;
+
+            // optional reset fields if you have them
+            // withdrawnApp.Note = null;
+            // withdrawnApp.WithdrawnAtUtc = null;
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                applicationId = withdrawnApp.Id,
+                status = withdrawnApp.Status.ToString()
+            });
         }
 
         var app = new Application

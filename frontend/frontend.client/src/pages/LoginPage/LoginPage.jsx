@@ -69,6 +69,11 @@ function FloatingIcons() {
 }
 
 export default function LoginPage() {
+
+    const API_URL =
+        (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL) ||
+        "http://localhost:5159";
+
     const navigate = useNavigate();
     const { darkMode, toggleTheme } = useTheme();
 
@@ -87,11 +92,11 @@ export default function LoginPage() {
     };
 
     const loginWithGoogle = () => {
-        window.location.href = "http://localhost:5159/api/Auth/external/Google";
+        window.location.href = `${API_URL}/Auth/external/Google`;
     };
 
     const loginWithGitHub = () => {
-        window.location.href = "http://localhost:5159/api/Auth/external/GitHub";
+        window.location.href = `${API_URL}/Auth/external/GitHub`;
     };
 
     const handleSubmit = async (e) => {

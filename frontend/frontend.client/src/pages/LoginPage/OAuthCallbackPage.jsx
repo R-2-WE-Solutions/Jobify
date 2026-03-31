@@ -19,7 +19,7 @@ export default function OAuthCallbackPage() {
 
             (async () => {
                 try {
-                    const res = await fetch(`${API_BASE}/api/Auth/external/complete`, {
+                    const res = await fetch(`${API_BASE}/Auth/external/complete`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ code }),

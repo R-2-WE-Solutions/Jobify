@@ -231,6 +231,7 @@ export default function AppLayout() {
             {!loadingProfile && role === "Recruiter" && (
               <NavLink
                 to="/organization"
+                end
                 className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
               >
                 <span className="al-linkIcon">
@@ -242,7 +243,7 @@ export default function AppLayout() {
 
             {!loadingProfile && role === "Recruiter" && (
               <NavLink
-                to="/applicants"
+                to="/organization/applicants"
                 className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
               >
                 <span className="al-linkIcon">

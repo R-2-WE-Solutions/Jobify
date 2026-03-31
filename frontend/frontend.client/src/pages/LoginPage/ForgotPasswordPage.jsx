@@ -139,7 +139,7 @@ export default function ForgotPasswordPage() {
         const API_BASE = import.meta.env.VITE_API_URL;
 
         try {
-            const res = await fetch(`${API_BASE}/api/Auth/forgot-password`, {
+            const res = await fetch(`${API_BASE}/Auth/forgot-password`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),

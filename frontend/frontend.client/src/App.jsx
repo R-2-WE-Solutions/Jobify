@@ -49,6 +49,10 @@ import Applicants from "./pages/applicants";
 import NotificationsPage from "./pages/NotificationsPage";
 import ApplicantProfilePage from "./pages/ApplicantsProfilePage";
 
+import EditJobPage from "./pages/EditJobPage";
+import AssesmentBuilderPage from "./pages/AssesmentBuilder"
+
+
 // ─────────────────────────────────────────────
 // AUTH HELPERS
 // ─────────────────────────────────────────────
@@ -129,7 +133,9 @@ export default function App() {
         <Route
           path="/organization/applicants/:applicationId/profile"
           element={<ApplicantProfilePage />}
-        />
+              />
+        <Route path="/edit-job/:id" element={<EditJobPage />} />
+        <Route path="/opportunities/:id/assessment" element={<AssesmentBuilderPage />} />
 
         {/* JOB FLOW */}
         <Route path="/opportunities/:id" element={<JobDetailsPage />} />
