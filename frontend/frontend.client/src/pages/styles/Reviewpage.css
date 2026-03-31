@@ -1,8 +1,8 @@
-
 .reviewPage {
-    background: #fff;
+    background: var(--bg);
     min-height: 100vh;
-    padding: 32px 18px 140px; 
+    padding: 32px 18px 140px;
+    color: var(--text);
 }
 
 .reviewShell {
@@ -14,28 +14,34 @@
     margin: 0 0 8px;
     font-size: 38px;
     letter-spacing: -0.4px;
-    color: #2563eb;
+    color: var(--primary);
 }
 
 .reviewHeader p {
     margin: 0 0 22px;
-    color: #6b7280;
+    color: var(--muted);
 }
 
-
 .card {
-    background: #fff;
-    border: 1px solid #eef1f6;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 18px;
     padding: 22px;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
     margin-bottom: 18px;
+    transition: all 0.2s ease;
+    color: var(--text);
+}
+
+.card:hover {
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
 }
 
 .cardTitle {
     font-size: 22px;
     font-weight: 750;
     margin-bottom: 16px;
+    color: var(--text);
 }
 
 .personalRow {
@@ -56,12 +62,12 @@
     border-radius: 999px;
     display: grid;
     place-items: center;
-    background: #eaf2ff;
-    color: #2563eb;
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.16), rgba(59, 130, 246, 0.2));
+    color: var(--primary);
     font-weight: 800;
     font-size: 20px;
-    border: 3px solid #fff;
-    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.12);
+    border: 3px solid var(--surface);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
 }
 
 .kvGrid {
@@ -74,7 +80,7 @@
 .k {
     font-size: 12px;
     letter-spacing: 0.08em;
-    color: #9aa3b2;
+    color: var(--muted);
     font-weight: 800;
     margin-bottom: 6px;
 }
@@ -83,18 +89,20 @@
 .v {
     font-size: 16px;
     font-weight: 650;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .vBig {
     font-size: 20px;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text);
+    margin-bottom: 8px;
 }
 
 .muted {
-    color: #6b7280;
+    color: var(--muted);
     margin-top: 6px;
+    margin-bottom: 14px;
 }
 
 .chips {
@@ -105,12 +113,17 @@
 }
 
 .chip {
-    background: #eef5ff;
-    color: #2563eb;
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--primary);
     padding: 8px 14px;
     border-radius: 999px;
     font-weight: 700;
-    border: 1px solid #dbeafe;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    transition: all 0.2s ease;
+}
+
+.chip:hover {
+    background: rgba(37, 99, 235, 0.18);
 }
 
 .detailGrid {
@@ -121,25 +134,30 @@
 }
 
 .detail {
-    border: 1px solid #eef1f6;
+    border: 1px solid var(--border);
     border-radius: 14px;
     padding: 14px;
-    background: #fbfcfe;
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
+    transition: all 0.2s ease;
 }
 
-    .detail .v {
-        margin-top: 2px;
-        color: #111827;
-        font-weight: 650;
-    }
+.detail:hover {
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.detail .v {
+    margin-top: 2px;
+    color: var(--text);
+    font-weight: 650;
+}
 
 .summary {
-    border: 1px solid #eef1f6;
-    background: #fbfcfe;
+    border: 1px solid var(--border);
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
     border-radius: 14px;
     padding: 14px;
     line-height: 1.6;
-    color: #0f172a;
+    color: var(--text);
 }
 
 .docRow {
@@ -148,11 +166,16 @@
     justify-content: space-between;
     gap: 16px;
     width: 100%;
-    border: 1px solid #eef1f6;
+    border: 1px solid var(--border);
     border-radius: 14px;
     padding: 14px 16px;
-    background: #fbfcfe;
+    background: var(--surface);
     margin-top: 12px;
+    transition: all 0.2s ease;
+}
+
+.docRow:hover {
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
 }
 
 .docLeft {
@@ -166,66 +189,67 @@
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    border: 1px solid #eef1f6;
-    background: #fff;
+    border: 1px solid var(--border);
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    color: #64748b;
+    color: var(--muted);
 }
 
-    .docIcon.ok {
-        color: #16a34a;
-        outline: 3px solid rgba(34, 197, 94, 0.12);
-    }
+.docIcon.ok {
+    color: #16a34a;
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.25);
+}
 
-    .docIcon.no {
-        color: #ef4444;
-        outline: 3px solid rgba(239, 68, 68, 0.10);
-    }
+.docIcon.no {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.25);
+}
 
 .docTitle {
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text);
     line-height: 1.1;
 }
 
 .docSub {
-    color: #6b7280;
+    color: var(--muted);
     font-size: 14px;
     margin-top: 2px;
     line-height: 1.2;
 }
 
 .badge {
-    flex: 0 0 auto; 
+    flex: 0 0 auto;
     align-self: center;
     font-size: 13px;
     font-weight: 900;
     padding: 8px 12px;
-    border-radius: 999px; 
+    border-radius: 999px;
     letter-spacing: 0.02em;
     border: 1px solid;
 }
 
 .badgeOk {
-    background: #ecfdf5;
-    color: #047857;
-    border-color: #a7f3d0;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
 }
 
 .badgeNo {
-    background: #f3f4f6;
-    color: #111827;
-    border-color: #e5e7eb;
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
+    color: var(--text);
+    border-color: var(--border);
 }
 
 .bottomBar {
-    position: static; 
-    background: transparent; 
-    border-top: 1px solid #e9edf5;
-    padding: 18px 0 0;
-    margin-top: 18px;
+    position: sticky;
+    bottom: 18px;
+    margin-top: 28px;
+    z-index: 10;
 }
 
 .bottomInner {
@@ -235,19 +259,30 @@
     justify-content: space-between;
     align-items: center;
     gap: 14px;
-    flex-wrap: nowrap;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
 }
 
 .btnOutline {
     height: 44px;
     padding: 0 18px;
     border-radius: 12px;
-    border: 1px solid #d7deea;
-    background: #fff;
+    border: 1px solid var(--border);
+    background: var(--surface);
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text);
     cursor: pointer;
-    flex: 0 0 auto;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.btnOutline:hover {
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.07);
 }
 
 .btnPrimary {
@@ -255,18 +290,132 @@
     padding: 0 26px;
     border-radius: 14px;
     border: none;
-    background: #2563eb;
+    background: linear-gradient(135deg, var(--primary), #1d4ed8);
     color: white;
     font-weight: 900;
     cursor: pointer;
     box-shadow: 0 14px 26px rgba(37, 99, 235, 0.25);
-    flex: 0 0 auto;
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
 
-    .btnPrimary:hover {
-        filter: brightness(0.98);
-    }
+.btnPrimary:hover {
+    filter: brightness(0.97);
+    transform: translateY(-1px);
+}
 
+.btnPrimary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.rulesPage {
+    background: var(--bg);
+    min-height: 100vh;
+    padding: 40px 18px 60px;
+    color: var(--text);
+}
+
+.rulesShell {
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+.rulesHeader h1 {
+    margin: 0 0 8px;
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--primary);
+}
+
+.rulesHeader p {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.5;
+}
+
+.rulesCard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.rulesCard:hover {
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.rulesCard h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 850;
+    color: var(--text);
+    letter-spacing: -0.2px;
+}
+
+.rulesList {
+    margin: 0;
+    padding-left: 18px;
+    line-height: 1.75;
+    color: var(--text);
+    font-size: 15px;
+}
+
+.rulesList li {
+    margin-bottom: 6px;
+}
+
+.checkRow {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px;
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft, rgba(148, 163, 184, 0.08));
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.checkRow:hover {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: rgba(37, 99, 235, 0.25);
+    transform: translateY(-1px);
+}
+
+.checkTitle {
+    font-weight: 850;
+    color: var(--text);
+}
+
+.checkSub {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+input[type="checkbox"] {
+    accent-color: var(--primary);
+    transform: scale(1.15);
+    margin-top: 3px;
+}
+
+.rulesActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+}
 
 @media (max-width: 720px) {
     .kvGrid {
@@ -286,134 +435,14 @@
     .btnPrimary {
         width: 100%;
     }
-}
 
-
-/*this is the assesmentsrule*/
-
-.rulesPage {
-    background: #fff;
-    min-height: 100vh;
-    padding: 40px 18px 60px;
-}
-
-.rulesShell {
-    max-width: 920px;
-    margin: 0 auto;
-}
-
-/* Header */
-.rulesHeader h1 {
-    margin: 0 0 8px;
-    font-size: 38px;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    color: #2563eb;
-}
-
-.rulesHeader p {
-    margin: 0 0 24px;
-    color: #64748b;
-    font-size: 15.5px;
-}
-
-.rulesCard {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 18px;
-    padding: 22px;
-    margin-bottom: 18px;
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(15, 23, 42, 0.02);
-}
-
-    .rulesCard h2 {
-        margin: 0 0 12px;
-        font-size: 20px;
-        font-weight: 850;
-        color: #0f172a;
-    }
-
-.rulesList {
-    margin: 0;
-    padding-left: 18px;
-    line-height: 1.7;
-    color: #0f172a;
-}
-
-    .rulesList li {
-        margin-bottom: 6px;
-    }
-
-.placeholder {
-    margin-top: 16px;
-    border: 1px dashed #d7deea;
-    border-radius: 14px;
-    padding: 14px;
-    background: #f8fafc;
-}
-
-.placeholderTitle {
-    font-weight: 900;
-    margin-bottom: 4px;
-    color: #0f172a;
-}
-
-.placeholderText {
-    font-size: 14px;
-    color: #64748b;
-}
-
-.checkRow {
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
-    padding: 14px;
-    margin-top: 14px;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 14px;
-    background: #f9fbff;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-    .checkRow:hover {
-        background: #eef5ff;
-    }
-
-.checkTitle {
-    font-weight: 850;
-    color: #0f172a;
-}
-
-.checkSub {
-    margin-top: 4px;
-    font-size: 14px;
-    color: #64748b;
-    line-height: 1.4;
-}
-
-input[type="checkbox"] {
-    accent-color: #2563eb;
-    transform: scale(1.15);
-    margin-top: 3px;
-}
-
-.rulesActions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-    margin-top: 12px;
-}
-
-@media (max-width: 720px) {
     .rulesActions {
         flex-direction: column;
         align-items: stretch;
     }
 
-        .rulesActions .btnOutline,
-        .rulesActions .btnPrimary {
-            width: 100%;
-        }
+    .rulesActions .btnOutline,
+    .rulesActions .btnPrimary {
+        width: 100%;
+    }
 }

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../../api/api";
+import "../styles/JobDetailsPage.css"; // reuse existing styling
 
 export default function ApplicationReviewPage() {
     const { applicationId } = useParams();
     const nav = useNavigate();
+
     const [data, setData] = useState(null);
     const [webcamConsent, setWebcamConsent] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -17,8 +19,21 @@ export default function ApplicationReviewPage() {
         })();
     }, [applicationId]);
 
-    if (loading) return <div style={{ padding: 20 }}>Loading…</div>;
-    if (!data) return <div style={{ padding: 20 }}>Not found</div>;
+    if (loading) {
+        return (
+            <div className="page">
+                <main className="container">Loading…</main>
+            </div>
+        );
+    }
+
+    if (!data) {
+        return (
+            <div className="page">
+                <main className="container">Not found</main>
+            </div>
+        );
+    }
 
     const hasAssessment = data.hasAssessment;
 
@@ -26,42 +41,48 @@ export default function ApplicationReviewPage() {
         const res = await api.post(`/Application/${applicationId}/assessment/start`, {
             webcamConsent,
         });
+
         nav(`/application/${applicationId}/assessment`);
     };
 
     return (
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: 20 }}>
-            <h1>Review Application</h1>
+        <div className="page">
+            <main className="container">
+                <h1 className="sectionTitle">Review Application</h1>
 
-            <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 12, marginTop: 12 }}>
-                <div><b>Status:</b> {data.status}</div>
-                <div><b>Opportunity:</b> {data.opportunityTitle} — {data.companyName}</div>
-            </div>
-
-            {!hasAssessment ? (
-                <div style={{ marginTop: 16 }}>
-                    <p>This opportunity has no assessment.</p>
-                    <Link to="/">Back</Link>
+                <div className="card" style={{ marginTop: 16 }}>
+                    <div><b>Status:</b> {data.status}</div>
+                    <div><b>Opportunity:</b> {data.opportunityTitle} — {data.companyName}</div>
                 </div>
-            ) : (
-                <div style={{ marginTop: 16, padding: 16, border: "1px solid #e5e7eb", borderRadius: 12 }}>
-                    <h3>Assessment</h3>
-                    <p>You’ll answer MCQs + solve coding task(s). Time limit is enforced by the backend.</p>
 
-                    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input
-                            type="checkbox"
-                            checked={webcamConsent}
-                            onChange={(e) => setWebcamConsent(e.target.checked)}
-                        />
-                        I consent to webcam snapshots every 2–3 minutes (optional)
-                    </label>
+                {!hasAssessment ? (
+                    <div className="card" style={{ marginTop: 16 }}>
+                        <p>This opportunity has no assessment.</p>
+                        <Link to="/" className="btnOutline">Back</Link>
+                    </div>
+                ) : (
+                    <div className="card" style={{ marginTop: 16 }}>
+                        <h3 className="subHeader">Assessment</h3>
 
-                    <button onClick={start} style={{ marginTop: 12, padding: "10px 14px" }}>
-                        Start Assessment
-                    </button>
-                </div>
-            )}
+                        <p>
+                            You’ll answer MCQs + solve coding task(s). Time limit is enforced by the backend.
+                        </p>
+
+                        <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
+                            <input
+                                type="checkbox"
+                                checked={webcamConsent}
+                                onChange={(e) => setWebcamConsent(e.target.checked)}
+                            />
+                            I consent to webcam snapshots every 2–3 minutes (optional)
+                        </label>
+
+                        <button className="btnPrimary" onClick={start} style={{ marginTop: 12 }}>
+                            Start Assessment →
+                        </button>
+                    </div>
+                )}
+            </main>
         </div>
     );
 }
