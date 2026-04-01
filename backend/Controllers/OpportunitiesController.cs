@@ -1048,7 +1048,7 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
         if (report == null)
             return NotFound();
 
-        report.IsResolved = True;
+        report.IsResolved = true;
 
         return Ok();
     }
