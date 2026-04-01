@@ -27,6 +27,8 @@ export default function ProfileReviewPage() {
     const [projects, setProjects] = useState([]);
     const [interests, setInterests] = useState([]);
 
+    const [hasAssessment, setHasAssessment] = useState(false);
+
     useEffect(() => {
         let mounted = true;
 
@@ -45,6 +47,19 @@ export default function ProfileReviewPage() {
                         getInterests(),
                     ]);
 
+                const token = localStorage.getItem("jobify_token");
+
+                const appRes = await fetch(
+                    `${import.meta.env.VITE_API_URL}/Application/${applicationId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const appData = await appRes.json();
+
                 if (!mounted) return;
 
                 setProfileData(profRes);
@@ -53,9 +68,15 @@ export default function ProfileReviewPage() {
                 setExperience(Array.isArray(expRes) ? expRes : []);
                 setProjects(Array.isArray(projRes) ? projRes : []);
                 setInterests(Array.isArray(intRes) ? intRes : []);
+
+                setHasAssessment(appData?.hasAssessment === true);
             } catch (e) {
-                const msg = e?.message || "Failed to load review data";
-                if (mounted) setErr(msg);
+                const msg =
+                    e?.response?.data ||
+                    e?.message ||
+                    "Failed to load review data";
+
+                if (mounted) setErr(String(msg));
 
                 if (
                     String(msg).toLowerCase().includes("unauthorized") ||
@@ -72,7 +93,7 @@ export default function ProfileReviewPage() {
         return () => {
             mounted = false;
         };
-    }, [navigate]);
+    }, [navigate, applicationId]);
 
     const p = profileData?.profile || {};
     const email = profileData?.email || p.email || "";
@@ -133,11 +154,6 @@ export default function ProfileReviewPage() {
     }, [interests, p.interestsText]);
 
     const startAssessment = () => {
-        if (!profileData?.hasAssessment) {
-            navigate(`/application/${applicationId}/result`);
-            return;
-        }
-
         navigate(`/application/${applicationId}/assessment/rules`);
     };
 
