@@ -83,7 +83,7 @@ export default function AdminReportedOpportunities() {
 
   const filteredOpportunities = opportunitiesState.filter(
     (opp) =>
-      opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      opp.opportunityTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -170,7 +170,10 @@ export default function AdminReportedOpportunities() {
                   return (
                     <div
                       key={opportunity.id}
-                      onClick={() => setSelectedOpportunity(opportunity)}
+                      onClick={async () => {
+                        setSelectedOpportunity(opportunity);
+                        await fetchOpportunityReports(opportunity.opportunityId);
+                      }}
                       onMouseEnter={() => setHoveredRow(opportunity.id)}
                       onMouseLeave={() => setHoveredRow(null)}
                       style={{
