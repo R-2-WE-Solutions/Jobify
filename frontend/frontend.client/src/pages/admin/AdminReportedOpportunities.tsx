@@ -69,6 +69,16 @@ export default function AdminReportedOpportunities() {
     }
   }
 
+  // Resolve Report
+  async function resolveReport(reportId: number) {
+    try {
+        await api.patch(`api/opportunities/admin/resolve-report/${reportId}`);
+    }
+    catch (error) {
+        console.error("Error in Resolving Report.")
+    }
+  }
+
   const filteredOpportunities = opportunitiesState.filter(
     (opp) =>
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
