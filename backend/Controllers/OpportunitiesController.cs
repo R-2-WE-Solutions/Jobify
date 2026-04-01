@@ -1050,6 +1050,8 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
 
         report.IsResolved = true;
 
+        await _db.SaveChangesAsync();
+        
         return Ok();
     }
 }
