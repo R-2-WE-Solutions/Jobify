@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle, Search } from "lucide-react";
 import { api } from "../../api/api";
 
@@ -40,9 +40,9 @@ export default function AdminReportedOpportunities() {
     try {
         setLoadingOpportunities(true);
 
-        const data = await api.get("api/opportunities/admin/reported-opportunities");
+        const res = await api.get("api/opportunities/admin/reported-opportunities");
 
-        return data;
+        return res.data;
     }
     catch (error) {
         console.error("Error in Fetching Reported Opportunities.")
@@ -57,9 +57,9 @@ export default function AdminReportedOpportunities() {
     try {
         setLoadingReports(true);
 
-        const data = await api.get(`api/opportunities/admin/get-reports/${opportunityId}`);
+        const res = await api.get(`api/opportunities/admin/get-reports/${opportunityId}`);
 
-        return data;
+        return res.data;
     }
     catch (error) {
         console.error("Error in Fetching Opportunity Reports.")
@@ -78,6 +78,12 @@ export default function AdminReportedOpportunities() {
         console.error("Error in Resolving Report.")
     }
   }
+
+  useEffect(() => {
+    fetchReportedOpportunities().then((data) => {
+      setOpportunitiesState(data);
+    });
+  }, []);
 
   const filteredOpportunities = opportunitiesState.filter(
     (opp) =>
