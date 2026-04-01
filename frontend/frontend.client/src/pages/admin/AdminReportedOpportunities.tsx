@@ -3,21 +3,11 @@ import { AlertCircle, CheckCircle, Search } from "lucide-react";
 import { api } from "../../api/api";
 
 
-interface Report {
-  id: string;
-  studentName: string;
-  studentId: string;
-  comment: string;
-  date: string;
-  resolved: boolean;
-}
-
 interface Opportunity {
-  id: string;
-  title: string;
+  opportunityId: number;
+  opportunityTitle: string;
   company: string;
   reportCount: number;
-  reports: Report[];
 }
 
 
@@ -79,6 +69,14 @@ export default function AdminReportedOpportunities() {
     }
   }
 
+  const handleResolveReport = async (reportId: number) => {
+    await resolveReport(reportId);
+
+    if (selectedOpportunity) {
+      await fetchOpportunityReports(selectedOpportunity.opportunityId);
+    }
+  };
+
   useEffect(() => {
     fetchReportedOpportunities();
   }, []);
@@ -88,35 +86,6 @@ export default function AdminReportedOpportunities() {
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleResolveReport = (opportunityId: string, reportId: string) => {
-    setOpportunitiesState((prev) =>
-      prev.map((opp) => {
-        if (opp.id === opportunityId) {
-          return {
-            ...opp,
-            reports: opp.reports.map((report) =>
-              report.id === reportId ? { ...report, resolved: true } : report
-            ),
-          };
-        }
-        return opp;
-      })
-    );
-
-    if (selectedOpportunity && selectedOpportunity.id === opportunityId) {
-      setSelectedOpportunity((prev) =>
-        prev
-          ? {
-              ...prev,
-              reports: prev.reports.map((report) =>
-                report.id === reportId ? { ...report, resolved: true } : report
-              ),
-            }
-          : null
-      );
-    }
-  };
 
   return (
     <div style={{ padding: "24px", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
@@ -196,7 +165,7 @@ export default function AdminReportedOpportunities() {
                 </div>
               ) : (
                 filteredOpportunities.map((opportunity) => {
-                  const isSelected = selectedOpportunity?.id === opportunity.id;
+                  const isSelected = selectedOpportunity?.opportunityId === opportunity.id;
                   const isHovered = hoveredRow === opportunity.id;
                   return (
                     <div
@@ -214,7 +183,7 @@ export default function AdminReportedOpportunities() {
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                        <h3 style={{ fontSize: "16px", fontWeight: "600" }}>{opportunity.title}</h3>
+                        <h3 style={{ fontSize: "16px", fontWeight: "600" }}>{opportunity.opportunityTitle}</h3>
                         <span
                           style={{
                             display: "inline-flex",
@@ -231,7 +200,7 @@ export default function AdminReportedOpportunities() {
                           }}
                         >
                           <AlertCircle style={{ width: "12px", height: "12px" }} />
-                          {opportunity.reportCount}
+                          {opportunity.reportsCount}
                         </span>
                       </div>
                       <p style={{ fontSize: "14px", color: "#6b7280" }}>{opportunity.company}</p>
@@ -256,7 +225,7 @@ export default function AdminReportedOpportunities() {
             >
               <div style={{ marginBottom: "24px" }}>
                 <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "8px" }}>
-                  {selectedOpportunity.title}
+                  {selectedOpportunity.opportunityTitle}
                 </h2>
                 <p style={{ fontSize: "14px", color: "#6b7280" }}>
                   {selectedOpportunity.company}
@@ -265,7 +234,7 @@ export default function AdminReportedOpportunities() {
 
               {/* Reports List */}
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                {selectedOpportunity.reports.length === 0 ? (
+                {reports.length === 0 ? (
                   <div
                     style={{
                       padding: "48px 24px",
@@ -279,14 +248,14 @@ export default function AdminReportedOpportunities() {
                     No reports found
                   </div>
                 ) : (
-                  selectedOpportunity.reports.map((report) => (
+                  reports.map((report) => (
                     <div
                       key={report.id}
                       style={{
                         border: "1px solid #e5e7eb",
                         borderRadius: "8px",
                         padding: "20px",
-                        opacity: report.resolved ? 0.5 : 1,
+                        opacity: report.isResolved ? 0.5 : 1,
                         transition: "opacity 0.3s",
                       }}
                     >
@@ -344,7 +313,7 @@ export default function AdminReportedOpportunities() {
                           </div>
                         </div>
                         <button
-                          onClick={() => handleResolveReport(selectedOpportunity.id, report.id)}
+                          onClick={() => handleResolveReport(report.reportId)}
                           disabled={report.resolved}
                           style={{
                             padding: "8px 16px",

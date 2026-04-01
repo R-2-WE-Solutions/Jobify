@@ -1028,6 +1028,7 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
 
         var result = reports.Select(r => new
             {
+                reportId = r.Id,
                 studentId = r.ReporterUserId,
                 reason = r.Reason,
                 details = r.Details,
@@ -1051,7 +1052,7 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
         report.IsResolved = true;
 
         await _db.SaveChangesAsync();
-        
+
         return Ok();
     }
 }
