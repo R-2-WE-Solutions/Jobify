@@ -292,7 +292,7 @@ export default function AdminReportedOpportunities() {
                             <p style={{ fontSize: "12px", color: "#9ca3af" }}>
                               Reported on {report.date}
                             </p>
-                            {report.resolved && (
+                            {report.isResolved && (
                               <span
                                 style={{
                                   display: "inline-flex",
@@ -314,32 +314,32 @@ export default function AdminReportedOpportunities() {
                         </div>
                         <button
                           onClick={() => handleResolveReport(report.reportId)}
-                          disabled={report.resolved}
+                          disabled={report.isResolved}
                           style={{
                             padding: "8px 16px",
-                            backgroundColor: report.resolved ? "#f3f4f6" : "#3b82f6",
-                            color: report.resolved ? "#9ca3af" : "white",
+                            backgroundColor: report.isResolved ? "#f3f4f6" : "#3b82f6",
+                            color: report.isResolved ? "#9ca3af" : "white",
                             border: "none",
                             borderRadius: "6px",
                             fontSize: "14px",
                             fontWeight: "600",
-                            cursor: report.resolved ? "not-allowed" : "pointer",
+                            cursor: report.isResolved ? "not-allowed" : "pointer",
                             transition: "all 0.2s",
                             flexShrink: 0,
                             marginLeft: "16px",
                           }}
                           onMouseEnter={(e) => {
-                            if (!report.resolved) {
+                            if (!report.isResolved) {
                               e.currentTarget.style.backgroundColor = "#2563eb";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (!report.resolved) {
+                            if (!report.isResolved) {
                               e.currentTarget.style.backgroundColor = "#3b82f6";
                             }
                           }}
                         >
-                          {report.resolved ? "Resolved" : "Resolve"}
+                          {report.isResolved ? "Resolved" : "Resolve"}
                         </button>
                       </div>
                     </div>
