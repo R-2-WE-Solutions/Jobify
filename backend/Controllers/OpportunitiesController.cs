@@ -1010,6 +1010,7 @@ private async Task<List<string>> GetStudentSkillNames(string userId)
                 {
                     opportunityId = g.Key,
                     opportunityTitle = g.First().Opportunity!.Title,
+                    company = g.First().Opportunity!.CompanyName,
                     reportsCount = g.Count()
                 })
             .ToListAsync();
