@@ -58,6 +58,11 @@ export default function AssessmentRulesPage() {
 
         const data = await res.json();
 
+        if (!data?.hasAssessment || !data?.assessment) {
+            navigate(`/application/${applicationId}/result`);
+            return;
+        }
+
         // your backend likely returns:
         // { hasAssessment, attempt: { ... }, assessment: { questions }, ... }
         const attempt = data?.attempt;
