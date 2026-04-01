@@ -42,7 +42,7 @@ export default function AdminReportedOpportunities() {
 
         const res = await api.get("api/opportunities/admin/reported-opportunities");
 
-        return res.data;
+        setOpportunitiesState(res.data);
     }
     catch (error) {
         console.error("Error in Fetching Reported Opportunities.")
@@ -59,7 +59,7 @@ export default function AdminReportedOpportunities() {
 
         const res = await api.get(`api/opportunities/admin/get-reports/${opportunityId}`);
 
-        return res.data;
+        setReports(res.data);
     }
     catch (error) {
         console.error("Error in Fetching Opportunity Reports.")
@@ -80,9 +80,7 @@ export default function AdminReportedOpportunities() {
   }
 
   useEffect(() => {
-    fetchReportedOpportunities().then((data) => {
-      setOpportunitiesState(data);
-    });
+    fetchReportedOpportunities();
   }, []);
 
   const filteredOpportunities = opportunitiesState.filter(
