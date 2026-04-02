@@ -12,6 +12,8 @@ import {
   Building2,
   FileText,
   Bell,
+  Github,
+  Mail,
 } from "lucide-react";
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
@@ -32,7 +34,7 @@ export default function AppLayout() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [openFooter, setOpenFooter] = useState(null);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const profileMenuRef = useRef(null);
 
@@ -121,10 +123,6 @@ export default function AppLayout() {
   function handleGoToChangePassword() {
     setShowProfileMenu(false);
     navigate("/change-password");
-  }
-
-  function toggleFooter(section) {
-    setOpenFooter((prev) => (prev === section ? null : section));
   }
 
   return (
@@ -311,97 +309,92 @@ export default function AppLayout() {
 
       <footer className="al-footer">
         <div className="al-footerInner">
-          <div>
-            <div className="al-footerBrand">Jobify</div>
-            <p className="al-footerText">
-              Smart matching platform connecting talent with opportunities
-              through AI-powered recommendations.
-            </p>
+          <div className="al-footerLeft">
+            <span className="al-footerBrand">Jobify</span>
+            <span className="al-footerText">
+              AI-powered matching platform
+            </span>
           </div>
 
-          <div className="al-footerCols">
-            <div>
-              <div className="al-footerTitle">Company</div>
-              <ul className="al-footerList">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("about")}
-                    className={`footer-toggle ${openFooter === "about" ? "open" : ""}`}
-                  >
-                    <span>About</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "about" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      Jobify is a smart platform that matches students and
-                      professionals with opportunities using AI-powered skill
-                      analysis and recommendations.
-                    </div>
-                  </div>
-                </li>
+          <div className="al-footerRight">
+            <a href="/" className="footer-link">
+              About
+            </a>
 
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("contact")}
-                    className={`footer-toggle ${openFooter === "contact" ? "open" : ""}`}
-                  >
-                    <span>Contact</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "contact" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      For support or questions, use the platform features or
-                      contact the project team.
-                    </div>
-                  </div>
-                </li>
-              </ul>
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() => setShowPrivacyModal(true)}
+            >
+              Privacy Policy
+            </button>
+
+            <div className="footer-icons">
+              <a
+                href="https://github.com/R-2-WE-Solutions/Jobify"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+                aria-label="GitHub"
+              >
+                <Github size={18} />
+              </a>
+
+              <a
+                href="mailto:lmsbywa@gmail.com"
+                className="footer-icon"
+                aria-label="Email"
+                title="lmsbywa@gmail.com"
+              >
+                <Mail size={18} />
+              </a>
             </div>
+          </div>
 
-            <div>
-              <div className="al-footerTitle">Legal</div>
-              <ul className="al-footerList">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("terms")}
-                    className={`footer-toggle ${openFooter === "terms" ? "open" : ""}`}
-                  >
-                    <span>Terms of Service</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "terms" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      By using Jobify, you agree to use the platform
-                      responsibly and for its intended purpose.
-                    </div>
-                  </div>
-                </li>
-
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("privacy")}
-                    className={`footer-toggle ${openFooter === "privacy" ? "open" : ""}`}
-                  >
-                    <span>Privacy Policy</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "privacy" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      Jobify respects your privacy and protects your personal
-                      information.
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            </div>
+          <div className="al-footerBottom">
+            © 2026 Jobify. All rights reserved.
           </div>
         </div>
 
-        <div className="al-footerBottom">© 2026 Jobify. All rights reserved.</div>
+        {showPrivacyModal && (
+          <div
+            className="footer-modalOverlay"
+            onClick={() => setShowPrivacyModal(false)}
+          >
+            <div
+              className="footer-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="footer-modalHeader">
+                <div className="footer-modalTitle">Privacy Policy</div>
+                <button
+                  type="button"
+                  className="footer-modalClose"
+                  onClick={() => setShowPrivacyModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="footer-modalBody">
+                <p>
+                  Jobify respects your privacy. Personal information such as resumes,
+                  profiles, applications, and uploaded documents is used only for
+                  recruitment, matching, and platform functionality.
+                </p>
+                <p>
+                  We do not sell user data to third parties. Information is only shown
+                  to authorized users and organizations within the platform as needed
+                  for the recruitment process.
+                </p>
+                <p>
+                  By using Jobify, you agree to provide accurate information and use
+                  the platform responsibly.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </footer>
     </div>
   );
