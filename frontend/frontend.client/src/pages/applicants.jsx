@@ -344,7 +344,6 @@ function ScheduleInterviewModal({
     }
 
 function AssessmentReviewModal({ open, onClose, applicant, loading }) {
-    if (!open) return null;
 
     const getSelectedMcqText = (question, answer) => {
         if (typeof answer !== "number") return "No answer";
@@ -360,7 +359,10 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
     const answers = applicant?.assessmentAnswers || {};
     const mcqResults = applicant?.mcqResults || [];
     const codeResults = applicant?.codeResults || [];
-    const snapshotFiles = applicant?.snapshotFiles || [];
+    const snapshotFiles = useMemo(
+        () => applicant?.snapshotFiles || [],
+        [applicant?.applicationId, applicant?.snapshotFiles]
+    );
     const [hiddenSnapshots, setHiddenSnapshots] = useState({});
     const [snapshotUrls, setSnapshotUrls] = useState({});
     const [loadingSnapshots, setLoadingSnapshots] = useState(false);
@@ -375,6 +377,7 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
         const loadSnapshots = async () => {
             if (!open || !applicant || snapshotFiles.length === 0) {
                 setSnapshotUrls({});
+                setLoadingSnapshots(false);
                 return;
             }
 
@@ -415,11 +418,8 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
 
         return () => {
             active = false;
-            setSnapshotUrls((prev) => {
-                Object.values(prev).forEach((url) => {
-                    if (url) URL.revokeObjectURL(url);
-                });
-                return {};
+            Object.values(snapshotUrls).forEach((url) => {
+                if (url) URL.revokeObjectURL(url);
             });
         };
     }, [open, applicant?.applicationId, snapshotFiles]);
@@ -427,6 +427,8 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
     const visibleSnapshotFiles = snapshotFiles.filter(
         (file) => !hiddenSnapshots[file] && snapshotUrls[file]
     );
+
+    if (!open) return null;
 
     return (
         <div className="org-modal-overlay">
@@ -906,8 +908,11 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
         const handleViewAssessment = async (applicant) => {
             try {
                 setAssessmentLoading(true);
-
                 const res = await api.get(`/Application/recruiter/${applicant.applicationId}`);
+                console.log("Assessment response:", JSON.stringify(res.data, null, 2));
+                console.log("assessmentDefinition:", res.data.assessmentDefinition);
+                console.log("questions:", res.data.assessmentDefinition?.questions);
+
 
                 setSelectedApplicantAssessment({
                     ...applicant,
