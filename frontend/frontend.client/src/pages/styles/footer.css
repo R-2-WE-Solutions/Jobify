@@ -129,7 +129,7 @@
 
 .footer-modal {
     width: min(620px, 100%);
-    background: var(--surface, #ffffff);
+    background: var(--card, #ffffff); /* FIX */
     border: 1px solid rgba(148, 163, 184, 0.25);
     border-radius: 24px;
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
@@ -148,7 +148,7 @@
     font-size: 28px;
     font-weight: 800;
     line-height: 1.1;
-    color: var(--text, #0f172a);
+    color: var(--text);
     margin: 0;
 }
 
@@ -178,7 +178,7 @@
 .footer-modalBody {
     font-size: 16px;
     line-height: 1.8;
-    color: var(--text, #1e293b);
+    color: var(--text);
 }
 
 .footer-modalBody p {

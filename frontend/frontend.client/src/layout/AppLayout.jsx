@@ -127,6 +127,7 @@ export default function AppLayout() {
 
   return (
     <div className="al-shell">
+      {/* HEADER */}
       <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
         <div className="al-headerInner">
           <div className="al-headerSide al-left">
@@ -149,56 +150,34 @@ export default function AppLayout() {
           </div>
 
           <div className="al-headerSide al-right">
-            <button
-              className="al-iconBtn"
-              type="button"
-              title="Toggle theme"
-              onClick={toggleTheme}
-            >
+            <button className="al-iconBtn" onClick={toggleTheme}>
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            <div className="al-notifWrap">
-              <button
-                className="al-iconBtn"
-                type="button"
-                title="Notifications"
-                onClick={() => navigate("/notifications")}
-              >
-                <Bell size={18} />
-                {unreadCount > 0 && (
-                  <span className="notif-badge">{unreadCount}</span>
-                )}
-              </button>
-            </div>
+            <button
+              className="al-iconBtn"
+              onClick={() => navigate("/notifications")}
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="notif-badge">{unreadCount}</span>
+              )}
+            </button>
 
             <div ref={profileMenuRef} className="al-profileMenuWrap">
               <button
                 className="al-iconBtn"
-                type="button"
-                title="Account"
-                onClick={() => setShowProfileMenu((prev) => !prev)}
+                onClick={() => setShowProfileMenu((p) => !p)}
               >
                 <User size={18} />
               </button>
 
               {showProfileMenu && (
                 <div className="al-profileMenu">
-                  <button
-                    type="button"
-                    onClick={handleGoToChangePassword}
-                    className="al-profileMenuItem"
-                  >
+                  <button onClick={handleGoToChangePassword}>
                     Reset Password
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="al-profileMenuItem"
-                  >
-                    Log out
-                  </button>
+                  <button onClick={handleLogout}>Log out</button>
                 </div>
               )}
             </div>
@@ -206,121 +185,52 @@ export default function AppLayout() {
         </div>
       </header>
 
+      {/* BODY */}
       <div className="al-body">
         {sidebarOpen && (
-          <div
-            className="al-overlay"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="al-overlay" onClick={() => setSidebarOpen(false)} />
         )}
 
         <aside className={`al-sidebar ${sidebarOpen ? "open" : ""}`}>
           <nav className="al-nav">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-            >
-              <span className="al-linkIcon">
-                <LayoutGrid size={18} />
-              </span>
-              <span className="al-linkText">Dashboard</span>
-            </NavLink>
-
-            {!loadingProfile && role === "Recruiter" && (
-              <NavLink
-                to="/organization"
-                end
-                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-              >
-                <span className="al-linkIcon">
-                  <Building2 size={18} />
-                </span>
-                <span className="al-linkText">Posting</span>
-              </NavLink>
+            <NavLink to="/dashboard">Dashboard</NavLink>
+            {role === "Recruiter" && (
+              <>
+                <NavLink to="/organization">Posting</NavLink>
+                <NavLink to="/organization/applicants">
+                  Applicants
+                </NavLink>
+              </>
             )}
-
-            {!loadingProfile && role === "Recruiter" && (
-              <NavLink
-                to="/organization/applicants"
-                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-              >
-                <span className="al-linkIcon">
-                  <FileText size={18} />
-                </span>
-                <span className="al-linkText">Applicants</span>
-              </NavLink>
+            {role === "Student" && (
+              <>
+                <NavLink to="/browse">Browse</NavLink>
+                <NavLink to="/match">Matches</NavLink>
+              </>
             )}
-
-            {!loadingProfile && role === "Student" && (
-              <NavLink
-                to="/browse"
-                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-              >
-                <span className="al-linkIcon">
-                  <Sparkles size={18} />
-                </span>
-                <span className="al-linkText">Browse</span>
-              </NavLink>
-            )}
-
-            {!loadingProfile && role === "Student" && (
-              <NavLink
-                to="/match"
-                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-              >
-                <span className="al-linkIcon">
-                  <Star size={18} />
-                </span>
-                <span className="al-linkText">Matches</span>
-              </NavLink>
-            )}
-
-            <NavLink
-              to="/profile"
-              className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-            >
-              <span className="al-linkIcon">
-                <UserCircle size={18} />
-              </span>
-              <span className="al-linkText">Profile</span>
-            </NavLink>
+            <NavLink to="/profile">Profile</NavLink>
           </nav>
-
-          <div className="al-sidebarBottom">
-            <div className="al-userCard">
-              <div className="al-userAvatar">{avatarLetter}</div>
-              <div className="al-userMeta">
-                <div className="al-userName">{displayName}</div>
-                <div className="al-userRole">
-                  {loadingProfile ? "Loading..." : role || "Unknown"}
-                </div>
-                {profileError && <div className="al-errorText">{profileError}</div>}
-              </div>
-            </div>
-          </div>
         </aside>
 
         <main className="al-main">
-          <div className="al-content">
-            <Outlet context={{ displayName, role, loadingProfile }} />
-          </div>
+          <Outlet />
         </main>
       </div>
 
+      {/* FOOTER */}
       <footer className="al-footer">
         <div className="al-footerInner">
           <div className="al-footerLeft">
             <span className="al-footerBrand">Jobify</span>
-            <span className="al-footerText">AI-powered matching platform</span>
+            <span className="al-footerText">
+              AI-powered matching platform
+            </span>
           </div>
 
           <div className="al-footerRight">
-            <a href="/" className="footer-link">
-              About
-            </a>
+            <a href="/" className="footer-link">About</a>
 
             <button
-              type="button"
               className="footer-link"
               onClick={() => setShowPrivacyModal(true)}
             >
@@ -333,16 +243,16 @@ export default function AppLayout() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="footer-icon"
-                aria-label="GitHub"
               >
                 <Github size={18} />
               </a>
 
+              {/* ✅ FIXED MAIL LINK */}
               <a
-                href="mailto:lmsbywa@gmail.com"
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="footer-icon"
-                aria-label="Email"
-                title="lmsbywa@gmail.com"
               >
                 <Mail size={18} />
               </a>
@@ -354,6 +264,7 @@ export default function AppLayout() {
           </div>
         </div>
 
+        {/* MODAL */}
         {showPrivacyModal && (
           <div
             className="footer-modalOverlay"
@@ -365,30 +276,13 @@ export default function AppLayout() {
             >
               <div className="footer-modalHeader">
                 <div className="footer-modalTitle">Privacy Policy</div>
-                <button
-                  type="button"
-                  className="footer-modalClose"
-                  onClick={() => setShowPrivacyModal(false)}
-                >
-                  ×
-                </button>
+                <button onClick={() => setShowPrivacyModal(false)}>×</button>
               </div>
 
               <div className="footer-modalBody">
-                <p>
-                  Jobify respects your privacy. Personal information such as resumes,
-                  profiles, applications, and uploaded documents is used only for
-                  recruitment, matching, and platform functionality.
-                </p>
-                <p>
-                  We do not sell user data to third parties. Information is only shown
-                  to authorized users and organizations within the platform as needed
-                  for the recruitment process.
-                </p>
-                <p>
-                  By using Jobify, you agree to provide accurate information and use
-                  the platform responsibly.
-                </p>
+                <p>Jobify respects your privacy.</p>
+                <p>No selling of data.</p>
+                <p>Used only for matching and recruitment.</p>
               </div>
             </div>
           </div>
