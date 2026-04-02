@@ -709,7 +709,8 @@ public class OpportunitiesController : ControllerBase
         opportunity.ResponsibilitiesJson = WriteList(dto.Responsibilities);
         opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);
         opportunity.BenefitsJson = WriteList(dto.Benefits);
-        opportunity.AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment);
+        if (dto.Assessment != null)
+            opportunity.AssessmentJson = JsonSerializer.Serialize(dto.Assessment);
         opportunity.Type = parsedType;
         opportunity.Level = parsedLevel;
         opportunity.MinPay = dto.MinPay;
