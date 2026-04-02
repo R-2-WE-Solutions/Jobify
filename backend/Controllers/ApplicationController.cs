@@ -281,8 +281,10 @@ public class ApplicationController : ControllerBase
                 questions
             };
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine("MakePublicAssessment FAILED:");
+            Console.WriteLine(ex.Message);
             return null;
         }
     }
@@ -1149,6 +1151,9 @@ public class ApplicationController : ControllerBase
                 : await _db.StudentProfiles.AsNoTracking()
                     .FirstOrDefaultAsync(s => s.UserId == candidateUserId);
 
+            if (string.IsNullOrWhiteSpace(candidateUserId) || (user == null && student == null))
+                continue;
+
             var assessment = await _db.ApplicationAssessments
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ApplicationId == app.Id);
@@ -1600,207 +1605,272 @@ public class ApplicationController : ControllerBase
 
         if (app.Assessment != null)
         {
-            if (app.Assessment != null)
+            // Build normalized assessment JSON first (handles both old and new formats)
+            List<string>? recruiterQuestionOrderEarly = null;
+            if (!string.IsNullOrWhiteSpace(app.Assessment.QuestionOrderJson))
             {
-                if (!string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson) &&
-                    !string.IsNullOrWhiteSpace(app.Assessment?.AnswersJson))
+                try { recruiterQuestionOrderEarly = JsonSerializer.Deserialize<List<string>>(app.Assessment.QuestionOrderJson); } catch { }
+            }
+
+            var normalizedDefinition = MakePublicAssessment(app.Opportunity?.AssessmentJson, recruiterQuestionOrderEarly);
+            Console.WriteLine($"=== normalizedDefinition: {(normalizedDefinition == null ? "NULL" : "OK")} | AssessmentJson: {(string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson) ? "EMPTY" : app.Opportunity.AssessmentJson[..Math.Min(200, app.Opportunity.AssessmentJson.Length)])}");
+            var normalizedJson = normalizedDefinition != null ? JsonSerializer.Serialize(normalizedDefinition) : null;
+
+            if (!string.IsNullOrWhiteSpace(normalizedJson) &&
+                !string.IsNullOrWhiteSpace(app.Assessment.AnswersJson))
+            {
+                try
                 {
-                    try
+                    using var assessmentDoc = JsonDocument.Parse(normalizedJson);
+                    using var answersDoc = JsonDocument.Parse(app.Assessment.AnswersJson);
+
+                    var assessmentRoot = assessmentDoc.RootElement;
+                    var answersRoot = answersDoc.RootElement;
+
+                    var mcqList = new List<object>();
+                    var codeList = new List<object>();
+
+                    if (assessmentRoot.TryGetProperty("questions", out var qs) && qs.ValueKind == JsonValueKind.Array)
                     {
-                        using var assessmentDoc = JsonDocument.Parse(app.Opportunity.AssessmentJson);
-                        using var answersDoc = JsonDocument.Parse(app.Assessment.AnswersJson);
-
-                        var assessmentRoot = assessmentDoc.RootElement;
-                        var answersRoot = answersDoc.RootElement;
-
-                        var mcqList = new List<object>();
-                        var codeList = new List<object>();
-
-                        if (assessmentRoot.TryGetProperty("questions", out var qs) &&
-                            qs.ValueKind == JsonValueKind.Array)
+                        foreach (var q in qs.EnumerateArray())
                         {
-                            foreach (var q in qs.EnumerateArray())
+                            var qid =
+                                q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String
+                                    ? idEl.GetString() : null;
+
+                            var qtype =
+                                q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String
+                                    ? tEl.GetString() : null;
+
+                            if (string.IsNullOrWhiteSpace(qid) || string.IsNullOrWhiteSpace(qtype))
+                                continue;
+
+                            if (string.Equals(qtype, "mcq", StringComparison.OrdinalIgnoreCase))
                             {
-                                var qid =
-                                    q.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.String
-                                        ? idEl.GetString()
-                                        : q.TryGetProperty("Id", out var idPascal) && idPascal.ValueKind == JsonValueKind.String
-                                            ? idPascal.GetString()
-                                            : null;
+                                int? chosenIndex = null;
+                                int? correctIndex = null;
 
-                                var qtype =
-                                    q.TryGetProperty("type", out var tEl) && tEl.ValueKind == JsonValueKind.String
-                                        ? tEl.GetString()
-                                        : q.TryGetProperty("Type", out var tPascal) && tPascal.ValueKind == JsonValueKind.String
-                                            ? tPascal.GetString()
-                                            : null;
+                                if (answersRoot.TryGetProperty(qid, out var chosen) &&
+                                    chosen.ValueKind == JsonValueKind.Number)
+                                    chosenIndex = chosen.GetInt32();
 
-                                if (string.IsNullOrWhiteSpace(qid) || string.IsNullOrWhiteSpace(qtype))
-                                    continue;
-
-                                if (string.Equals(qtype, "mcq", StringComparison.OrdinalIgnoreCase))
+                                // correctIndex must come from the ORIGINAL raw JSON (normalized strips it)
+                                if (!string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson))
                                 {
-                                    int? chosenIndex = null;
-                                    int? correctIndex = null;
+                                    try
+                                    {
+                                        using var rawDoc = JsonDocument.Parse(app.Opportunity.AssessmentJson);
+                                        var rawRoot = rawDoc.RootElement;
 
-                                    if (answersRoot.TryGetProperty(qid, out var chosen) &&
-                                        chosen.ValueKind == JsonValueKind.Number)
-                                    {
-                                        chosenIndex = chosen.GetInt32();
-                                    }
+                                        // Try new format first
+                                        JsonElement rawQs;
+                                        bool foundRaw = (rawRoot.TryGetProperty("questions", out rawQs) && rawQs.ValueKind == JsonValueKind.Array) ||
+                                                       (rawRoot.TryGetProperty("Questions", out rawQs) && rawQs.ValueKind == JsonValueKind.Array);
 
-                                    if (q.TryGetProperty("correctIndex", out var cEl) &&
-                                        cEl.ValueKind == JsonValueKind.Number)
-                                    {
-                                        correctIndex = cEl.GetInt32();
-                                    }
-                                    else if (q.TryGetProperty("CorrectIndex", out var cPascal) &&
-                                             cPascal.ValueKind == JsonValueKind.Number)
-                                    {
-                                        correctIndex = cPascal.GetInt32();
-                                    }
-
-                                    mcqList.Add(new
-                                    {
-                                        questionId = qid,
-                                        chosenIndex,
-                                        correctIndex,
-                                        isCorrect = chosenIndex.HasValue &&
-                                                    correctIndex.HasValue &&
-                                                    chosenIndex.Value == correctIndex.Value
-                                    });
-                                }
-                                else if (string.Equals(qtype, "code", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    int languageId = 0;
-                                    string sourceCode = "";
-
-                                    if (answersRoot.TryGetProperty(qid, out var codeAnswer) &&
-                                        codeAnswer.ValueKind == JsonValueKind.Object)
-                                    {
-                                        if (codeAnswer.TryGetProperty("languageId", out var langEl) &&
-                                            langEl.ValueKind == JsonValueKind.Number)
+                                        if (!foundRaw)
                                         {
-                                            languageId = langEl.GetInt32();
-                                        }
-
-                                        if (codeAnswer.TryGetProperty("code", out var codeEl) &&
-                                            codeEl.ValueKind == JsonValueKind.String)
-                                        {
-                                            sourceCode = codeEl.GetString() ?? "";
-                                        }
-                                    }
-
-                                    var hiddenResults = new List<object>();
-                                    int passed = 0;
-                                    int total = 0;
-
-                                    if (languageId != 0 &&
-                                        !string.IsNullOrWhiteSpace(sourceCode) &&
-                                        q.TryGetProperty("hiddenTests", out var hiddenTests) &&
-                                        hiddenTests.ValueKind == JsonValueKind.Array)
-                                    {
-                                        foreach (var ht in hiddenTests.EnumerateArray())
-                                        {
-                                            var stdin =
-                                                ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String
-                                                    ? s.GetString() ?? ""
-                                                    : "";
-
-                                            var expected =
-                                                ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String
-                                                    ? e.GetString() ?? ""
-                                                    : "";
-
-                                            var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
-
-                                            var status = res.TryGetValue("status", out var stObj)
-                                                ? stObj?.ToString()
-                                                : null;
-
-                                            var stdout = res.TryGetValue("stdout", out var outObj)
-                                                ? outObj?.ToString()
-                                                : null;
-
-                                            var stderr = res.TryGetValue("stderr", out var errObj)
-                                                ? errObj?.ToString()
-                                                : null;
-
-                                            var compileOutput = res.TryGetValue("compile_output", out var compObj)
-                                                ? compObj?.ToString()
-                                                : null;
-
-                                            var isCorrect = string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase);
-
-                                            total++;
-                                            if (isCorrect) passed++;
-
-                                            hiddenResults.Add(new
+                                            // Old format: mcqs array, ids are mcq-0, mcq-1...
+                                            if ((rawRoot.TryGetProperty("mcqs", out rawQs) && rawQs.ValueKind == JsonValueKind.Array) ||
+                                                (rawRoot.TryGetProperty("Mcqs", out rawQs) && rawQs.ValueKind == JsonValueKind.Array))
                                             {
-                                                stdin,
-                                                expected,
-                                                stdout,
-                                                stderr,
-                                                compileOutput,
-                                                status,
-                                                isCorrect
-                                            });
+                                                // qid is like "mcq-0", extract index
+                                                if (qid.StartsWith("mcq-") && int.TryParse(qid[4..], out var mcqIdx))
+                                                {
+                                                    var rawArr = rawQs.EnumerateArray().ToList();
+                                                    if (mcqIdx < rawArr.Count)
+                                                    {
+                                                        var rawQ = rawArr[mcqIdx];
+                                                        if (rawQ.TryGetProperty("correctIndex", out var cElOld) && cElOld.ValueKind == JsonValueKind.Number)
+                                                            correctIndex = cElOld.GetInt32();
+                                                        else if (rawQ.TryGetProperty("CorrectIndex", out var cElOldP) && cElOldP.ValueKind == JsonValueKind.Number)
+                                                            correctIndex = cElOldP.GetInt32();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            foreach (var rawQ in rawQs.EnumerateArray())
+                                            {
+                                                var rawId =
+                                                    rawQ.TryGetProperty("id", out var ri) && ri.ValueKind == JsonValueKind.String ? ri.GetString() :
+                                                    rawQ.TryGetProperty("Id", out var riP) && riP.ValueKind == JsonValueKind.String ? riP.GetString() : null;
+
+                                                if (rawId != qid) continue;
+
+                                                if (rawQ.TryGetProperty("correctIndex", out var cEl) && cEl.ValueKind == JsonValueKind.Number)
+                                                    correctIndex = cEl.GetInt32();
+                                                else if (rawQ.TryGetProperty("CorrectIndex", out var cElP) && cElP.ValueKind == JsonValueKind.Number)
+                                                    correctIndex = cElP.GetInt32();
+                                                break;
+                                            }
                                         }
                                     }
-
-                                    codeList.Add(new
-                                    {
-                                        questionId = qid,
-                                        languageId,
-                                        code = sourceCode,
-                                        passed,
-                                        total,
-                                        isCorrect = total > 0 ? passed == total : (bool?)null,
-                                        hiddenResults
-                                    });
+                                    catch { }
                                 }
+
+                                mcqList.Add(new
+                                {
+                                    questionId = qid,
+                                    chosenIndex,
+                                    correctIndex,
+                                    isCorrect = chosenIndex.HasValue && correctIndex.HasValue &&
+                                                chosenIndex.Value == correctIndex.Value
+                                });
+                            }
+                            else if (string.Equals(qtype, "code", StringComparison.OrdinalIgnoreCase))
+                            {
+                                int languageId = 0;
+                                string sourceCode = "";
+
+                                if (answersRoot.TryGetProperty(qid, out var codeAnswer) &&
+                                    codeAnswer.ValueKind == JsonValueKind.Object)
+                                {
+                                    if (codeAnswer.TryGetProperty("languageId", out var langEl) && langEl.ValueKind == JsonValueKind.Number)
+                                        languageId = langEl.GetInt32();
+                                    if (codeAnswer.TryGetProperty("code", out var codeEl) && codeEl.ValueKind == JsonValueKind.String)
+                                        sourceCode = codeEl.GetString() ?? "";
+                                }
+
+                                var hiddenResults = new List<object>();
+                                int passed = 0;
+                                int total = 0;
+
+                                // Hidden tests come from original raw JSON
+                                if (languageId != 0 && !string.IsNullOrWhiteSpace(sourceCode) &&
+                                    !string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson))
+                                {
+                                    try
+                                    {
+                                        using var rawDoc = JsonDocument.Parse(app.Opportunity.AssessmentJson);
+                                        var rawRoot = rawDoc.RootElement;
+                                        JsonElement rawQs;
+
+                                        bool foundRaw = (rawRoot.TryGetProperty("questions", out rawQs) && rawQs.ValueKind == JsonValueKind.Array) ||
+                                                       (rawRoot.TryGetProperty("Questions", out rawQs) && rawQs.ValueKind == JsonValueKind.Array);
+
+                                        if (!foundRaw)
+                                        {
+                                            if ((rawRoot.TryGetProperty("codingChallenges", out rawQs) && rawQs.ValueKind == JsonValueKind.Array) ||
+                                                (rawRoot.TryGetProperty("CodingChallenges", out rawQs) && rawQs.ValueKind == JsonValueKind.Array))
+                                            {
+                                                if (qid.StartsWith("code-") && int.TryParse(qid[5..], out var codeIdx))
+                                                {
+                                                    var rawArr = rawQs.EnumerateArray().ToList();
+                                                    if (codeIdx < rawArr.Count)
+                                                    {
+                                                        var rawQ = rawArr[codeIdx];
+                                                        if (rawQ.TryGetProperty("hiddenTests", out var hts) && hts.ValueKind == JsonValueKind.Array)
+                                                        {
+                                                            foreach (var ht in hts.EnumerateArray())
+                                                            {
+                                                                var stdin = ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+                                                                var expected = ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+                                                                var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
+                                                                var status = res.TryGetValue("status", out var stObj) ? stObj?.ToString() : null;
+                                                                var isCorrect = string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase);
+                                                                total++;
+                                                                if (isCorrect) passed++;
+                                                                hiddenResults.Add(new { stdin, expected, stdout = res["stdout"], stderr = res["stderr"], compileOutput = res["compile_output"], status, isCorrect });
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            foreach (var rawQ in rawQs.EnumerateArray())
+                                            {
+                                                var rawId =
+                                                    rawQ.TryGetProperty("id", out var ri) && ri.ValueKind == JsonValueKind.String ? ri.GetString() :
+                                                    rawQ.TryGetProperty("Id", out var riP) && riP.ValueKind == JsonValueKind.String ? riP.GetString() : null;
+
+                                                if (rawId != qid) continue;
+
+                                                if (rawQ.TryGetProperty("hiddenTests", out var hts) && hts.ValueKind == JsonValueKind.Array)
+                                                {
+                                                    foreach (var ht in hts.EnumerateArray())
+                                                    {
+                                                        var stdin = ht.TryGetProperty("stdin", out var s) && s.ValueKind == JsonValueKind.String ? s.GetString() ?? "" : "";
+                                                        var expected = ht.TryGetProperty("expected", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "";
+                                                        var res = await Judge0Submit(sourceCode, languageId, stdin, expected);
+                                                        var status = res.TryGetValue("status", out var stObj) ? stObj?.ToString() : null;
+                                                        var isCorrect = string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase);
+                                                        total++;
+                                                        if (isCorrect) passed++;
+                                                        hiddenResults.Add(new { stdin, expected, stdout = res["stdout"], stderr = res["stderr"], compileOutput = res["compile_output"], status, isCorrect });
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    catch { }
+                                }
+
+                                codeList.Add(new
+                                {
+                                    questionId = qid,
+                                    languageId,
+                                    code = sourceCode,
+                                    passed,
+                                    total,
+                                    isCorrect = total > 0 ? passed == total : (bool?)null,
+                                    hiddenResults
+                                });
                             }
                         }
-
-                        mcqResults = mcqList;
-                        codeResults = codeList;
                     }
-                    catch { }
+
+                    mcqResults = mcqList;
+                    codeResults = codeList;
                 }
-
-                var snapshots = await _db.ProctorEvents
-                    .AsNoTracking()
-                    .Where(x => x.ApplicationAssessmentId == app.Assessment.Id && x.Type == "WEBCAM_SNAPSHOT")
-                    .OrderByDescending(x => x.CreatedAtUtc)
-                    .ToListAsync();
-
-                foreach (var s in snapshots)
+                catch (Exception ex)
                 {
-                    if (string.IsNullOrWhiteSpace(s.Details)) continue;
-
-                    try
-                    {
-                        using var d = JsonDocument.Parse(s.Details);
-                        if (d.RootElement.TryGetProperty("file", out var f) && f.ValueKind == JsonValueKind.String)
-                        {
-                            var file = f.GetString();
-                            if (!string.IsNullOrWhiteSpace(file))
-                                snapshotFiles.Add(file!);
-                        }
-                    }
-                    catch { }
+                    Console.WriteLine("Assessment grading failed: " + ex.Message);
                 }
             }
+
+            // Snapshots
+            var snapshots = await _db.ProctorEvents
+                .AsNoTracking()
+                .Where(x => x.ApplicationAssessmentId == app.Assessment.Id && x.Type == "WEBCAM_SNAPSHOT")
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .ToListAsync();
+
+            foreach (var s in snapshots)
+            {
+                if (string.IsNullOrWhiteSpace(s.Details)) continue;
+                try
+                {
+                    using var d = JsonDocument.Parse(s.Details);
+                    if (d.RootElement.TryGetProperty("file", out var f) && f.ValueKind == JsonValueKind.String)
+                    {
+                        var file = f.GetString();
+                        if (!string.IsNullOrWhiteSpace(file))
+                            snapshotFiles.Add(file!);
+                    }
+                }
+                catch { }
+            }
+
+            // Use normalizedDefinition for assessmentDefinition too
+            assessmentDefinition = normalizedDefinition;
         }
 
-        if (!string.IsNullOrWhiteSpace(app.Opportunity?.AssessmentJson))
+        List<string>? recruiterQuestionOrder = null;
+
+        if (!string.IsNullOrWhiteSpace(app.Assessment?.QuestionOrderJson))
         {
             try
             {
-                assessmentDefinition = MakePublicAssessment(app.Opportunity.AssessmentJson);
+                recruiterQuestionOrder = JsonSerializer.Deserialize<List<string>>(app.Assessment.QuestionOrderJson);
             }
             catch { }
         }
+
+        
 
         if (!string.IsNullOrWhiteSpace(app.Assessment?.AnswersJson))
         {
