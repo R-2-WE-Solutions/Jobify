@@ -311,9 +311,7 @@ export default function AppLayout() {
         <div className="al-footerInner">
           <div className="al-footerLeft">
             <span className="al-footerBrand">Jobify</span>
-            <span className="al-footerText">
-              AI-powered matching platform
-            </span>
+            <span className="al-footerText">AI-powered matching platform</span>
           </div>
 
           <div className="al-footerRight">
