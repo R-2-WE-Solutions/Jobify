@@ -5,7 +5,7 @@
     import "./styles/applicant.css";
 
 
-    function ApplicantCard({ applicant, onSchedule, onStatus, onViewProfile, updatingId }) {
+    function ApplicantCard({ applicant, onSchedule, onStatus, onViewProfile,onViewAssessment, updatingId }) {
         const getStatusClass = (status) => {
             switch (status) {
                 case "Pending":
@@ -76,6 +76,13 @@
                         View Profile
                     </button>
 
+                    <button
+                        className="org-btn org-btn-outline"
+                        onClick={() => onViewAssessment(applicant)}
+                    >
+                        View Assessment
+                    </button>
+
                     <select
                         className="org-select"
                         value={applicant.status}
@@ -105,133 +112,143 @@
         );
     }
 
-    function ScheduleInterviewModal({
-        open,
-        onClose,
-        applicant,
-        onConfirm,
-        scheduling,
-    }) {
-        const [date, setDate] = useState("");
-        const [time, setTime] = useState("");
-        const [interviewType, setInterviewType] = useState("online");
-        const [meetingLink, setMeetingLink] = useState("");
+function ScheduleInterviewModal({
+    open,
+    onClose,
+    applicant,
+    onConfirm,
+    scheduling,
+}) {
+    const [date, setDate] = useState("");
+    const [time, setTime] = useState("");
+    const [interviewType, setInterviewType] = useState("online");
+    const [meetingLink, setMeetingLink] = useState("");
 
-        useEffect(() => {
-            if (!open || !applicant) return;
+    useEffect(() => {
+        if (!open || !applicant) return;
 
-            const scheduled = applicant.interviewScheduledAtUtc
-                ? new Date(applicant.interviewScheduledAtUtc)
-                : null;
+        const scheduled = applicant.interviewScheduledAtUtc
+            ? new Date(applicant.interviewScheduledAtUtc)
+            : null;
 
-            if (scheduled && !Number.isNaN(scheduled.getTime())) {
-                const yyyy = scheduled.getUTCFullYear();
-                const mm = String(scheduled.getUTCMonth() + 1).padStart(2, "0");
-                const dd = String(scheduled.getUTCDate()).padStart(2, "0");
-                const hh = String(scheduled.getUTCHours()).padStart(2, "0");
-                const min = String(scheduled.getUTCMinutes()).padStart(2, "0");
+        if (scheduled && !Number.isNaN(scheduled.getTime())) {
+            const yyyy = scheduled.getUTCFullYear();
+            const mm = String(scheduled.getUTCMonth() + 1).padStart(2, "0");
+            const dd = String(scheduled.getUTCDate()).padStart(2, "0");
+            const hh = String(scheduled.getUTCHours()).padStart(2, "0");
+            const min = String(scheduled.getUTCMinutes()).padStart(2, "0");
 
-                setDate(`${yyyy}-${mm}-${dd}`);
-                setTime(`${hh}:${min}`);
-            } else {
-                setDate("");
-                setTime("");
-            }
+            setDate(`${yyyy}-${mm}-${dd}`);
+            setTime(`${hh}:${min}`);
+        } else {
+            setDate("");
+            setTime("");
+        }
 
-            setInterviewType(applicant.interviewType || "online");
-            setMeetingLink(applicant.meetingLink || "");
-        }, [open, applicant]);
+        setInterviewType(applicant.interviewType || "online");
+        setMeetingLink(applicant.meetingLink || "");
+    }, [open, applicant]);
 
-        if (!open || !applicant) return null;
+    if (!open || !applicant) return null;
 
-        const handleSubmit = async () => {
-            if (!date || !time) {
-                alert("Please select date and time.");
-                return;
-            }
+    const today = new Date().toISOString().split("T")[0];
 
-            await onConfirm({
-                applicant,
-                date,
-                time,
-                interviewType,
-                meetingLink,
-            });
-        };
+    const handleSubmit = async () => {
+        if (!date || !time) {
+            alert("Please select date and time.");
+            return;
+        }
 
-        return (
-            <div className="org-modal-overlay">
-                <div className="org-modal">
-                    <h2>{applicant.hasActiveInterview ? "Edit Interview" : "Schedule Interview"}</h2>
-                    <p>
-                        {applicant.hasActiveInterview
-                            ? `Update interview for ${applicant.name}`
-                            : `Schedule an interview with ${applicant.name}`}
-                    </p>
+        if (date < today) {
+            alert("Interview date cannot be in the past.");
+            return;
+        }
 
-                    <div className="org-form-group">
-                        <label>Date</label>
-                        <input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
-                    </div>
+        await onConfirm({
+            applicant,
+            date,
+            time,
+            interviewType,
+            meetingLink,
+        });
+    };
 
-                    <div className="org-form-group">
-                        <label>Time</label>
-                        <input
-                            type="time"
-                            value={time}
-                            onChange={(e) => setTime(e.target.value)}
-                        />
-                    </div>
+    return (
+        <div className="org-modal-overlay">
+            <div className="org-modal">
+                <h2>{applicant.hasActiveInterview ? "Edit Interview" : "Schedule Interview"}</h2>
+                <p>
+                    {applicant.hasActiveInterview
+                        ? `Update interview for ${applicant.name}`
+                        : `Schedule an interview with ${applicant.name}`}
+                </p>
 
-                    <div className="org-form-group">
-                        <label>Type</label>
-                        <select
-                            value={interviewType}
-                            onChange={(e) => setInterviewType(e.target.value)}
-                        >
-                            <option value="online">Online</option>
-                            <option value="onsite">On-site</option>
-                        </select>
-                    </div>
+                <div className="org-form-group">
+                    <label>Date</label>
+                    <input
+                        type="date"
+                        value={date}
+                        min={today}
+                        onChange={(e) => setDate(e.target.value)}
+                    />
+                </div>
 
-                    <div className="org-form-group">
-                        <label>Meeting Link</label>
-                        <input
-                            type="url"
-                            placeholder="https://meet.google.com/..."
-                            value={meetingLink}
-                            onChange={(e) => setMeetingLink(e.target.value)}
-                        />
-                    </div>
+                <div className="org-form-group">
+                    <label>Time</label>
+                    <input
+                        type="time"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                    />
+                </div>
 
-                    <div className="org-modal-actions">
-                        <button
-                            className="org-btn org-btn-outline"
-                            onClick={onClose}
-                            disabled={scheduling}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            className="org-btn org-btn-dark"
-                            onClick={handleSubmit}
-                            disabled={scheduling}
-                        >
-                            {scheduling
-                                ? "Saving..."
-                                : applicant.hasActiveInterview
-                                    ? "Save Changes"
-                                    : "Confirm"}
-                        </button>
-                    </div>
+                <div className="org-form-group">
+                    <label>Type</label>
+                    <select
+                        value={interviewType}
+                        onChange={(e) => setInterviewType(e.target.value)}
+                    >
+                        <option value="online">Online</option>
+                        <option value="onsite">On-site</option>
+                    </select>
+                </div>
+
+                <div className="org-form-group">
+                    <label>Meeting Link</label>
+                    <input
+                        type="url"
+                        placeholder="https://meet.google.com/..."
+                        value={meetingLink}
+                        onChange={(e) => setMeetingLink(e.target.value)}
+                    />
+                </div>
+
+                <div className="org-modal-actions">
+                    <button
+                        className="org-btn org-btn-outline"
+                        onClick={onClose}
+                        disabled={scheduling}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="org-btn org-btn-dark"
+                        onClick={handleSubmit}
+                        disabled={scheduling}
+                    >
+                        {scheduling
+                            ? "Saving..."
+                            : applicant.hasActiveInterview
+                                ? "Save Changes"
+                                : "Confirm"}
+                    </button>
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
+}
+
+
 
     function StatusModal({ open, onClose, onConfirm, applicant, newStatus, loading }) {
         const [message, setMessage] = useState("");
@@ -326,6 +343,319 @@
         );
     }
 
+function AssessmentReviewModal({ open, onClose, applicant, loading }) {
+
+    const getSelectedMcqText = (question, answer) => {
+        if (typeof answer !== "number") return "No answer";
+        const options = question?.options || question?.Options || [];
+        if (!Array.isArray(options)) return "No answer";
+        return options[answer] ?? "No answer";
+    };
+
+    const questions =
+        applicant?.assessmentDefinition?.questions ||
+        applicant?.assessmentDefinition?.Questions ||
+        [];
+    const answers = applicant?.assessmentAnswers || {};
+    const mcqResults = applicant?.mcqResults || [];
+    const codeResults = applicant?.codeResults || [];
+    const snapshotFiles = useMemo(
+        () => applicant?.snapshotFiles || [],
+        [applicant?.applicationId, applicant?.snapshotFiles]
+    );
+    const [hiddenSnapshots, setHiddenSnapshots] = useState({});
+    const [snapshotUrls, setSnapshotUrls] = useState({});
+    const [loadingSnapshots, setLoadingSnapshots] = useState(false);
+
+    useEffect(() => {
+        setHiddenSnapshots({});
+    }, [applicant?.applicationId, open]);
+
+    useEffect(() => {
+        let active = true;
+
+        const loadSnapshots = async () => {
+            if (!open || !applicant || snapshotFiles.length === 0) {
+                setSnapshotUrls({});
+                setLoadingSnapshots(false);
+                return;
+            }
+
+            setLoadingSnapshots(true);
+
+            try {
+                const entries = await Promise.all(
+                    snapshotFiles.map(async (file) => {
+                        try {
+                            const res = await api.get(
+                                `/Application/snapshot-file?fileName=${encodeURIComponent(file)}`,
+                                { responseType: "blob" }
+                            );
+
+                            const blobUrl = URL.createObjectURL(res.data);
+                            return [file, blobUrl];
+                        } catch (err) {
+                            console.error("Failed to load snapshot:", file, err);
+                            return [file, null];
+                        }
+                    })
+                );
+
+                if (!active) return;
+
+                const next = {};
+                for (const [file, url] of entries) {
+                    if (url) next[file] = url;
+                }
+
+                setSnapshotUrls(next);
+            } finally {
+                if (active) setLoadingSnapshots(false);
+            }
+        };
+
+        loadSnapshots();
+
+        return () => {
+            active = false;
+            Object.values(snapshotUrls).forEach((url) => {
+                if (url) URL.revokeObjectURL(url);
+            });
+        };
+    }, [open, applicant?.applicationId, snapshotFiles]);
+
+    const visibleSnapshotFiles = snapshotFiles.filter(
+        (file) => !hiddenSnapshots[file] && snapshotUrls[file]
+    );
+
+    if (!open) return null;
+
+    return (
+        <div className="org-modal-overlay">
+            <div className="org-modal org-modal-lg">
+                <h2>Assessment Review</h2>
+                <p>
+                    {applicant?.name
+                        ? `Submitted answers for ${applicant.name}`
+                        : "Submitted assessment answers"}
+                </p>
+
+                {loading ? (
+                    <p>Loading assessment...</p>
+                ) : !applicant ? (
+                    <p>No assessment data found.</p>
+                ) : (
+                    <>
+                        <div className="org-assessment-summary">
+                            <div className="org-assessment-pill">
+                                Score: {applicant.assessmentScore ?? "—"}/100
+                            </div>
+
+                            {applicant.assessmentSubmittedAtUtc && (
+                                <div className="org-assessment-pill">
+                                    Submitted: {formatDate(applicant.assessmentSubmittedAtUtc)}
+                                </div>
+                            )}
+
+                            {applicant.flagged && (
+                                <div className="org-assessment-pill flagged">
+                                    Flagged{applicant.flagReason ? `: ${applicant.flagReason}` : ""}
+                                </div>
+                            )}
+                                </div>
+
+                                <div className="org-snapshots-section">
+                                    <h4>Webcam Snapshots</h4>
+
+                                    {loadingSnapshots ? (
+                                        <div className="org-no-snapshots">Loading snapshots...</div>
+                                    ) : visibleSnapshotFiles.length === 0 ? (
+                                        <div className="org-no-snapshots">
+                                            No webcam snapshots available.
+                                        </div>
+                                    ) : (
+                                        <div className="org-snapshots-grid">
+                                            {visibleSnapshotFiles.map((file, index) => (
+                                                <div key={file} className="org-snapshot-card">
+                                                    <img
+                                                        src={snapshotUrls[file]}
+                                                        alt={`Assessment snapshot ${index + 1}`}
+                                                        className="org-snapshot-img"
+                                                        onError={() =>
+                                                            setHiddenSnapshots((prev) => ({
+                                                                ...prev,
+                                                                [file]: true,
+                                                            }))
+                                                        }
+                                                    />
+
+                                                    <a
+                                                        href={snapshotUrls[file]}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="org-snapshot-link"
+                                                    >
+                                                        Open snapshot {index + 1}
+                                                    </a>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                        {questions.length === 0 ? (
+                            <p>No assessment questions found.</p>
+                        ) : (
+                            <div className="org-assessment-list">
+                                {questions.map((q, index) => {
+                                    const qId = q.id || q.Id;
+                                    const qType = q.type || q.Type;
+                                    const qTitle = q.title || q.Title;
+                                    const qPrompt = q.prompt || q.Prompt;
+                                    const qOptions = q.options || q.Options || [];
+                                    const answer = answers?.[qId];
+
+                                    const mcqResult = mcqResults.find((x) => x.questionId === qId);
+                                    const codeResult = codeResults.find((x) => x.questionId === qId);
+
+                                    return (
+                                        <div key={qId || index} className="org-assessment-card">
+                                            <h4>
+                                                Question {index + 1}
+                                                {qType === "code" && qTitle ? ` — ${qTitle}` : ""}
+                                            </h4>
+
+                                            <p className="org-assessment-prompt">
+                                                {qPrompt || "No prompt provided."}
+                                            </p>
+
+                                            {qType === "mcq" && (
+                                                <div className="org-assessment-answer-block">
+                                                    <p>
+                                                        <strong>Selected Answer:</strong>{" "}
+                                                        {getSelectedMcqText(q, answer)}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Result:</strong>{" "}
+                                                        {mcqResult?.isCorrect === true
+                                                            ? "Correct"
+                                                            : mcqResult?.isCorrect === false
+                                                                ? "Wrong"
+                                                                : "Not answered"}
+                                                    </p>
+                                                    {typeof mcqResult?.correctIndex === "number" && Array.isArray(qOptions) && (
+                                                        <p>
+                                                            <strong>Correct Answer:</strong> {qOptions[mcqResult.correctIndex] ?? "—"}
+                                                        </p>
+                                                    )}
+
+                                                    <div className="org-assessment-options">
+                                                        {Array.isArray(qOptions) &&
+                                                            qOptions.map((opt, i) => (
+                                                                <div
+                                                                    key={i}
+                                                                    className={`org-assessment-option ${answer === i ? "selected" : ""}`}
+                                                                >
+                                                                    {opt}
+                                                                    {answer === i ? "  ← Selected" : ""}
+                                                                </div>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {qType === "code" && (
+                                                <div className="org-assessment-answer-block">
+                                                    <p>
+                                                        <strong>Language ID:</strong>{" "}
+                                                        {codeResult?.languageId ?? answer?.languageId ?? "N/A"}
+                                                    </p>
+
+                                                    <p>
+                                                        <strong>Result:</strong>{" "}
+                                                        {codeResult?.isCorrect === true
+                                                            ? "Correct"
+                                                            : codeResult?.isCorrect === false
+                                                                ? `Wrong (${codeResult?.passed ?? 0}/${codeResult?.total ?? 0} tests passed)`
+                                                                : "No hidden test result"}
+                                                    </p>
+
+                                                    <p><strong>Submitted Code:</strong></p>
+                                                    <pre className="org-code-block">
+                                                        {codeResult?.code || answer?.code || "No code submitted."}
+                                                    </pre>
+
+                                                    {Array.isArray(codeResult?.hiddenResults) && codeResult.hiddenResults.length > 0 && (
+                                                        <div className="org-code-test-results">
+                                                            <p><strong>Test Results:</strong></p>
+
+                                                            {codeResult.hiddenResults.map((test, i) => (
+                                                                <div
+                                                                    key={i}
+                                                                    className={`org-code-test ${test.isCorrect ? "correct" : "wrong"}`}
+                                                                >
+                                                                    <div>
+                                                                        <strong>Test {i + 1}:</strong>{" "}
+                                                                        {test.isCorrect ? "Passed" : "Failed"}
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <strong>Status:</strong> {test.status || "—"}
+                                                                    </div>
+
+                                                                    {test.stdin && (
+                                                                        <div>
+                                                                            <strong>Input:</strong>
+                                                                            <pre className="org-inline-code">{test.stdin}</pre>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div>
+                                                                        <strong>Output:</strong>
+                                                                        <pre className="org-inline-code">{test.stdout || "—"}</pre>
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <strong>Expected Output:</strong>
+                                                                        <pre className="org-inline-code">{test.expected || "—"}</pre>
+                                                                    </div>
+
+                                                                    {test.stderr && (
+                                                                        <div>
+                                                                            <strong>Error:</strong>
+                                                                            <pre className="org-inline-code">{test.stderr}</pre>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {test.compileOutput && (
+                                                                        <div>
+                                                                            <strong>Compile Output:</strong>
+                                                                            <pre className="org-inline-code">{test.compileOutput}</pre>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                <div className="org-modal-actions">
+                    <button className="org-btn org-btn-dark" onClick={onClose}>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
     function formatDate(dateValue) {
         if (!dateValue) return "—";
         const d = new Date(dateValue);
@@ -466,6 +796,10 @@
         const [selectedApplicantForStatus, setSelectedApplicantForStatus] = useState(null);
         const [sendingStatus, setSendingStatus] = useState(false);
 
+        const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
+        const [assessmentLoading, setAssessmentLoading] = useState(false);
+        const [selectedApplicantAssessment, setSelectedApplicantAssessment] = useState(null);
+
         const [stageFilter, setStageFilter] = useState("All");
 
         const dropdownRef = useRef(null);
@@ -569,6 +903,29 @@
 
         const handleViewProfile = (applicant) => {
             navigate(`/organization/applicants/${applicant.applicationId}/profile`);
+        };
+
+        const handleViewAssessment = async (applicant) => {
+            try {
+                setAssessmentLoading(true);
+                const res = await api.get(`/Application/recruiter/${applicant.applicationId}`);
+                console.log("Assessment response:", JSON.stringify(res.data, null, 2));
+                console.log("assessmentDefinition:", res.data.assessmentDefinition);
+                console.log("questions:", res.data.assessmentDefinition?.questions);
+
+
+                setSelectedApplicantAssessment({
+                    ...applicant,
+                    ...res.data
+                });
+
+                setAssessmentModalOpen(true);
+            } catch (err) {
+                console.error("Failed to load assessment:", err);
+                alert("Failed to load assessment details.");
+            } finally {
+                setAssessmentLoading(false);
+            }
         };
 
         useEffect(() => {
@@ -818,6 +1175,7 @@
                                     onSchedule={handleSchedule}
                                     onStatus={handleStatus}
                                     onViewProfile={handleViewProfile}
+                                    onViewAssessment={handleViewAssessment}
                                     updatingId={updatingId}
                                 />
                             ))}
@@ -844,6 +1202,16 @@
                     newStatus={selectedStatus}
                     onConfirm={handleConfirmStatus}
                     loading={sendingStatus}
+                />
+
+                <AssessmentReviewModal
+                    open={assessmentModalOpen}
+                    onClose={() => {
+                        setAssessmentModalOpen(false);
+                        setSelectedApplicantAssessment(null);
+                    }}
+                    applicant={selectedApplicantAssessment}
+                    loading={assessmentLoading}
                 />
             </div>
         );

@@ -36,29 +36,29 @@ async function request(path, options = {}) {
 }
 
 // ─── Skills ───────────────────────────────────────────────
-export const getSkills = () => request("/api/profile/student/skills");
-export const addSkill = (name) => request("/api/profile/student/skills", { method: "POST", body: JSON.stringify({ name }) });
-export const deleteSkill = (id) => request(`/api/profile/student/skills/${id}`, { method: "DELETE" });
+export const getSkills = () => request("/profile/student/skills");
+export const addSkill = (name) => request("/profile/student/skills", { method: "POST", body: JSON.stringify({ name }) });
+export const deleteSkill = (id) => request(`/profile/student/skills/${id}`, { method: "DELETE" });
 
 // ─── Education ────────────────────────────────────────────
-export const getEducation = () => request("/api/profile/student/education");
-export const addEducation = (data) => request("/api/profile/student/education", { method: "POST", body: JSON.stringify(data) });
-export const updateEducation = (id, data) => request(`/api/profile/student/education/${id}`, { method: "PUT", body: JSON.stringify(data) });
-export const deleteEducation = (id) => request(`/api/profile/student/education/${id}`, { method: "DELETE" });
+export const getEducation = () => request("/profile/student/education");
+export const addEducation = (data) => request("/profile/student/education", { method: "POST", body: JSON.stringify(data) });
+export const updateEducation = (id, data) => request(`/profile/student/education/${id}`, { method: "PUT", body: JSON.stringify(data) });
+export const deleteEducation = (id) => request(`/profile/student/education/${id}`, { method: "DELETE" });
 
 // ─── Experience ───────────────────────────────────────────
-export const getExperience = () => request("/api/profile/student/experience");
-export const addExperience = (data) => request("/api/profile/student/experience", { method: "POST", body: JSON.stringify(data) });
-export const updateExperience = (id, data) => request(`/api/profile/student/experience/${id}`, { method: "PUT", body: JSON.stringify(data) });
-export const deleteExperience = (id) => request(`/api/profile/student/experience/${id}`, { method: "DELETE" });
+export const getExperience = () => request("/profile/student/experience");
+export const addExperience = (data) => request("/profile/student/experience", { method: "POST", body: JSON.stringify(data) });
+export const updateExperience = (id, data) => request(`/profile/student/experience/${id}`, { method: "PUT", body: JSON.stringify(data) });
+export const deleteExperience = (id) => request(`/profile/student/experience/${id}`, { method: "DELETE" });
 
 // ─── Projects ─────────────────────────────────────────────
-export const getProjects = () => request("/api/profile/student/projects");
-export const addProject = (data) => request("/api/profile/student/projects", { method: "POST", body: JSON.stringify(data) });
-export const updateProject = (id, data) => request(`/api/profile/student/projects/${id}`, { method: "PUT", body: JSON.stringify(data) });
-export const deleteProject = (id) => request(`/api/profile/student/projects/${id}`, { method: "DELETE" });
+export const getProjects = () => request("/profile/student/projects");
+export const addProject = (data) => request("/profile/student/projects", { method: "POST", body: JSON.stringify(data) });
+export const updateProject = (id, data) => request(`/profile/student/projects/${id}`, { method: "PUT", body: JSON.stringify(data) });
+export const deleteProject = (id) => request(`/profile/student/projects/${id}`, { method: "DELETE" });
 
 // ─── Interests ────────────────────────────────────────────
-export const getInterests = () => request("/api/profile/student/interests");
-export const addInterest = (interest) => request("/api/profile/student/interests", { method: "POST", body: JSON.stringify({ interest }) });
-export const deleteInterest = (id) => request(`/api/profile/student/interests/${id}`, { method: "DELETE" });
+export const getInterests = () => request("/profile/student/interests");
+export const addInterest = (interest) => request("/profile/student/interests", { method: "POST", body: JSON.stringify({ interest }) });
+export const deleteInterest = (id) => request(`/profile/student/interests/${id}`, { method: "DELETE" });

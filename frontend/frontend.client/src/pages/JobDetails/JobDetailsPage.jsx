@@ -107,6 +107,13 @@ export default function JobDetailsPage() {
             }
 
             const data = await res.json();
+
+            const hasAssessment =
+                data.hasAssessment ||
+                (data.assessmentMcqCount ?? 0) > 0 ||
+                (data.assessmentChallengeCount ?? 0) > 0;
+
+            // ALWAYS go to profile review first
             navigate(`/apply/${data.applicationId}/review`);
         } catch (e) {
             console.error(e);
@@ -141,6 +148,7 @@ export default function JobDetailsPage() {
 
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
+
 
 
 
@@ -405,18 +413,47 @@ export default function JobDetailsPage() {
     const deadlineText = job.deadlineUtc ? formatDeadline(job.deadlineUtc) : "—";
     const salaryText = formatMoneyRange(job.minPay, job.maxPay);
 
-    const assessment = job.assessment ?? null;
-    const assessmentType =
-        assessment && typeof assessment === "object"
-            ? assessment.type || "—"
-            : typeof assessment === "string"
-                ? assessment
-                : "—";
+    const assessment = job?.assessment ?? null;
+
+    const assessmentQuestions = Array.isArray(assessment?.questions)
+        ? assessment.questions
+        : [];
+
+    const mcqCount =
+        job?.assessmentMcqCount ??
+        assessment?.mcqCount ??
+        assessmentQuestions.filter((q) => (q?.type || "").toLowerCase() === "mcq").length ??
+        0;
+
+    const challengeCount =
+        job?.assessmentChallengeCount ??
+        assessment?.challengeCount ??
+        assessmentQuestions.filter((q) => {
+            const t = (q?.type || "").toLowerCase();
+            return t === "code" || t === "challenge" || t === "design";
+        }).length ??
+        0;
+
+    const timeLimitSeconds =
+        job?.assessmentTimeLimitSeconds ??
+        assessment?.timeLimitSeconds ??
+        null;
 
     const assessmentDuration =
-        assessment && typeof assessment === "object" && assessment.estimatedMinutes != null
-            ? `${assessment.estimatedMinutes} min`
-            : "—";
+        typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
+            ? `${Math.round(timeLimitSeconds / 60)} min`
+            : assessment?.estimatedMinutes != null
+                ? `${assessment.estimatedMinutes} min`
+                : "—";
+
+    const assessmentType =
+        mcqCount > 0 && challengeCount > 0
+            ? "MCQ + Coding"
+            : mcqCount > 0
+                ? "MCQ"
+                : challengeCount > 0
+                    ? "Coding"
+                    : (assessment?.type || "No assessment");
 
     const assessmentDeadline = deadlineText;
 
@@ -600,7 +637,13 @@ export default function JobDetailsPage() {
                                 </div>
                             )}
 
-                            {embedUrl ? (
+                            {isRemote ? (
+                                <div className="remoteMapPlaceholder">
+                                    <Globe size={40} />
+                                    <h4>Remote Opportunity</h4>
+                                    <p>This position can be performed from anywhere.</p>
+                                </div>
+                            ) : embedUrl ? (
                                 <iframe
                                     className="mapFrame"
                                     src={embedUrl}
@@ -609,7 +652,7 @@ export default function JobDetailsPage() {
                                     title="Map"
                                 />
                             ) : (
-                                <div className="mapPlaceholder">—</div>
+                                <div className="mapPlaceholder">No location provided</div>
                             )}
 
                             <div className="mapChip">{isRemote ? "Remote" : job.location || "—"}</div>
@@ -648,32 +691,7 @@ export default function JobDetailsPage() {
 
                         </div>
 
-                        <div className="card">
-                            <h4 className="subHeader">Job Insights</h4>
-
-                            <div className="insights">
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Users size={16} /> Applicants
-                                    </span>
-                                    <span className="insightVal">—</span>
-                                </div>
-
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Clock size={16} /> Avg. Response
-                                    </span>
-                                    <span className="insightVal">—</span>
-                                </div>
-
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Briefcase size={16} /> Experience
-                                    </span>
-                                    <span className="insightVal">{job.level}</span>
-                                </div>
-                            </div>
-                        </div>
+                       
 
                         <div className="card">
                             <h4 className="subHeader">
@@ -694,10 +712,7 @@ export default function JobDetailsPage() {
                                     <span className="kvVal">{assessmentDeadline}</span>
                                 </div>
 
-                                <div className="progressBar">
-                                    <div className="progressFill" style={{ width: "33%" }} />
-                                </div>
-                                <p className="mutedSmall">Step 1 of 3 in application process</p>
+                               
                             </div>
                         </div>
 

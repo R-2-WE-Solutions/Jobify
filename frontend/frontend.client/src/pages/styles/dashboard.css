@@ -2,7 +2,7 @@
     padding: 20px;
     max-width: 1150px;
     margin: 0 auto;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     color: var(--text);
 }
 
@@ -171,7 +171,10 @@
     font-weight: 800;
 }
 
-.dashboard-link-button {
+/* FIXED BUTTONS */
+
+.dashboard-link-button,
+.btn-primary {
     margin-top: 12px;
     display: inline-flex;
     align-items: center;
@@ -179,18 +182,41 @@
     padding: 10px 14px;
     border-radius: 12px;
     text-decoration: none;
-    background: var(--primary);
+    background: #2563eb;
     color: white;
     font-weight: 800;
     border: none;
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22);
     transition: 0.18s ease;
+    font-family: inherit;
 }
 
-.dashboard-link-button:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
+    .dashboard-link-button:hover,
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+    }
+
+.btn-secondary {
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: 0.2s ease;
+    font-size: 14px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    color: #0f172a;
+    font-family: inherit;
 }
+
+    .btn-secondary:hover {
+        background: #f8fafc;
+    }
 
 .dashboard-question-box {
     margin-top: 12px;
@@ -211,10 +237,10 @@
     padding: 16px;
 }
 
-.opportunity-card + .opportunity-card,
-.deadline-card + .deadline-card {
-    margin-top: 12px;
-}
+    .opportunity-card + .opportunity-card,
+    .deadline-card + .deadline-card {
+        margin-top: 12px;
+    }
 
 .opportunity-card-top {
     display: flex;
@@ -282,42 +308,6 @@
     gap: 10px;
     margin-top: 18px;
     flex-wrap: wrap;
-}
-
-.btn-primary,
-.btn-secondary {
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-weight: 800;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: 0.2s ease;
-    font-size: 14px;
-}
-
-.btn-primary {
-    border: none;
-    background: var(--primary);
-    color: white;
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
-}
-
-.btn-primary:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-}
-
-.btn-secondary {
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-}
-
-.btn-secondary:hover {
-    background: var(--surface-2);
 }
 
 .dashboard-mt-sm {

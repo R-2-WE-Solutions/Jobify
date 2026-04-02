@@ -209,7 +209,7 @@ export default function ResetPasswordPage() {
         setFieldError("token", "");
 
         try {
-            const res = await fetch(`${API_URL}/api/Auth/reset-password`, {
+            const res = await fetch(`${API_URL}/Auth/reset-password`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

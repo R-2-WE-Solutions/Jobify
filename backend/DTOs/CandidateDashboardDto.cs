@@ -19,5 +19,6 @@ namespace Jobify.Api.DTOs.Dashboard
         public string Location { get; set; } = "";
         public string WorkMode { get; set; } = "";
         public decimal? MatchScore { get; set; }
+        public DateTime? DeadlineUtc { get; set; }
     }
 }
