@@ -139,7 +139,7 @@ function getWithdrawWarning(rawStatus) {
 
     return "Are you sure you want to withdraw this application? If you continue, you will not be able to reapply to this opportunity.";
 }
-
+// alerts
 export default function MatchesPage() {
     const navigate = useNavigate();
 
@@ -160,6 +160,17 @@ export default function MatchesPage() {
     const [applicationsLoading, setApplicationsLoading] = useState(false);
     const [applicationsError, setApplicationsError] = useState("");
     const [withdrawingId, setWithdrawingId] = useState(null);
+
+    const [confirmWithdraw, setConfirmWithdraw] = useState(null);
+    const [toast, setToast] = useState(null);
+
+    function showToast(message, type = "success") {
+        setToast({ message, type });
+
+        setTimeout(() => {
+            setToast(null);
+        }, 3000);
+    }
 
     async function fetchOpportunities() {
         try {
@@ -206,16 +217,24 @@ export default function MatchesPage() {
         }
     }
 
-    async function handleWithdrawApplication(application) {
+    function handleWithdrawApplication(application) {
         if (!application?.id || !application?.canWithdraw || withdrawingId === application.id) {
             return;
         }
 
-        const confirmed = window.confirm(application.withdrawWarning);
-        if (!confirmed) return;
+        setConfirmWithdraw(application);
+    }
+// render toasts
+    async function confirmWithdrawApplication() {
+        const application = confirmWithdraw;
+        if (!application?.id) {
+            setConfirmWithdraw(null);
+            return;
+        }
 
         try {
             setWithdrawingId(application.id);
+            setConfirmWithdraw(null);
 
             const res = await api.post(`/application/${application.id}/withdraw`);
             const canReapply = res?.data?.canReapply;
@@ -223,19 +242,29 @@ export default function MatchesPage() {
             await fetchApplications();
 
             if (canReapply === true) {
-                window.alert("Application withdrawn successfully. You may reapply to this opportunity later.");
+                showToast(
+                    "Application withdrawn successfully. You can reapply to this opportunity later.",
+                    "success"
+                );
             } else if (canReapply === false) {
-                window.alert("Application withdrawn successfully. You will not be able to reapply to this opportunity.");
+                showToast(
+                    "Application withdrawn successfully. You can no longer reapply to this opportunity.",
+                    "warning"
+                );
             } else {
-                window.alert("Application withdrawn successfully.");
+                showToast("Application withdrawn successfully.", "success");
             }
         } catch (error) {
             console.error("Failed to withdraw application.", error);
-            window.alert(
-                error?.response?.data ||
-                error?.message ||
-                "Failed to withdraw application."
-            );
+
+            const message =
+                typeof error?.response?.data === "string"
+                    ? error.response.data
+                    : error?.response?.data?.message ||
+                      error?.message ||
+                      "Failed to withdraw application.";
+
+            showToast(message, "error");
         } finally {
             setWithdrawingId(null);
         }
@@ -270,7 +299,6 @@ export default function MatchesPage() {
                 createdAtUtc: application.createdAtUtc,
                 updatedAtUtc: application.updatedAtUtc,
                 note: application.note ?? null,
-
                 canWithdraw,
                 isDraftStage,
                 withdrawWarning: getWithdrawWarning(application.status),
@@ -357,9 +385,6 @@ export default function MatchesPage() {
         return [...mappedOpportunities, ...mappedApplications, ...mappedInterviews];
     }, [mappedOpportunities, mappedApplications, mappedInterviews]);
 
-    console.log("RAW APPLICATIONS:", applications);
-    console.log("MAPPED APPLICATIONS:", mappedApplications);
-
     return (
         <div className="matches-page">
             <div className="matches-header">
@@ -408,6 +433,53 @@ export default function MatchesPage() {
                     />
                 )}
             </div>
+
+            {confirmWithdraw && (
+                <div
+                    className="confirm-overlay"
+                    onClick={() => setConfirmWithdraw(null)}
+                >
+                    <div
+                        className="confirm-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 className="confirm-title">Withdraw Application</h3>
+                        <p className="confirm-text">{confirmWithdraw.withdrawWarning}</p>
+
+                        <div className="confirm-actions">
+                            <button
+                                type="button"
+                                className="confirm-btn cancel"
+                                onClick={() => setConfirmWithdraw(null)}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                className="confirm-btn danger"
+                                onClick={confirmWithdrawApplication}
+                            >
+                                Withdraw
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {toast && (
+                <div className={`jobify-toast ${toast.type}`}>
+                    <span>{toast.message}</span>
+                    <button
+                        type="button"
+                        className="jobify-toast-close"
+                        onClick={() => setToast(null)}
+                        aria-label="Close notification"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
