@@ -449,6 +449,65 @@ public class UsersController : ControllerBase
         return Ok(companies);
     }
 
+    // Admin: Get System Overview Stats
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/system-overview")]
+    public async Task<IActionResult> GetSystemOverview()
+    {
+        var since24h = DateTime.UtcNow.AddHours(-24);
+
+        var pendingVerificationTask = _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.EmailPending);
+
+        var pendingApprovalTask = _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Pending);
+
+        var verifiedRecruitersTask = _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Verified);
+
+        var rejectedRecruitersTask = _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Rejected);
+
+        var activeUsersTask = _userManager.Users.CountAsync();
+
+        var newStudentSignupsTask = _context.StudentProfiles
+            .CountAsync(s => s.CreatedAt >= since24h);
+
+        var newRecruiterSignupsTask = _context.RecruiterProfiles
+            .CountAsync(r => r.CreatedAtUtc >= since24h);
+
+        var unresolvedReportsTask = _context.OpportunityReports
+            .CountAsync(r => !r.IsResolved);
+
+        await Task.WhenAll(
+            pendingVerificationTask,
+            pendingApprovalTask,
+            verifiedRecruitersTask,
+            rejectedRecruitersTask,
+            activeUsersTask,
+            newStudentSignupsTask,
+            newRecruiterSignupsTask,
+            unresolvedReportsTask
+        );
+
+        var pendingVerification = pendingVerificationTask.Result;
+        var pendingApproval = pendingApprovalTask.Result;
+        var unresolvedReports = unresolvedReportsTask.Result;
+
+        var newSignups = newStudentSignupsTask.Result + newRecruiterSignupsTask.Result;
+        var pendingActions = pendingVerification + pendingApproval + unresolvedReports;
+
+        return Ok(new
+        {
+            pendingVerification,
+            pendingApproval,
+            verifiedRecruiters = verifiedRecruitersTask.Result,
+            rejectedRecruiters = rejectedRecruitersTask.Result,
+            activeUsers = activeUsersTask.Result,
+            newSignups,
+            pendingActions
+        });
+    }
 
     // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
