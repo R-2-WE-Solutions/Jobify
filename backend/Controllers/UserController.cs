@@ -456,58 +456,44 @@ public class UsersController : ControllerBase
     {
         var since24h = DateTime.UtcNow.AddHours(-24);
 
-        var pendingVerificationTask = _context.RecruiterProfiles
+        var pendingVerification = await _context.RecruiterProfiles
             .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.EmailPending);
 
-        var pendingApprovalTask = _context.RecruiterProfiles
+        var pendingApproval = await _context.RecruiterProfiles
             .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Pending);
 
-        var verifiedRecruitersTask = _context.RecruiterProfiles
+        var verifiedRecruiters = await _context.RecruiterProfiles
             .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Verified);
 
-        var rejectedRecruitersTask = _context.RecruiterProfiles
+        var rejectedRecruiters = await _context.RecruiterProfiles
             .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Rejected);
 
-        var activeUsersTask = _userManager.Users.CountAsync();
+        var activeUsers = await _userManager.Users.CountAsync();
 
-        var newStudentSignupsTask = _context.StudentProfiles
+        var newStudentSignups = await _context.StudentProfiles
             .CountAsync(s => s.CreatedAt >= since24h);
 
-        var newRecruiterSignupsTask = _context.RecruiterProfiles
+        var newRecruiterSignups = await _context.RecruiterProfiles
             .CountAsync(r => r.CreatedAtUtc >= since24h);
 
-        var unresolvedReportsTask = _context.OpportunityReports
+        var unresolvedReports = await _context.OpportunityReports
             .CountAsync(r => !r.IsResolved);
 
-        await Task.WhenAll(
-            pendingVerificationTask,
-            pendingApprovalTask,
-            verifiedRecruitersTask,
-            rejectedRecruitersTask,
-            activeUsersTask,
-            newStudentSignupsTask,
-            newRecruiterSignupsTask,
-            unresolvedReportsTask
-        );
-
-        var pendingVerification = pendingVerificationTask.Result;
-        var pendingApproval = pendingApprovalTask.Result;
-        var unresolvedReports = unresolvedReportsTask.Result;
-
-        var newSignups = newStudentSignupsTask.Result + newRecruiterSignupsTask.Result;
+        var newSignups = newStudentSignups + newRecruiterSignups;
         var pendingActions = pendingVerification + pendingApproval + unresolvedReports;
 
         return Ok(new
         {
             pendingVerification,
             pendingApproval,
-            verifiedRecruiters = verifiedRecruitersTask.Result,
-            rejectedRecruiters = rejectedRecruitersTask.Result,
-            activeUsers = activeUsersTask.Result,
+            verifiedRecruiters,
+            rejectedRecruiters,
+            activeUsers,
             newSignups,
             pendingActions
         });
     }
+
 
     // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
