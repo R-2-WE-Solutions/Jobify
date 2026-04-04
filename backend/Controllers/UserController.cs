@@ -419,7 +419,7 @@ public class UsersController : ControllerBase
             newSignups,
             pendingActions,
 
-            recentActivity
+            recentActivity,
 
             studentsTrendPercent = CalculatePercentageChange(studentsThisMonth, studentsLastMonth),
             recruitersTrendPercent = CalculatePercentageChange(recruitersThisMonth, recruitersLastMonth),
@@ -562,7 +562,7 @@ public class UsersController : ControllerBase
         if (previousPeriodCount == 0)
             return currentPeriodCount > 0 ? 100.0 : 0.0;
 
-        return ((current - previous) / (double)previous) * 100.0;
+        return ((currentPeriodCount - previousPeriodCount) / (double)previousPeriodCount) * 100.0;
     }
 
 }

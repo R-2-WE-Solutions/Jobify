@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, Briefcase, Building2, FileText, TrendingUp, UserPlus, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Users, Briefcase, Building2, FileText, TrendingUp, TrendingDown, Minus, UserPlus, Clock, CheckCircle, XCircle } from "lucide-react";
 import { api } from "../../api/api";
 
 
@@ -80,6 +80,7 @@ export default function AdminDashboard() {
     {
       title: "Total Students",
       value: dashboard?.totalStudents ?? "--",
+      trend:dashboard?.studentsTrendPercent,
       icon: Users,
       iconColor: "#2563eb",
       bgColor: "#dbeafe",
@@ -87,6 +88,7 @@ export default function AdminDashboard() {
     {
       title: "Total Recruiters",
       value: dashboard?.totalRecruiters ?? "--",
+      trend:dashboard?.recruitersTrendPercent,
       icon: Briefcase,
       iconColor: "#16a34a",
       bgColor: "#dcfce7",
@@ -94,6 +96,7 @@ export default function AdminDashboard() {
     {
       title: "Total Companies",
       value: dashboard?.totalCompanies ?? "--",
+      trend:dashboard?.companiesTrendPercent,
       icon: Building2,
       iconColor: "#9333ea",
       bgColor: "#f3e8ff",
@@ -101,6 +104,7 @@ export default function AdminDashboard() {
     {
       title: "Total Applications",
       value: dashboard?.totalApplications ?? "--",
+      trend:dashboard?.applicationsTrendPercent,
       icon: FileText,
       iconColor: "#ea580c",
       bgColor: "#ffedd5",
@@ -135,6 +139,12 @@ export default function AdminDashboard() {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const isHovered = hoveredCard === index;
+
+          const trendValue = typeof stat.trend === "number" ? stat.trend : null;
+          const trendColor = trendValue === null ? "#6b7280" : trendValue > 0 ? "#16a34a" : trendValue < 0 ? "#dc2626" : "#6b7280";
+          const TrendIcon = trendValue === null || trendValue === 0 ? Minus : trendValue > 0 ? TrendingUp : TrendingDown;
+          const trendText = trendValue === null ? "--" : `${trendValue > 0 ? "+" : ""}${trendValue}%`;
+
           return (
             <div
               key={stat.title}
@@ -173,7 +183,7 @@ export default function AdminDashboard() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "14px" }}>
                 <TrendingUp style={{ width: "16px", height: "16px", color: "#16a34a" }} />
-                <span style={{ color: "#16a34a", fontWeight: "600" }}>+12%</span>
+                <span style={{ color: "#16a34a", fontWeight: "600" }}>{trendText}</span>
                 <span style={{ color: "#6b7280" }}>from last month</span>
               </div>
             </div>
