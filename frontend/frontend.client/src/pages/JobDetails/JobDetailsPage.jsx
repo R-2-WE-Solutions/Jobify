@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/JobDetailsPage.css";
-import { api } from "../../api/api";
 
 import {
     MapPin,
@@ -17,10 +16,13 @@ import {
     Briefcase,
     Users,
     ChevronRight,
+    Star,
     MessageSquare,
     Bookmark,
     ArrowRight,
 } from "lucide-react";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Badge({ children, variant = "neutral" }) {
     return <span className={`badge badge--${variant}`}>{children}</span>;
@@ -77,9 +79,48 @@ function CompanyLogo({ name, size = 64, logoUrl }) {
     );
 }
 
+
 export default function JobDetailsPage() {
     const { id } = useParams();
+
     const navigate = useNavigate();
+
+    const handleApply = async () => {
+        const token = localStorage.getItem("jobify_token");
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/opportunities/${id}/apply`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                const t = await res.text().catch(() => "");
+                alert(t || `Apply failed (${res.status})`);
+                return;
+            }
+
+            const data = await res.json();
+
+            const hasAssessment =
+                data.hasAssessment ||
+                (data.assessmentMcqCount ?? 0) > 0 ||
+                (data.assessmentChallengeCount ?? 0) > 0;
+
+            // ALWAYS go to profile review first
+            navigate(`/apply/${data.applicationId}/review`);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to apply. Try again.");
+        }
+    };
+
 
     const [isSaved, setIsSaved] = useState(false);
 
@@ -90,6 +131,7 @@ export default function JobDetailsPage() {
     const [similar, setSimilar] = useState([]);
     const [similarLoading, setSimilarLoading] = useState(true);
     const [similarErr, setSimilarErr] = useState("");
+
 
     const [askOpen, setAskOpen] = useState(false);
     const [questionText, setQuestionText] = useState("");
@@ -107,26 +149,8 @@ export default function JobDetailsPage() {
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
 
-    const handleApply = async () => {
-        const token = localStorage.getItem("jobify_token");
-        if (!token) {
-            navigate("/login");
-            return;
-        }
 
-        try {
-            const res = await api.post(`/opportunities/${id}/apply`);
-            const data = res.data;
-            navigate(`/apply/${data.applicationId}/review`);
-        } catch (e) {
-            console.error(e);
-            const message =
-                e?.response?.data ||
-                e?.message ||
-                "Failed to apply. Try again.";
-            alert(message);
-        }
-    };
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -136,11 +160,19 @@ export default function JobDetailsPage() {
                 setLoading(true);
                 setErr("");
 
-                const res = await api.get(`/opportunities/${id}`, {
+                const token = localStorage.getItem("jobify_token");
+
+                const res = await fetch(`${API_URL}/opportunities/${id}`, {
                     signal: controller.signal,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                    },
                 });
 
-                const data = res.data;
+                if (!res.ok) throw new Error(`Failed to load opportunity (${res.status})`);
+
+                const data = await res.json();
 
                 setJob({
                     ...data,
@@ -154,9 +186,9 @@ export default function JobDetailsPage() {
                         : [],
                 });
             } catch (e) {
-                if (e?.name !== "CanceledError" && e?.name !== "AbortError") {
+                if (e?.name !== "AbortError") {
                     console.error(e);
-                    setErr(e?.response?.data || e?.message || "Failed to load opportunity");
+                    setErr(e?.message || "Failed to load opportunity");
                     setJob(null);
                 }
             } finally {
@@ -164,10 +196,7 @@ export default function JobDetailsPage() {
             }
         };
 
-        if (id) {
-            fetchDetails();
-        }
-
+        fetchDetails();
         return () => controller.abort();
     }, [id]);
 
@@ -179,16 +208,19 @@ export default function JobDetailsPage() {
                 setSimilarLoading(true);
                 setSimilarErr("");
 
-                const res = await api.get(`/opportunities/${id}/similar?take=4`, {
+                const res = await fetch(`${API_URL}/opportunities/${id}/similar?take=4`, {
                     signal: controller.signal,
+                    headers: { "Content-Type": "application/json" },
                 });
 
-                const data = res.data;
+                if (!res.ok) throw new Error(`Failed to load similar (${res.status})`);
+
+                const data = await res.json();
                 setSimilar(Array.isArray(data) ? data : []);
             } catch (e) {
-                if (e?.name !== "CanceledError" && e?.name !== "AbortError") {
+                if (e?.name !== "AbortError") {
                     console.error(e);
-                    setSimilarErr(e?.response?.data || e?.message || "Failed to load similar opportunities");
+                    setSimilarErr(e?.message || "Failed to load similar opportunities");
                     setSimilar([]);
                 }
             } finally {
@@ -196,12 +228,10 @@ export default function JobDetailsPage() {
             }
         };
 
-        if (id) {
-            loadSimilar();
-        }
-
+        if (id) loadSimilar();
         return () => controller.abort();
     }, [id]);
+
 
     const submitQuestion = async () => {
         try {
@@ -222,29 +252,39 @@ export default function JobDetailsPage() {
 
             setAskLoading(true);
 
-            await api.post(`/opportunities/${id}/questions`, { question: q });
+            const res = await fetch(`${API_URL}/opportunities/${id}/questions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ question: q }),
+            });
+
+            if (!res.ok) {
+                let msg = `Failed to submit question (${res.status})`;
+                try {
+                    const t = await res.text();
+                    if (t) msg = t;
+                } catch { }
+                setAskErr(msg);
+                return;
+            }
 
             setAskOk("Question submitted!");
             setQuestionText("");
             setAskOpen(false);
 
-            const refreshed = await api.get(`/opportunities/${id}`);
-            const data = refreshed.data;
-
-            setJob({
-                ...data,
-                skills: Array.isArray(data.skills)
-                    ? data.skills
-                    : Array.isArray(data.skillsRequired)
-                        ? data.skillsRequired
-                        : [],
-                preferredSkills: Array.isArray(data.preferredSkills)
-                    ? data.preferredSkills
-                    : [],
+            const refreshed = await fetch(`${API_URL}/opportunities/${id}`, {
+                headers: { "Content-Type": "application/json" },
             });
+            if (refreshed.ok) {
+                const data = await refreshed.json();
+                setJob(data);
+            }
         } catch (e) {
             console.error(e);
-            setAskErr(e?.response?.data || e?.message || "Failed to submit question");
+            setAskErr(e?.message || "Failed to submit question");
         } finally {
             setAskLoading(false);
         }
@@ -271,10 +311,27 @@ export default function JobDetailsPage() {
 
             setReportLoading(true);
 
-            await api.post(`/opportunities/${id}/report`, {
-                reason,
-                details: details || null,
+            const res = await fetch(`${API_URL}/opportunities/${id}/report`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    reason,
+                    details: details || null,
+                }),
             });
+
+            if (!res.ok) {
+                let msg = `Failed to submit report (${res.status})`;
+                try {
+                    const t = await res.text();
+                    if (t) msg = t;
+                } catch { }
+                setReportErr(msg);
+                return;
+            }
 
             setReportOk("Report submitted successfully.");
             setReportReason("");
@@ -286,7 +343,7 @@ export default function JobDetailsPage() {
             }, 1000);
         } catch (e) {
             console.error(e);
-            setReportErr(e?.response?.data || e?.message || "Failed to submit report");
+            setReportErr(e?.message || "Failed to submit report");
         } finally {
             setReportLoading(false);
         }
@@ -326,9 +383,10 @@ export default function JobDetailsPage() {
     const isRemote = !!job?.isRemote;
 
     const embedUrl = useMemo(() => {
-        if (job?.latitude == null || job?.longitude == null || isRemote) return "";
+        if (!job?.latitude || !job?.longitude || isRemote) return "";
         return `https://www.google.com/maps?q=${job.latitude},${job.longitude}&output=embed`;
     }, [job, isRemote]);
+
 
     const mapsUrl = useMemo(() => {
         if (!location || isRemote) return "";
@@ -355,23 +413,53 @@ export default function JobDetailsPage() {
     const deadlineText = job.deadlineUtc ? formatDeadline(job.deadlineUtc) : "—";
     const salaryText = formatMoneyRange(job.minPay, job.maxPay);
 
-    const assessment = job.assessment ?? null;
-    const assessmentType =
-        assessment && typeof assessment === "object"
-            ? assessment.type || "—"
-            : typeof assessment === "string"
-                ? assessment
-                : "—";
+    const assessment = job?.assessment ?? null;
+
+    const assessmentQuestions = Array.isArray(assessment?.questions)
+        ? assessment.questions
+        : [];
+
+    const mcqCount =
+        job?.assessmentMcqCount ??
+        assessment?.mcqCount ??
+        assessmentQuestions.filter((q) => (q?.type || "").toLowerCase() === "mcq").length ??
+        0;
+
+    const challengeCount =
+        job?.assessmentChallengeCount ??
+        assessment?.challengeCount ??
+        assessmentQuestions.filter((q) => {
+            const t = (q?.type || "").toLowerCase();
+            return t === "code" || t === "challenge" || t === "design";
+        }).length ??
+        0;
+
+    const timeLimitSeconds =
+        job?.assessmentTimeLimitSeconds ??
+        assessment?.timeLimitSeconds ??
+        null;
 
     const assessmentDuration =
-        assessment && typeof assessment === "object" && assessment.estimatedMinutes != null
-            ? `${assessment.estimatedMinutes} min`
-            : "—";
+        typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
+            ? `${Math.round(timeLimitSeconds / 60)} min`
+            : assessment?.estimatedMinutes != null
+                ? `${assessment.estimatedMinutes} min`
+                : "—";
+
+    const assessmentType =
+        mcqCount > 0 && challengeCount > 0
+            ? "MCQ + Coding"
+            : mcqCount > 0
+                ? "MCQ"
+                : challengeCount > 0
+                    ? "Coding"
+                    : (assessment?.type || "No assessment");
 
     const assessmentDeadline = deadlineText;
 
     const requiredSkills = job?.skillsRequired || job?.skills || [];
     const preferredSkills = job?.preferredSkills || [];
+
 
     return (
         <div className="page">
@@ -382,8 +470,11 @@ export default function JobDetailsPage() {
                     <div className="heroTop">
                         <div className="heroLeft">
                             <div className="logoWrap">
-                                <CompanyLogo name={job.companyName} size={64} />
+                                <div className="companyLogo">
+                                    <Building2 size={30} strokeWidth={1.8} />
+                                </div>
                             </div>
+
 
                             <div className="heroInfo">
                                 <h1 className="heroTitle">{job.title}</h1>
@@ -546,7 +637,13 @@ export default function JobDetailsPage() {
                                 </div>
                             )}
 
-                            {embedUrl ? (
+                            {isRemote ? (
+                                <div className="remoteMapPlaceholder">
+                                    <Globe size={40} />
+                                    <h4>Remote Opportunity</h4>
+                                    <p>This position can be performed from anywhere.</p>
+                                </div>
+                            ) : embedUrl ? (
                                 <iframe
                                     className="mapFrame"
                                     src={embedUrl}
@@ -555,7 +652,7 @@ export default function JobDetailsPage() {
                                     title="Map"
                                 />
                             ) : (
-                                <div className="mapPlaceholder">—</div>
+                                <div className="mapPlaceholder">No location provided</div>
                             )}
 
                             <div className="mapChip">{isRemote ? "Remote" : job.location || "—"}</div>
@@ -591,34 +688,10 @@ export default function JobDetailsPage() {
                             <button className="btnPrimary full" onClick={handleApply}>
                                 Apply Now <ArrowRight size={18} />
                             </button>
+
                         </div>
 
-                        <div className="card">
-                            <h4 className="subHeader">Job Insights</h4>
-
-                            <div className="insights">
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Users size={16} /> Applicants
-                                    </span>
-                                    <span className="insightVal">—</span>
-                                </div>
-
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Clock size={16} /> Avg. Response
-                                    </span>
-                                    <span className="insightVal">—</span>
-                                </div>
-
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Briefcase size={16} /> Experience
-                                    </span>
-                                    <span className="insightVal">{job.level}</span>
-                                </div>
-                            </div>
-                        </div>
+                       
 
                         <div className="card">
                             <h4 className="subHeader">
@@ -639,10 +712,7 @@ export default function JobDetailsPage() {
                                     <span className="kvVal">{assessmentDeadline}</span>
                                 </div>
 
-                                <div className="progressBar">
-                                    <div className="progressFill" style={{ width: "33%" }} />
-                                </div>
-                                <p className="mutedSmall">Step 1 of 3 in application process</p>
+                               
                             </div>
                         </div>
 
@@ -756,7 +826,6 @@ export default function JobDetailsPage() {
                         </div>
                     </div>
                 </div>
-
                 <div className="similarWrap">
                     <div className="similarHeader">
                         <h2 className="similarTitle">Similar Opportunities</h2>
@@ -803,6 +872,7 @@ export default function JobDetailsPage() {
                                             title="Save"
                                             onClick={(e) => {
                                                 e.stopPropagation();
+
                                             }}
                                         >
                                             <Bookmark size={20} />
@@ -819,6 +889,7 @@ export default function JobDetailsPage() {
                             ))
                         )}
                     </div>
+
                 </div>
 
                 {reportOpen ? (

@@ -11,7 +11,9 @@ import {
   UserCircle,
   Building2,
   FileText,
-  Bell,
+    Bell,
+    Github,
+    Mail
 } from "lucide-react";
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
@@ -33,6 +35,8 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [openFooter, setOpenFooter] = useState(null);
+
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const profileMenuRef = useRef(null);
 
@@ -231,6 +235,7 @@ export default function AppLayout() {
             {!loadingProfile && role === "Recruiter" && (
               <NavLink
                 to="/organization"
+                end
                 className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
               >
                 <span className="al-linkIcon">
@@ -242,7 +247,7 @@ export default function AppLayout() {
 
             {!loadingProfile && role === "Recruiter" && (
               <NavLink
-                to="/applicants"
+                to="/organization/applicants"
                 className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
               >
                 <span className="al-linkIcon">
@@ -308,100 +313,103 @@ export default function AppLayout() {
         </main>
       </div>
 
-      <footer className="al-footer">
-        <div className="al-footerInner">
-          <div>
-            <div className="al-footerBrand">Jobify</div>
-            <p className="al-footerText">
-              Smart matching platform connecting talent with opportunities
-              through AI-powered recommendations.
-            </p>
-          </div>
-
-          <div className="al-footerCols">
-            <div>
-              <div className="al-footerTitle">Company</div>
-              <ul className="al-footerList">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("about")}
-                    className={`footer-toggle ${openFooter === "about" ? "open" : ""}`}
-                  >
-                    <span>About</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "about" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      Jobify is a smart platform that matches students and
-                      professionals with opportunities using AI-powered skill
-                      analysis and recommendations.
-                    </div>
+          <footer className="al-footer">
+              <div className="al-footerInner">
+                  <div className="al-footerLeft">
+                      <span className="al-footerBrand">Jobify</span>
+                      <span className="al-footerText">
+                          AI-powered matching platform
+                      </span>
                   </div>
-                </li>
 
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("contact")}
-                    className={`footer-toggle ${openFooter === "contact" ? "open" : ""}`}
-                  >
-                    <span>Contact</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "contact" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      For support or questions, use the platform features or
-                      contact the project team.
-                    </div>
+                  <div className="al-footerRight">
+                      <a href="/" className="footer-link">About</a>
+
+                      <button
+                          type="button"
+                          className="footer-link"
+                          onClick={() => setShowPrivacyModal(true)}
+                      >
+                          Privacy Policy
+                      </button>
+
+                      <div className="footer-icons">
+                          <a
+                              href="https://github.com/R-2-WE-Solutions/Jobify"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="footer-icon"
+                          >
+                              <Github size={18} />
+                          </a>
+
+                          <a
+                              href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="footer-icon"
+                          >
+                              <Mail size={18} />
+                          </a>
+                      </div>
                   </div>
-                </li>
-              </ul>
-            </div>
 
-            <div>
-              <div className="al-footerTitle">Legal</div>
-              <ul className="al-footerList">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("terms")}
-                    className={`footer-toggle ${openFooter === "terms" ? "open" : ""}`}
-                  >
-                    <span>Terms of Service</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "terms" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      By using Jobify, you agree to use the platform
-                      responsibly and for its intended purpose.
-                    </div>
+                  <div className="al-footerBottom">
+                      © 2026 Jobify. All rights reserved.
                   </div>
-                </li>
+              </div>
 
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => toggleFooter("privacy")}
-                    className={`footer-toggle ${openFooter === "privacy" ? "open" : ""}`}
+              {showPrivacyModal && (
+                  <div
+                      className="footer-modalOverlay"
+                      onClick={() => setShowPrivacyModal(false)}
                   >
-                    <span>Privacy Policy</span>
-                    <span className="footer-arrow">⌄</span>
-                  </button>
-                  <div className={`footer-dropdown ${openFooter === "privacy" ? "open" : ""}`}>
-                    <div className="footer-dropdownContent">
-                      Jobify respects your privacy and protects your personal
-                      information.
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+                      <div
+                          className="footer-modal"
+                          onClick={(e) => e.stopPropagation()}
+                      >
+                          <div className="footer-modalHeader">
+                              <div className="footer-modalTitle">Privacy Policy</div>
+                              <button
+                                  type="button"
+                                  className="footer-modalClose"
+                                  onClick={() => setShowPrivacyModal(false)}
+                              >
+                                  ×
+                              </button>
+                          </div>
 
-        <div className="al-footerBottom">© 2026 Jobify. All rights reserved.</div>
-      </footer>
+                          <div className="footer-modalBody">
+                              <p>
+                                  Jobify is committed to protecting your privacy and personal information.
+                              </p>
+
+                              <p>
+                                  Only verified organizations are allowed to access applicant profiles.
+                                  Recruiters must go through a verification process before they can view
+                                  candidate information on the platform.
+                              </p>
+
+                              <p>
+                                  Your personal information is used strictly for recruitment and job
+                                  matching purposes within the Jobify platform.
+                              </p>
+
+                              <p>
+                                  Jobify does <strong>not sell, rent, or share your personal data</strong>
+                                  with third parties for advertising or commercial purposes.
+                              </p>
+
+                              <p>
+                                  We aim to maintain a safe environment where students and professionals
+                                  can connect with legitimate opportunities.
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+              )}
+          </footer>
+             
     </div>
   );
 }

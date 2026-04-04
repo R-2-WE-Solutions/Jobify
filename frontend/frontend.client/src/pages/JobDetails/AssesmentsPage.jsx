@@ -103,7 +103,7 @@ export default function AssessmentPage() {
 
     const uploadSnapshot = useCallback(async (base64Jpeg) => {
         try {
-            await api.post(`/api/Application/${applicationId}/assessment/snapshot`, {
+            await api.post(`/Application/${applicationId}/assessment/snapshot`, {
                 base64Jpeg,
             });
         } catch {
@@ -113,13 +113,13 @@ export default function AssessmentPage() {
 
 
     const fetchApp = useCallback(async () => {
-        const res = await api.get(`/api/Application/${applicationId}?t=${Date.now()}`);
+        const res = await api.get(`/Application/${applicationId}?t=${Date.now()}`);
         return res.data;
     }, [applicationId]);
 
   const startAttempt = useCallback(
     async (webcamConsent = false) => {
-      const res = await api.post(`/api/Application/${applicationId}/assessment/start`, { webcamConsent });
+      const res = await api.post(`/Application/${applicationId}/assessment/start`, { webcamConsent });
       return res.data;
     },
     [applicationId]
@@ -169,7 +169,7 @@ export default function AssessmentPage() {
     saveRef.current = setInterval(async () => {
       try {
         setSaving(true);
-        await api.put(`/api/Application/${applicationId}/assessment`, { answers });
+        await api.put(`/Application/${applicationId}/assessment`, { answers });
       } catch (e) {
         // ignore (offline etc.)
       } finally {
@@ -183,7 +183,7 @@ export default function AssessmentPage() {
   const sendProctor = useCallback(
     async (type) => {
       try {
-        const res = await api.post(`/api/Application/${applicationId}/assessment/proctor-event`, {
+        const res = await api.post(`/Application/${applicationId}/assessment/proctor-event`, {
           type,
           details: { at: new Date().toISOString() },
         });
@@ -327,7 +327,7 @@ export default function AssessmentPage() {
 
     setRunOutputByQid((o) => ({ ...o, [qid]: null }));
 
-    const res = await api.post(`/api/Application/${applicationId}/assessment/run`, {
+    const res = await api.post(`/Application/${applicationId}/assessment/run`, {
       questionId: qid,
       languageId: a.languageId ?? 71,
       sourceCode: code,
@@ -343,9 +343,9 @@ const submit = useCallback(async () => {
   try {
     setSubmitting(true);
 
-    await api.put(`/api/Application/${applicationId}/assessment`, { answers });
+    await api.put(`/Application/${applicationId}/assessment`, { answers });
 
-    const res = await api.post(`/api/Application/${applicationId}/assessment/submit`);
+    const res = await api.post(`/Application/${applicationId}/assessment/submit`);
 
     nav(`/application/${applicationId}/result`, { state: res.data });
 

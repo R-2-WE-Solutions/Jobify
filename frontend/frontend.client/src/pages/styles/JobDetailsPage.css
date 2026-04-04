@@ -1037,3 +1037,311 @@ body {
         grid-template-columns: 1fr 1fr 44px;
     }
 }
+
+.mapFrame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 16px;
+}
+
+.qaList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.qaCard {
+    border: 1px solid rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.85);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.qaTop {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.qaAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(59,130,246,.25), rgba(99,102,241,.25));
+    border: 1px solid rgba(59,130,246,.25);
+    flex: 0 0 auto;
+}
+
+.qaUser {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .2px;
+    color: rgba(15,23,42,0.75);
+    margin-bottom: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .qaUser::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(59,130,246,0.9);
+    }
+
+.qaAnswerLabel {
+    font-weight: 700;
+    font-size: 13px;
+    color: rgba(16,185,129,0.95);
+    margin-bottom: 4px;
+}
+
+.qaQuestion {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(2,6,23,0.92);
+    line-height: 1.35;
+}
+
+.qaAnswer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(0,0,0,0.12);
+}
+
+.qaAnswerText {
+    font-size: 14px;
+    color: rgba(2,6,23,0.8);
+    line-height: 1.45;
+}
+
+.btnDashed {
+    border: 1.5px dashed rgba(59,130,246,0.45);
+    background: rgba(59,130,246,0.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-weight: 700;
+    color: rgba(30,64,175,0.95);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+    .btnDashed:hover {
+        background: rgba(59,130,246,0.10);
+        border-color: rgba(59,130,246,0.65);
+        transform: translateY(-1px);
+    }
+
+
+
+.fullWidthMap {
+    grid-column: 1 / -1; 
+}
+
+.mapFrame {
+    width: 100%;
+    height: 300px; 
+    border: 0;
+    border-radius: 16px;
+}
+
+.companyLogo {
+    width: 64px;
+    height: 64px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+    .companyLogo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+.similarLogo {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.jobMatchBadge {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.remoteMapPlaceholder {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg,#1c2a4a,#0f172a);
+    border-radius: 14px;
+    color: white;
+    text-align: center;
+}
+
+    .remoteMapPlaceholder h4 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .remoteMapPlaceholder p {
+        margin: 0;
+        font-size: 14px;
+        opacity: .8;
+    }
+
+.heroGlow {
+    pointer-events: none;
+}
+
+.heroTop,
+.heroLeft,
+.heroRight,
+.heroActions,
+.btnIcon,
+.btnOutline,
+.btnPrimary {
+    position: relative;
+    z-index: 2;
+}
+
+.reportModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+}
+
+.reportModal {
+    width: min(100%, 520px);
+    background: #fff;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.25);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+}
+
+.reportModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.reportModalTitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.reportCloseBtn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+    .reportCloseBtn:hover {
+        background: #eef2f7;
+    }
+
+.reportModalText {
+    margin: 0 0 14px;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.reportSelect,
+.reportTextarea {
+    width: 100%;
+    border: 1px solid #dbe3ee;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    color: #0f172a;
+    background: #fff;
+    outline: none;
+}
+
+.reportSelect {
+    margin-bottom: 12px;
+}
+
+.reportTextarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+    .reportSelect:focus,
+    .reportTextarea:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    }
+
+.reportFeedback {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.reportError {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.reportSuccess {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.reportModalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
