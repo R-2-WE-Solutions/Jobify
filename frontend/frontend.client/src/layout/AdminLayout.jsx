@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Briefcase, Users, Building2, AlertTriangle, Shield, LogOut } from "lucide-react";
 
 const navItems = [
-    { to: "/admin/", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { to: "/admin/recruiters", label: "Recruiters", icon: Briefcase },
     { to: "/admin/students", label: "Students", icon: Users },
     { to: "/admin/companies", label: "Companies", icon: Building2 },
@@ -62,7 +62,7 @@ export default function AdminLayout() {
                     return (
                         <NavLink
                             key={item.to}
-                            to={item.to}
+                            to={item.to} end
                             style={({ isActive }) => ({
                             display: "flex",
                             alignItems: "center",
