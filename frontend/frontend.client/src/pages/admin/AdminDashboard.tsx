@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Users, Briefcase, Building2, FileText, TrendingUp, UserPlus, Clock, CheckCircle, XCircle } from "lucide-react";
+import { api } from "../../api/api";
 
 
 const getActivityIcon = (type: string) => {
@@ -24,6 +25,9 @@ export default function AdminDashboard() {
   const [dashboard, setDashboard] = useState<any>();
   const [loadingDashboard, setLoadingDashboard] = useState(true);
 
+  // System Overview
+  const [systemOverview, setSystemOverview] = useState<any>([]);
+  const [loadingSystemOverview, setLoadingSystemOverview] = useState(false);
 
   // Dashboard Fetching
   async function fetchDashboard() {
@@ -49,8 +53,25 @@ export default function AdminDashboard() {
     }
   };
 
+  // System Overview
+  async function fetchSystemOverview() {
+    try{
+      setLoadingSystemOverview(true);
+
+      const res = await api.get("/api/users/admin/system-overview");
+      setSystemOverview(res.data);
+    }
+    catch (err) {
+      console.error("Error in Fetching System Overview: ", err)
+    }
+    finally {
+      setLoadingSystemOverview(false);
+    }
+  }
+
   useEffect(() => {
     fetchDashboard();
+    fetchSystemOverview();
   }, []);
 
 
@@ -184,22 +205,22 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Pending Verification</span>
-                <span style={{ fontWeight: "600" }}>{dashboard?.pendingVerification ?? "--"}</span>
+                <span style={{ fontWeight: "600" }}>{systemOverview?.pendingVerification ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Pending Approval</span>
-                <span style={{ fontWeight: "600" }}>{dashboard?.pendingApproval ?? "--"}</span>
+                <span style={{ fontWeight: "600" }}>{systemOverview?.pendingApproval ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Verified</span>
-                <span style={{ fontWeight: "600" }}>{dashboard?.verifiedRecruiters ?? "--"}</span>
+                <span style={{ fontWeight: "600" }}>{systemOverview?.verifiedRecruiters ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Rejected</span>
-                <span style={{ fontWeight: "600", color: "#dc2626" }}>{dashboard?.rejectedRecruiters ?? "--"}</span>
+                <span style={{ fontWeight: "600", color: "#dc2626" }}>{systemOverview?.rejectedRecruiters ?? "--"}</span>
               </div>
             </div>
           </div>
@@ -213,17 +234,17 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Active Users</span>
-                <span style={{ fontWeight: "600" }}>{dashboard?.activeUsers ?? "--"}</span>
+                <span style={{ fontWeight: "600" }}>{systemOverview?.activeUsers ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>New Signups (24h)</span>
-                <span style={{ fontWeight: "600" }}>{dashboard?.newSignups ?? "--"}</span>
+                <span style={{ fontWeight: "600" }}>{systemOverview?.newSignups ?? "--"}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6b7280" }}>Pending Actions</span>
-                <span style={{ fontWeight: "600", color: "#ea580c" }}>{dashboard?.pendingActions ?? "--"}</span>
+                <span style={{ fontWeight: "600", color: "#ea580c" }}>{systemOverview?.pendingActions ?? "--"}</span>
               </div>
             </div>
           </div>
