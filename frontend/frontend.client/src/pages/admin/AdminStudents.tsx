@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, FileText, Search } from "lucide-react";
+import { api } from "../../api/api";
+
 
 // Student Interface
 interface Student {
@@ -94,6 +96,18 @@ export default function AdminStudents() {
         <p>Loading Students...</p>
       </div>
     );
+  }
+
+  // Delete Student
+  async function deleteStudent(student: Student){
+    try {
+      api.delete(`admin/students/${student.id}`);
+
+      console.log("Student Deleted Successfully!");
+    }
+    catch (error) {
+      console.error("Error in Deleting Student: ", error);
+    }
   }
 
   // Fetching Applications
@@ -352,8 +366,8 @@ export default function AdminStudents() {
                             }}
                             style={{
                               padding: "6px 12px",
-                              backgroundColor: "orange",
-                              color: "#958f83",
+                              backgroundColor: "#55e75f",
+                              color: "#ffffff",
                               border: "1px solid #d1d5db",
                               borderRadius: "6px",
                               fontSize: "13px",
@@ -382,10 +396,11 @@ export default function AdminStudents() {
                             gap: "4px",
                             transition: "all 0.2s",
                           }}
+                          onClick={ () => deleteStudent(student)}
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
                         >
-                            Delete
+                            Delete 
                         </button>
                       </div>
                     </td>
