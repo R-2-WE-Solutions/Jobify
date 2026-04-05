@@ -7,7 +7,8 @@ import "./styles/matches.css";
 import { api } from "../api/api";
 import CvReviewPage from "./components/matches/CvReviewPage";
 
-// Normalize backend status into student-facing pipeline status
+
+const API_URL = import.meta.env.VITE_API_URL;
 function normalizeApplicationStatus(status) {
     switch (status) {
         case "Draft":
@@ -139,7 +140,7 @@ function getWithdrawWarning(rawStatus) {
 
     return "Are you sure you want to withdraw this application? If you continue, you will not be able to reapply to this opportunity.";
 }
-// alerts
+
 export default function MatchesPage() {
     const navigate = useNavigate();
 
@@ -155,6 +156,9 @@ export default function MatchesPage() {
     const [opportunities, setOpportunities] = useState([]);
     const [opportunitiesLoading, setOpportunitiesLoading] = useState(false);
     const [opportunitiesError, setOpportunitiesError] = useState("");
+
+    const [savedItems, setSavedItems] = useState([]);
+    const [savingId, setSavingId] = useState(null);
 
     const [applications, setApplications] = useState([]);
     const [applicationsLoading, setApplicationsLoading] = useState(false);
@@ -217,6 +221,77 @@ export default function MatchesPage() {
         }
     }
 
+    async function fetchSavedIds() {
+        try {
+            const token = localStorage.getItem("jobify_token");
+            if (!token) {
+                setSavedItems([]);
+                return;
+            }
+
+            const res = await fetch(`${API_URL}/opportunities/saved/ids`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                setSavedItems([]);
+                return;
+            }
+
+            const data = await res.json();
+            setSavedItems(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Failed to fetch saved ids.", error);
+            setSavedItems([]);
+        }
+    }
+
+    async function toggleSaved(opportunityId) {
+        try {
+            const token = localStorage.getItem("jobify_token");
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            setSavingId(opportunityId);
+
+            const currentlySaved =
+                savedItems.includes(opportunityId) ||
+                savedItems.includes(Number(opportunityId));
+
+            const res = await fetch(`${API_URL}/opportunities/${opportunityId}/save`, {
+                method: currentlySaved ? "DELETE" : "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                const t = await res.text().catch(() => "");
+                window.alert(t || "Failed to update saved opportunity.");
+                return;
+            }
+
+            if (currentlySaved) {
+                setSavedItems((prev) =>
+                    prev.filter(
+                        (x) => x !== opportunityId && x !== Number(opportunityId)
+                    )
+                );
+            } else {
+                setSavedItems((prev) => [...prev, Number(opportunityId)]);
+            }
+        } catch (error) {
+            console.error("Failed to update saved opportunity.", error);
+            window.alert("Failed to update saved opportunity.");
+        } finally {
+            setSavingId(null);
+        }
+    }
+
     function handleWithdrawApplication(application) {
         if (!application?.id || !application?.canWithdraw || withdrawingId === application.id) {
             return;
@@ -224,9 +299,10 @@ export default function MatchesPage() {
 
         setConfirmWithdraw(application);
     }
-// render toasts
+
     async function confirmWithdrawApplication() {
         const application = confirmWithdraw;
+
         if (!application?.id) {
             setConfirmWithdraw(null);
             return;
@@ -261,8 +337,8 @@ export default function MatchesPage() {
                 typeof error?.response?.data === "string"
                     ? error.response.data
                     : error?.response?.data?.message ||
-                      error?.message ||
-                      "Failed to withdraw application.";
+                    error?.message ||
+                    "Failed to withdraw application.";
 
             showToast(message, "error");
         } finally {
@@ -273,6 +349,7 @@ export default function MatchesPage() {
     useEffect(() => {
         fetchOpportunities();
         fetchApplications();
+        fetchSavedIds();
     }, []);
 
     const mappedApplications = useMemo(() => {
@@ -299,6 +376,7 @@ export default function MatchesPage() {
                 createdAtUtc: application.createdAtUtc,
                 updatedAtUtc: application.updatedAtUtc,
                 note: application.note ?? null,
+
                 canWithdraw,
                 isDraftStage,
                 withdrawWarning: getWithdrawWarning(application.status),
@@ -367,9 +445,14 @@ export default function MatchesPage() {
                 logoColor: getLogoColor(opportunity.companyName),
                 deadline: formatDeadline(opportunity.deadlineUtc),
                 skills,
+
+                isSaved:
+                    savedItems.includes(opportunity.id) ||
+                    savedItems.includes(Number(opportunity.id)),
+                isSaving: savingId === opportunity.id || savingId === Number(opportunity.id),
             };
         });
-    }, [opportunities]);
+    }, [opportunities, savedItems, savingId]);
 
     const mappedInterviews = useMemo(() => {
         return matches
@@ -384,6 +467,9 @@ export default function MatchesPage() {
     const mappedMatches = useMemo(() => {
         return [...mappedOpportunities, ...mappedApplications, ...mappedInterviews];
     }, [mappedOpportunities, mappedApplications, mappedInterviews]);
+
+    console.log("RAW APPLICATIONS:", applications);
+    console.log("MAPPED APPLICATIONS:", mappedApplications);
 
     return (
         <div className="matches-page">
@@ -423,14 +509,16 @@ export default function MatchesPage() {
                         {opportunitiesError || applicationsError}
                     </div>
                 ) : (
-                    <MatchesTabs
-                        activeTab={activeTab}
-                        matches={mappedMatches}
-                        onPrepare={(item) => {
-                            navigate(`/interviews/${item.id}/prepare`);
-                        }}
-                        onWithdrawApplication={handleWithdrawApplication}
-                    />
+                 <MatchesTabs
+                    activeTab={activeTab}
+                    matches={mappedMatches}
+                    onPrepare={(item) => {
+                    navigate(`/interviews/${item.id}/prepare`);
+                    }}
+                    onWithdrawApplication={handleWithdrawApplication}
+                    onToggleSave={toggleSaved}
+                />
+
                 )}
             </div>
 

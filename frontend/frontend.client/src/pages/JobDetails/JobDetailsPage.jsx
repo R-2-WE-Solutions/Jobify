@@ -85,6 +85,45 @@ export default function JobDetailsPage() {
 
     const navigate = useNavigate();
 
+    const toggleSaved = async (opportunityId) => {
+        try {
+            const token = localStorage.getItem("jobify_token");
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            setSavingId(opportunityId);
+
+            const currentlySaved = savedItems.includes(opportunityId);
+
+            const res = await fetch(`${API_URL}/opportunities/${opportunityId}/save`, {
+                method: currentlySaved ? "DELETE" : "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                const t = await res.text().catch(() => "");
+                alert(t || "Failed to update saved opportunity.");
+                return;
+            }
+
+            if (currentlySaved) {
+                setSavedItems((prev) => prev.filter((x) => x !== opportunityId));
+            } else {
+                setSavedItems((prev) => [...prev, opportunityId]);
+            }
+
+        } catch (err) {
+            console.error("Failed to update saved opportunity:", err);
+            alert("Failed to update saved opportunity.");
+        } finally {
+            setSavingId(null);
+        }
+    };
+
     const handleApply = async () => {
         const token = localStorage.getItem("jobify_token");
         if (!token) {
@@ -123,6 +162,8 @@ export default function JobDetailsPage() {
 
 
     const [isSaved, setIsSaved] = useState(false);
+    const [savedItems, setSavedItems] = useState([]);
+    const [savingId, setSavingId] = useState(null);
 
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -150,6 +191,43 @@ export default function JobDetailsPage() {
     const [shareErr, setShareErr] = useState("");
 
 
+    useEffect(() => {
+        const numericId = Number(id);
+        setIsSaved(savedItems.includes(numericId) || savedItems.includes(id));
+    }, [savedItems, id]);
+
+
+
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const fetchSavedIds = async () => {
+            try {
+                const token = localStorage.getItem("jobify_token");
+                if (!token) return;
+
+                const res = await fetch(`${API_URL}/opportunities/saved/ids`, {
+                    signal: controller.signal,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) return;
+
+                const data = await res.json();
+                setSavedItems(Array.isArray(data) ? data : []);
+            } catch (err) {
+                if (err?.name !== "AbortError") {
+                    console.error("Failed to fetch saved ids:", err);
+                }
+            }
+        };
+
+        fetchSavedIds();
+        return () => controller.abort();
+    }, []);
 
 
     useEffect(() => {
@@ -199,6 +277,7 @@ export default function JobDetailsPage() {
         fetchDetails();
         return () => controller.abort();
     }, [id]);
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -415,36 +494,22 @@ export default function JobDetailsPage() {
 
     const assessment = job?.assessment ?? null;
 
-    const assessmentQuestions = Array.isArray(assessment?.questions)
-        ? assessment.questions
+    const mcqs = Array.isArray(assessment?.mcqs) ? assessment.mcqs : [];
+    const codingChallenges = Array.isArray(assessment?.codingChallenges)
+        ? assessment.codingChallenges
         : [];
 
-    const mcqCount =
-        job?.assessmentMcqCount ??
-        assessment?.mcqCount ??
-        assessmentQuestions.filter((q) => (q?.type || "").toLowerCase() === "mcq").length ??
-        0;
+    const mcqCount = mcqs.length;
+    const challengeCount = codingChallenges.length;
 
-    const challengeCount =
-        job?.assessmentChallengeCount ??
-        assessment?.challengeCount ??
-        assessmentQuestions.filter((q) => {
-            const t = (q?.type || "").toLowerCase();
-            return t === "code" || t === "challenge" || t === "design";
-        }).length ??
-        0;
+    const hasAssessment = mcqCount > 0 || challengeCount > 0;
 
-    const timeLimitSeconds =
-        job?.assessmentTimeLimitSeconds ??
-        assessment?.timeLimitSeconds ??
-        null;
+    const timeLimitMinutes =
+        typeof assessment?.timeLimitMinutes === "number" && assessment.timeLimitMinutes > 0
+            ? assessment.timeLimitMinutes
+            : null;
 
-    const assessmentDuration =
-        typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
-            ? `${Math.round(timeLimitSeconds / 60)} min`
-            : assessment?.estimatedMinutes != null
-                ? `${assessment.estimatedMinutes} min`
-                : "—";
+    const assessmentDuration = timeLimitMinutes ? `${timeLimitMinutes} min` : "—";
 
     const assessmentType =
         mcqCount > 0 && challengeCount > 0
@@ -453,12 +518,14 @@ export default function JobDetailsPage() {
                 ? "MCQ"
                 : challengeCount > 0
                     ? "Coding"
-                    : (assessment?.type || "No assessment");
+                    : "No assessment";
 
     const assessmentDeadline = deadlineText;
 
     const requiredSkills = job?.skillsRequired || job?.skills || [];
     const preferredSkills = job?.preferredSkills || [];
+
+
 
 
     return (
@@ -525,10 +592,13 @@ export default function JobDetailsPage() {
                             <div className="heroActions">
                                 <button
                                     className={`btnOutline ${isSaved ? "btnOutlineSaved" : ""}`}
-                                    onClick={() => setIsSaved((s) => !s)}
+                                    onClick={() => toggleSaved(job.id)}
+                                    disabled={savingId === job.id}
                                 >
                                     <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
-                                    <span className="hideOnMobile">{isSaved ? "Saved" : "Save"}</span>
+                                    <span className="hideOnMobile">
+                                        {savingId === job.id ? "Saving..." : isSaved ? "Saved" : "Save"}
+                                    </span>
                                 </button>
 
                                 <button className="btnOutline" onClick={handleShare}>
@@ -691,30 +761,39 @@ export default function JobDetailsPage() {
 
                         </div>
 
-                       
 
                         <div className="card">
                             <h4 className="subHeader">
                                 <Clock size={18} className="blueIcon" /> Assessment Process
                             </h4>
 
-                            <div className="kv">
-                                <div className="kvRow">
-                                    <span className="kvKey">Duration</span>
-                                    <span className="kvVal">{assessmentDuration}</span>
-                                </div>
-                                <div className="kvRow">
-                                    <span className="kvKey">Type</span>
-                                    <span className="kvVal">{assessmentType}</span>
-                                </div>
-                                <div className="kvRow">
-                                    <span className="kvKey">Deadline</span>
-                                    <span className="kvVal">{assessmentDeadline}</span>
-                                </div>
+                            {hasAssessment ? (
+                                <div className="kv">
+                                    <div className="kvRow">
+                                        <span className="kvKey">Duration</span>
+                                        <span className="kvVal">{assessmentDuration}</span>
+                                    </div>
 
-                               
-                            </div>
+                                    <div className="kvRow">
+                                        <span className="kvKey">Type</span>
+                                        <span className="kvVal">{assessmentType}</span>
+                                    </div>
+
+                                    <div className="kvRow">
+                                        <span className="kvKey">Deadline</span>
+                                        <span className="kvVal">{assessmentDeadline}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="kv">
+                                    <div className="kvRow">
+                                        <span className="kvKey">Status</span>
+                                        <span className="kvVal">No assessment</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
+                       
 
                         <div className="card">
                             <SectionTitle>Q&A with the Recruiter</SectionTitle>
@@ -868,14 +947,18 @@ export default function JobDetailsPage() {
                                             <Building2 size={22} strokeWidth={1.8} />
                                         </div>
                                         <button
-                                            className="bookmarkBtn"
-                                            title="Save"
+                                            className={`bookmarkBtn ${savedItems.includes(s.id) ? "isSaved" : ""}`}
+                                            title={savedItems.includes(s.id) ? "Unsave" : "Save"}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-
+                                                toggleSaved(s.id);
                                             }}
+                                            disabled={savingId === s.id}
                                         >
-                                            <Bookmark size={20} />
+                                            <Bookmark
+                                                size={20}
+                                                fill={savedItems.includes(s.id) ? "currentColor" : "none"}
+                                            />
                                         </button>
                                     </div>
 
