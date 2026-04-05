@@ -134,8 +134,17 @@ export function OpportunityCard({ match }) {
                             <ChevronDown size={16} style={{ marginLeft: 6 }} />
                         </button>
 
-                        <button type="button" className="match-btn-icon">
-                            <Bookmark size={18} />
+                        <button
+                            type="button"
+                            className={`match-btn-icon ${match.isSaved ? "isSaved" : ""}`}
+                            onClick={() => onToggleSave?.(match.id)}
+                            disabled={match.isSaving}
+                            title={match.isSaved ? "Unsave" : "Save"}
+                        >
+                            <Bookmark
+                                size={18}
+                                fill={match.isSaved ? "currentColor" : "none"}
+                            />
                         </button>
                     </div>
                 </div>
@@ -193,7 +202,7 @@ export function OpportunityCard({ match }) {
     );
 }
 
-export function OpportunitiesTab({ matches = [] }) {
+export function OpportunitiesTab({ matches = [], onToggleSave }) {
     const opportunities = matches.filter((m) => m.type === "opportunity");
 
     if (!opportunities.length) {
@@ -203,7 +212,11 @@ export function OpportunitiesTab({ matches = [] }) {
     return (
         <div className="matches-content">
             {opportunities.map((match) => (
-                <OpportunityCard key={match.id} match={match} />
+                <OpportunityCard
+                    key={match.id}
+                    match={match}
+                    onToggleSave={onToggleSave}
+                />
             ))}
         </div>
     );
