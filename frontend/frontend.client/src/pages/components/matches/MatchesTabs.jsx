@@ -8,7 +8,8 @@ import {
 export function MatchesTabs({
     activeTab,
     matches,
-    onWithdrawApplication
+    onWithdrawApplication,
+    onToggleSave,
 }) {
     if (activeTab === "applications") {
         return (
@@ -27,5 +28,10 @@ export function MatchesTabs({
         return <CVReviewTab />;
     }
 
-    return <OpportunitiesTab matches={matches} />;
+    return (
+        <OpportunitiesTab
+            matches={matches}
+            onToggleSave={onToggleSave}
+        />
+    );
 }

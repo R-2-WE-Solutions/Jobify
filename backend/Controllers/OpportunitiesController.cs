@@ -707,10 +707,30 @@ public class OpportunitiesController : ControllerBase
         opportunity.Latitude = dto.Latitude;
         opportunity.Longitude = dto.Longitude;
         opportunity.ResponsibilitiesJson = WriteList(dto.Responsibilities);
-        opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);
+        opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);   
         opportunity.BenefitsJson = WriteList(dto.Benefits);
-        if (dto.Assessment != null)
-            opportunity.AssessmentJson = JsonSerializer.Serialize(dto.Assessment);
+        opportunity.AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment);
+
+        if (dto.Assessment == null)
+        {
+            opportunity.AssessmentTimeLimitSeconds = 0;
+            opportunity.AssessmentMcqCount = 0;
+            opportunity.AssessmentChallengeCount = 0;
+        }
+        else
+        {
+            var assessmentJson = JsonSerializer.Serialize(dto.Assessment);
+            var parsedAssessment = ReadAssessmentForBuilder(assessmentJson);
+
+            opportunity.AssessmentTimeLimitSeconds =
+                Math.Max(60, (parsedAssessment?.TimeLimitMinutes ?? 30) * 60);
+
+            opportunity.AssessmentMcqCount =
+                parsedAssessment?.Mcqs?.Count ?? 0;
+
+            opportunity.AssessmentChallengeCount =
+                parsedAssessment?.CodingChallenges?.Count ?? 0;
+        }
         opportunity.Type = parsedType;
         opportunity.Level = parsedLevel;
         opportunity.MinPay = dto.MinPay;
@@ -1222,10 +1242,43 @@ public class OpportunitiesController : ControllerBase
                                 ? starterEl.GetString() ?? ""
                                 : "",
 
-                            ExpectedOutput = q.TryGetProperty("expectedOutput", out var expectedEl) && expectedEl.ValueKind == JsonValueKind.String
-                                ? expectedEl.GetString() ?? ""
-                                : ""
+                            PublicTests = new List<TestCaseDto>(),
+                            HiddenTests = new List<TestCaseDto>()
                         };
+
+                        if (q.TryGetProperty("publicTests", out var publicTestsEl) &&
+                            publicTestsEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var t in publicTestsEl.EnumerateArray())
+                            {
+                                code.PublicTests.Add(new TestCaseDto
+                                {
+                                    Stdin = t.TryGetProperty("stdin", out var stdinEl) && stdinEl.ValueKind == JsonValueKind.String
+                                        ? stdinEl.GetString() ?? ""
+                                        : "",
+                                    Expected = t.TryGetProperty("expected", out var expectedEl) && expectedEl.ValueKind == JsonValueKind.String
+                                        ? expectedEl.GetString() ?? ""
+                                        : ""
+                                });
+                            }
+                        }
+
+                        if (q.TryGetProperty("hiddenTests", out var hiddenTestsEl) &&
+                            hiddenTestsEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var t in hiddenTestsEl.EnumerateArray())
+                            {
+                                code.HiddenTests.Add(new TestCaseDto
+                                {
+                                    Stdin = t.TryGetProperty("stdin", out var stdinEl) && stdinEl.ValueKind == JsonValueKind.String
+                                        ? stdinEl.GetString() ?? ""
+                                        : "",
+                                    Expected = t.TryGetProperty("expected", out var expectedEl) && expectedEl.ValueKind == JsonValueKind.String
+                                        ? expectedEl.GetString() ?? ""
+                                        : ""
+                                });
+                            }
+                        }
 
                         dto.CodingChallenges.Add(code);
                     }
