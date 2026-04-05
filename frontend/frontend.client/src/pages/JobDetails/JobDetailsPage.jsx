@@ -190,6 +190,7 @@ export default function JobDetailsPage() {
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
 
+
     useEffect(() => {
         const numericId = Number(id);
         setIsSaved(savedItems.includes(numericId) || savedItems.includes(id));
@@ -493,36 +494,22 @@ export default function JobDetailsPage() {
 
     const assessment = job?.assessment ?? null;
 
-    const assessmentQuestions = Array.isArray(assessment?.questions)
-        ? assessment.questions
+    const mcqs = Array.isArray(assessment?.mcqs) ? assessment.mcqs : [];
+    const codingChallenges = Array.isArray(assessment?.codingChallenges)
+        ? assessment.codingChallenges
         : [];
 
-    const mcqCount =
-        job?.assessmentMcqCount ??
-        assessment?.mcqCount ??
-        assessmentQuestions.filter((q) => (q?.type || "").toLowerCase() === "mcq").length ??
-        0;
+    const mcqCount = mcqs.length;
+    const challengeCount = codingChallenges.length;
 
-    const challengeCount =
-        job?.assessmentChallengeCount ??
-        assessment?.challengeCount ??
-        assessmentQuestions.filter((q) => {
-            const t = (q?.type || "").toLowerCase();
-            return t === "code" || t === "challenge" || t === "design";
-        }).length ??
-        0;
+    const hasAssessment = mcqCount > 0 || challengeCount > 0;
 
-    const timeLimitSeconds =
-        job?.assessmentTimeLimitSeconds ??
-        assessment?.timeLimitSeconds ??
-        null;
+    const timeLimitMinutes =
+        typeof assessment?.timeLimitMinutes === "number" && assessment.timeLimitMinutes > 0
+            ? assessment.timeLimitMinutes
+            : null;
 
-    const assessmentDuration =
-        typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
-            ? `${Math.round(timeLimitSeconds / 60)} min`
-            : assessment?.estimatedMinutes != null
-                ? `${assessment.estimatedMinutes} min`
-                : "—";
+    const assessmentDuration = timeLimitMinutes ? `${timeLimitMinutes} min` : "—";
 
     const assessmentType =
         mcqCount > 0 && challengeCount > 0
@@ -531,12 +518,14 @@ export default function JobDetailsPage() {
                 ? "MCQ"
                 : challengeCount > 0
                     ? "Coding"
-                    : (assessment?.type || "No assessment");
+                    : "No assessment";
 
     const assessmentDeadline = deadlineText;
 
     const requiredSkills = job?.skillsRequired || job?.skills || [];
     const preferredSkills = job?.preferredSkills || [];
+
+
 
 
     return (
@@ -773,13 +762,12 @@ export default function JobDetailsPage() {
                         </div>
 
 
+                        <div className="card">
+                            <h4 className="subHeader">
+                                <Clock size={18} className="blueIcon" /> Assessment Process
+                            </h4>
 
-                        {(mcqCount > 0 || challengeCount > 0) && (
-                            <div className="card">
-                                <h4 className="subHeader">
-                                    <Clock size={18} className="blueIcon" /> Assessment Process
-                                </h4>
-
+                            {hasAssessment ? (
                                 <div className="kv">
                                     <div className="kvRow">
                                         <span className="kvKey">Duration</span>
@@ -796,9 +784,16 @@ export default function JobDetailsPage() {
                                         <span className="kvVal">{assessmentDeadline}</span>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                        z
+                            ) : (
+                                <div className="kv">
+                                    <div className="kvRow">
+                                        <span className="kvKey">Status</span>
+                                        <span className="kvVal">No assessment</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                       
 
                         <div className="card">
                             <SectionTitle>Q&A with the Recruiter</SectionTitle>
