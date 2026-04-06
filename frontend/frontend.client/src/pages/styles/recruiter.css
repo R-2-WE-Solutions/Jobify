@@ -146,6 +146,72 @@
     font-size: 16px;
 }
 
+/* DARK MODE */
+
+.dark .recruiter-interviews-page {
+    background: transparent;
+}
+
+.dark .recruiter-interviews-title {
+    color: #f8fafc;
+}
+
+.dark .recruiter-interviews-subtitle {
+    color: #94a3b8;
+}
+
+.dark .recruiter-interview-card {
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
+    .dark .recruiter-interview-card:hover {
+        border-color: rgba(96, 165, 250, 0.35);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
+    }
+
+.dark .recruiter-interview-title {
+    color: #f8fafc;
+}
+
+.dark .recruiter-interview-date-badge {
+    background: rgba(37, 99, 235, 0.14);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    color: #93c5fd;
+}
+
+.dark .recruiter-interview-company {
+    color: #cbd5e1;
+}
+
+.dark .recruiter-interview-pill {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+}
+
+.dark .recruiter-interview-time {
+    color: #94a3b8;
+}
+
+.dark .recruiter-interview-link {
+    background: #3b82f6;
+    color: #ffffff;
+}
+
+    .dark .recruiter-interview-link:hover {
+        background: #2563eb;
+    }
+
+.dark .recruiter-interviews-empty,
+.dark .recruiter-interviews-loading {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.82);
+    color: #94a3b8;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
 @media (max-width: 768px) {
     .recruiter-interviews-page {
         padding: 20px;

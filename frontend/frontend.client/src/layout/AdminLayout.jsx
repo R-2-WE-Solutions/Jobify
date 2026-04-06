@@ -27,16 +27,16 @@ const navItems = [
 ];
 
 export default function AdminLayout() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const storedUser = JSON.parse(localStorage.getItem("jobify_user") || "{}");
-    const adminEmail = storedUser?.email || "admin@jobify.com";
+  const storedUser = JSON.parse(localStorage.getItem("jobify_user") || "{}");
+  const adminEmail = storedUser?.email || "admin@jobify.com";
 
-    const handleLogout = () => {
+  const handleLogout = () => {
     localStorage.removeItem("jobify_token");
     localStorage.removeItem("jobify_user");
     navigate("/login", { replace: true });
-    };
+  };
 
     return (
         <div style={{ display: "flex", minHeight: "100vh", backgroundColor: colors.pageBg }}>

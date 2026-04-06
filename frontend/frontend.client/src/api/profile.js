@@ -46,11 +46,11 @@ async function request(path, options = {}) {
 }
 
 export async function getProfile() {
-    return request("/api/Profile", { method: "GET" });
+    return request("/Profile", { method: "GET" });
 }
 
 export async function updateProfile(payload) {
-    await request("/api/Profile", {
+    await request("/Profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -5,6 +5,7 @@ using Jobify.Api.Services;
 using Jobify.Api.Services.SkillServices;
 using Jobify.Api.Swagger;
 using Jobify.Api.Services.Dashboard;
+using Jobify.Api.Services.Cv;
 
 
 // Authentication / Authorization
@@ -46,6 +47,10 @@ builder.Services.AddScoped<RecommendationService>();
 builder.Services.AddScoped<SkillService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<UniversityProofOcrService>();
+builder.Services.AddScoped<ICvReviewService, CvReviewService>();
+
+// notifications
+builder.Services.AddScoped<NotificationService>();
 
 builder.Services.AddHttpClient<MlSkillClient>(client =>
 {

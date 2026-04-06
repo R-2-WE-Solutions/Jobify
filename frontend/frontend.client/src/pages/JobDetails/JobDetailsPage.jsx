@@ -85,6 +85,45 @@ export default function JobDetailsPage() {
 
     const navigate = useNavigate();
 
+    const toggleSaved = async (opportunityId) => {
+        try {
+            const token = localStorage.getItem("jobify_token");
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            setSavingId(opportunityId);
+
+            const currentlySaved = savedItems.includes(opportunityId);
+
+            const res = await fetch(`${API_URL}/opportunities/${opportunityId}/save`, {
+                method: currentlySaved ? "DELETE" : "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                const t = await res.text().catch(() => "");
+                alert(t || "Failed to update saved opportunity.");
+                return;
+            }
+
+            if (currentlySaved) {
+                setSavedItems((prev) => prev.filter((x) => x !== opportunityId));
+            } else {
+                setSavedItems((prev) => [...prev, opportunityId]);
+            }
+
+        } catch (err) {
+            console.error("Failed to update saved opportunity:", err);
+            alert("Failed to update saved opportunity.");
+        } finally {
+            setSavingId(null);
+        }
+    };
+
     const handleApply = async () => {
         const token = localStorage.getItem("jobify_token");
         if (!token) {
@@ -107,6 +146,13 @@ export default function JobDetailsPage() {
             }
 
             const data = await res.json();
+
+            const hasAssessment =
+                data.hasAssessment ||
+                (data.assessmentMcqCount ?? 0) > 0 ||
+                (data.assessmentChallengeCount ?? 0) > 0;
+
+            // ALWAYS go to profile review first
             navigate(`/apply/${data.applicationId}/review`);
         } catch (e) {
             console.error(e);
@@ -116,6 +162,8 @@ export default function JobDetailsPage() {
 
 
     const [isSaved, setIsSaved] = useState(false);
+    const [savedItems, setSavedItems] = useState([]);
+    const [savingId, setSavingId] = useState(null);
 
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -142,6 +190,44 @@ export default function JobDetailsPage() {
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
 
+
+    useEffect(() => {
+        const numericId = Number(id);
+        setIsSaved(savedItems.includes(numericId) || savedItems.includes(id));
+    }, [savedItems, id]);
+
+
+
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const fetchSavedIds = async () => {
+            try {
+                const token = localStorage.getItem("jobify_token");
+                if (!token) return;
+
+                const res = await fetch(`${API_URL}/opportunities/saved/ids`, {
+                    signal: controller.signal,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) return;
+
+                const data = await res.json();
+                setSavedItems(Array.isArray(data) ? data : []);
+            } catch (err) {
+                if (err?.name !== "AbortError") {
+                    console.error("Failed to fetch saved ids:", err);
+                }
+            }
+        };
+
+        fetchSavedIds();
+        return () => controller.abort();
+    }, []);
 
 
     useEffect(() => {
@@ -191,6 +277,7 @@ export default function JobDetailsPage() {
         fetchDetails();
         return () => controller.abort();
     }, [id]);
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -405,23 +492,40 @@ export default function JobDetailsPage() {
     const deadlineText = job.deadlineUtc ? formatDeadline(job.deadlineUtc) : "—";
     const salaryText = formatMoneyRange(job.minPay, job.maxPay);
 
-    const assessment = job.assessment ?? null;
-    const assessmentType =
-        assessment && typeof assessment === "object"
-            ? assessment.type || "—"
-            : typeof assessment === "string"
-                ? assessment
-                : "—";
+    const assessment = job?.assessment ?? null;
 
-    const assessmentDuration =
-        assessment && typeof assessment === "object" && assessment.estimatedMinutes != null
-            ? `${assessment.estimatedMinutes} min`
-            : "—";
+    const mcqs = Array.isArray(assessment?.mcqs) ? assessment.mcqs : [];
+    const codingChallenges = Array.isArray(assessment?.codingChallenges)
+        ? assessment.codingChallenges
+        : [];
+
+    const mcqCount = mcqs.length;
+    const challengeCount = codingChallenges.length;
+
+    const hasAssessment = mcqCount > 0 || challengeCount > 0;
+
+    const timeLimitMinutes =
+        typeof assessment?.timeLimitMinutes === "number" && assessment.timeLimitMinutes > 0
+            ? assessment.timeLimitMinutes
+            : null;
+
+    const assessmentDuration = timeLimitMinutes ? `${timeLimitMinutes} min` : "—";
+
+    const assessmentType =
+        mcqCount > 0 && challengeCount > 0
+            ? "MCQ + Coding"
+            : mcqCount > 0
+                ? "MCQ"
+                : challengeCount > 0
+                    ? "Coding"
+                    : "No assessment";
 
     const assessmentDeadline = deadlineText;
 
     const requiredSkills = job?.skillsRequired || job?.skills || [];
     const preferredSkills = job?.preferredSkills || [];
+
+
 
 
     return (
@@ -488,10 +592,13 @@ export default function JobDetailsPage() {
                             <div className="heroActions">
                                 <button
                                     className={`btnOutline ${isSaved ? "btnOutlineSaved" : ""}`}
-                                    onClick={() => setIsSaved((s) => !s)}
+                                    onClick={() => toggleSaved(job.id)}
+                                    disabled={savingId === job.id}
                                 >
                                     <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
-                                    <span className="hideOnMobile">{isSaved ? "Saved" : "Save"}</span>
+                                    <span className="hideOnMobile">
+                                        {savingId === job.id ? "Saving..." : isSaved ? "Saved" : "Save"}
+                                    </span>
                                 </button>
 
                                 <button className="btnOutline" onClick={handleShare}>
@@ -600,7 +707,13 @@ export default function JobDetailsPage() {
                                 </div>
                             )}
 
-                            {embedUrl ? (
+                            {isRemote ? (
+                                <div className="remoteMapPlaceholder">
+                                    <Globe size={40} />
+                                    <h4>Remote Opportunity</h4>
+                                    <p>This position can be performed from anywhere.</p>
+                                </div>
+                            ) : embedUrl ? (
                                 <iframe
                                     className="mapFrame"
                                     src={embedUrl}
@@ -609,7 +722,7 @@ export default function JobDetailsPage() {
                                     title="Map"
                                 />
                             ) : (
-                                <div className="mapPlaceholder">—</div>
+                                <div className="mapPlaceholder">No location provided</div>
                             )}
 
                             <div className="mapChip">{isRemote ? "Remote" : job.location || "—"}</div>
@@ -648,58 +761,39 @@ export default function JobDetailsPage() {
 
                         </div>
 
-                        <div className="card">
-                            <h4 className="subHeader">Job Insights</h4>
-
-                            <div className="insights">
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Users size={16} /> Applicants
-                                    </span>
-                                    <span className="insightVal">—</span>
-                                </div>
-
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Clock size={16} /> Avg. Response
-                                    </span>
-                                    <span className="insightVal">—</span>
-                                </div>
-
-                                <div className="insightRow">
-                                    <span className="insightLeft">
-                                        <Briefcase size={16} /> Experience
-                                    </span>
-                                    <span className="insightVal">{job.level}</span>
-                                </div>
-                            </div>
-                        </div>
 
                         <div className="card">
                             <h4 className="subHeader">
                                 <Clock size={18} className="blueIcon" /> Assessment Process
                             </h4>
 
-                            <div className="kv">
-                                <div className="kvRow">
-                                    <span className="kvKey">Duration</span>
-                                    <span className="kvVal">{assessmentDuration}</span>
-                                </div>
-                                <div className="kvRow">
-                                    <span className="kvKey">Type</span>
-                                    <span className="kvVal">{assessmentType}</span>
-                                </div>
-                                <div className="kvRow">
-                                    <span className="kvKey">Deadline</span>
-                                    <span className="kvVal">{assessmentDeadline}</span>
-                                </div>
+                            {hasAssessment ? (
+                                <div className="kv">
+                                    <div className="kvRow">
+                                        <span className="kvKey">Duration</span>
+                                        <span className="kvVal">{assessmentDuration}</span>
+                                    </div>
 
-                                <div className="progressBar">
-                                    <div className="progressFill" style={{ width: "33%" }} />
+                                    <div className="kvRow">
+                                        <span className="kvKey">Type</span>
+                                        <span className="kvVal">{assessmentType}</span>
+                                    </div>
+
+                                    <div className="kvRow">
+                                        <span className="kvKey">Deadline</span>
+                                        <span className="kvVal">{assessmentDeadline}</span>
+                                    </div>
                                 </div>
-                                <p className="mutedSmall">Step 1 of 3 in application process</p>
-                            </div>
+                            ) : (
+                                <div className="kv">
+                                    <div className="kvRow">
+                                        <span className="kvKey">Status</span>
+                                        <span className="kvVal">No assessment</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
+                       
 
                         <div className="card">
                             <SectionTitle>Q&A with the Recruiter</SectionTitle>
@@ -853,14 +947,18 @@ export default function JobDetailsPage() {
                                             <Building2 size={22} strokeWidth={1.8} />
                                         </div>
                                         <button
-                                            className="bookmarkBtn"
-                                            title="Save"
+                                            className={`bookmarkBtn ${savedItems.includes(s.id) ? "isSaved" : ""}`}
+                                            title={savedItems.includes(s.id) ? "Unsave" : "Save"}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-
+                                                toggleSaved(s.id);
                                             }}
+                                            disabled={savingId === s.id}
                                         >
-                                            <Bookmark size={20} />
+                                            <Bookmark
+                                                size={20}
+                                                fill={savedItems.includes(s.id) ? "currentColor" : "none"}
+                                            />
                                         </button>
                                     </div>
 

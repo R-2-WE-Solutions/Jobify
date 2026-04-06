@@ -17,6 +17,8 @@ using Jobify.Api.Data;
 using Jobify.Api.Models;
 
 using Microsoft.AspNetCore.Authorization;
+using System.Linq;
+using System.ComponentModel.DataAnnotations;
 
 namespace Jobify.Api.Controllers;
 
@@ -31,6 +33,7 @@ public class AuthController : ControllerBase
     private readonly JwtTokenService _jwt;
     private readonly IConfiguration _config;
     private readonly AppDbContext _db;
+    private readonly NotificationService _notificationService;
 
     private static readonly Dictionary<string, (string Email, DateTime ExpiresAtUtc)> _oauthTemp = new();
 
@@ -40,7 +43,8 @@ public class AuthController : ControllerBase
         RoleManager<IdentityRole> roleManager,
         JwtTokenService jwt,
         IConfiguration config,
-        AppDbContext db)
+        AppDbContext db,
+        NotificationService notificationService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -48,6 +52,7 @@ public class AuthController : ControllerBase
         _jwt = jwt;
         _config = config;
         _db = db;
+        _notificationService = notificationService;
     }
 
     [HttpPost("register")]
@@ -92,6 +97,7 @@ public class AuthController : ControllerBase
 
         await EnsureRoleExists(role);
         await _userManager.AddToRoleAsync(user, role);
+        await CreateWelcomeNotificationAsync(user, role);
 
         if (role == "Recruiter")
         {
@@ -260,6 +266,49 @@ public class AuthController : ControllerBase
         });
     }
 
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        if (request == null)
+            return BadRequest(new { message = "Request body is required." });
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
+            string.IsNullOrWhiteSpace(request.NewPassword) ||
+            string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
+        {
+            return BadRequest(new { message = "Current password, new password, and confirm password are required." });
+        }
+
+        if (request.NewPassword != request.ConfirmNewPassword)
+            return BadRequest(new { message = "New password and confirmation do not match." });
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { message = "User not authenticated." });
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return NotFound(new { message = "User not found." });
+
+        var result = await _userManager.ChangePasswordAsync(
+            user,
+            request.CurrentPassword,
+            request.NewPassword
+        );
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message = "Password change failed.",
+                errors = result.Errors.Select(e => e.Description)
+            });
+        }
+
+        return Ok(new { message = "Password changed successfully." });
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/pending-recruiters")]
     public async Task<IActionResult> GetPendingRecruiters()
@@ -376,8 +425,6 @@ public class AuthController : ControllerBase
         }
     }
 
-
-    // Revoke Recruiters
     [Authorize(Roles = "Admin")]
     [HttpPost("admin/recruiters/{userId}/revoke")]
     public async Task<IActionResult> RevokeRecruiter(string userId)
@@ -388,11 +435,9 @@ public class AuthController : ControllerBase
         if (prof == null)
             return NotFound("Recruiter profile not found.");
 
-        // Only allow revoke if currently verified
         if (prof.VerificationStatus != RecruiterVerificationStatus.Verified)
             return BadRequest("Only verified recruiters can be revoked.");
 
-        // Update status
         prof.VerificationStatus = RecruiterVerificationStatus.Rejected;
         prof.Notes = "Access revoked by admin.";
         prof.VerifiedAtUtc = null;
@@ -508,6 +553,7 @@ public class AuthController : ControllerBase
             var role = "Student";
             await EnsureRoleExists(role);
             await _userManager.AddToRoleAsync(user, role);
+            await CreateWelcomeNotificationAsync(user, role);
         }
 
         var code = Guid.NewGuid().ToString("N");
@@ -558,6 +604,24 @@ public class AuthController : ControllerBase
     {
         if (!await _roleManager.RoleExistsAsync(role))
             await _roleManager.CreateAsync(new IdentityRole(role));
+    }
+
+    private async Task CreateWelcomeNotificationAsync(IdentityUser user, string role)
+    {
+        var message = role == "Recruiter"
+            ? "Welcome to Jobify. Create your first opportunity to start receiving applications."
+            : "Welcome to Jobify. Complete your profile and upload your CV to get better opportunity matches.";
+
+        await _notificationService.CreateAsync(new Notification
+        {
+            UserId = user.Id,
+            Title = "Welcome to Jobify!",
+            Message = message,
+            Type = "System",
+            IsRead = false,
+            IsArchived = false,
+            CreatedAtUtc = DateTime.UtcNow
+        });
     }
 
     private async Task SendRecruiterConfirmEmail(IdentityUser user)
@@ -848,6 +912,7 @@ public class AuthController : ControllerBase
 
     public record ForgotPasswordRequest(string Email);
     public record ResetPasswordRequest(string Email, string Token, string NewPassword);
+    public record ChangePasswordRequest(string CurrentPassword, string NewPassword, string ConfirmNewPassword);
 
     public record ResendConfirmationRequest(string Email);
     public record RejectRecruiterRequest(string? Reason);

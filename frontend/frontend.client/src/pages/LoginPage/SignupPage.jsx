@@ -100,17 +100,15 @@ export default function SignupPage() {
 
     // ✅ OAuth redirect helpers
     const loginWithGoogle = () => {
-        window.location.href = `${API_URL}/api/Auth/external/Google`;
+        window.location.href = `${API_URL}/Auth/external/Google`;
     };
 
     const loginWithGitHub = () => {
-        window.location.href = `${API_URL}/api/Auth/external/GitHub`;
+        window.location.href = `${API_URL}/Auth/external/GitHub`;
     };
 
-    /** Theme state (local UI only) */
-    const { darkMode, setDarkMode } = useTheme();
-
-    const toggleDarkMode = () => setDarkMode(d => !d);
+    /** Theme state (local UI only) //global now */
+    const { darkMode, toggleTheme } = useTheme();
 
     /** Role selection controls which fields are shown and validated */
     const [userRole, setUserRole] = useState("candidate");
@@ -293,7 +291,7 @@ export default function SignupPage() {
         try {
             setIsLoading(true);
 
-            const res = await fetch(`${API_URL}/api/Auth/register`, {
+            const res = await fetch(`${API_URL}/Auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -446,7 +444,7 @@ export default function SignupPage() {
                             <div className="lp-darktoggle-desktop">
                                 <button
                                     className="lp-iconbtn"
-                                    onClick={toggleDarkMode}
+                                    onClick={toggleTheme}
                                     type="button"
                                     aria-label="Toggle theme"
                                 >

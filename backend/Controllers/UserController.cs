@@ -1,4 +1,4 @@
-﻿using Jobify.Api.Data;
+using Jobify.Api.Data;
 using Jobify.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,28 +15,24 @@ public class UsersController : ControllerBase
     private readonly AppDbContext _context;
 
     public UsersController(AppDbContext context, UserManager<IdentityUser> userManager)
-    {   
+    {
         _context = context;
         _userManager = userManager;
     }
 
     // GET: /api/users
-    // Returns a list of users with basic identity info + roles.
     [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetUsers()
     {
-        // Fetch users from Identity store (ordered by email for consistent output)
         var users = await _userManager.Users
             .OrderBy(u => u.Email)
             .ToListAsync();
 
-        // Map IdentityUser -> UserDto to avoid exposing sensitive/internal Identity fields
         var result = new List<UserDto>();
 
         foreach (var u in users)
         {
-            // Retrieve roles for each user (Identity stores roles separately)
             var roles = await _userManager.GetRolesAsync(u);
 
             result.Add(new UserDto(
@@ -51,21 +47,20 @@ public class UsersController : ControllerBase
     }
 
     // GET : /api/users/by-role/{role}
-    // Retures users based on their role (student/recruiter)
     [Authorize(Roles = "Admin")]
     [HttpGet("by-role/{role}")]
     public async Task<IActionResult> GetUsersByRole(string role)
     {
-        // use AppDbContext instead of IdentityUser
         var context = HttpContext.RequestServices.GetRequiredService<AppDbContext>();
 
-        if(role.ToLower() == "student") {
+        if (role.ToLower() == "student")
+        {
             var students = await (
                 from u in context.Users
                 join ur in context.UserRoles on u.Id equals ur.UserId
                 join r in context.Roles on ur.RoleId equals r.Id
-                join p in context.StudentProfiles on u.Email equals p.Email
-                where r.Name == role
+                join p in context.StudentProfiles on u.Id equals p.UserId
+                where r.Name != null && r.Name.ToLower() == role.ToLower()
                 select new StudentAdminDto
                 {
                     Id = p.UserId,
@@ -78,13 +73,14 @@ public class UsersController : ControllerBase
 
             return Ok(students);
         }
-        else if (role.ToLower() == "recruiter") {
+        else if (role.ToLower() == "recruiter")
+        {
             var recruiters = await (
                 from u in context.Users
                 join ur in context.UserRoles on u.Id equals ur.UserId
                 join r in context.Roles on ur.RoleId equals r.Id
-                join p in context.RecruiterProfiles on u.Email equals p.Email
-                where r.Name == role
+                join p in context.RecruiterProfiles on u.Id equals p.UserId
+                where r.Name != null && r.Name.ToLower() == role.ToLower()
                 select new RecruiterAdminDto
                 {
                     Id = p.UserId,
@@ -102,24 +98,16 @@ public class UsersController : ControllerBase
         return BadRequest("Invalid Role!");
     }
 
-
     // GET: /api/users/{id}
-    // Returns one user's basic identity info + roles by userId.
-    //
-    // Notes:
-    // - Suitable for user detail pages / admin views.
     [Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(string id)
     {
-        // Lookup user by Identity primary key
         var user = await _userManager.FindByIdAsync(id);
         if (user == null) return NotFound("User not found.");
 
-        // Fetch roles assigned to this user
         var roles = await _userManager.GetRolesAsync(user);
 
-        // Return a safe DTO (no password hashes or internal fields)
         return Ok(new UserDto(
             Id: user.Id,
             Email: user.Email ?? "",
@@ -128,21 +116,15 @@ public class UsersController : ControllerBase
         ));
     }
 
-    //DELETE: /api/users/{id}
-    // Deletes a user and related data (RecruiterProfile if exists)
-    //
-    // Security: Admin only
+    // DELETE: /api/users/{id}
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {
-        // Find user
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
             return NotFound("User not found.");
 
-        // If user is a recruiter, delete recruiter profile first
-        // (prevents FK issues + keeps DB clean)
         var recruiterProfile = await HttpContext.RequestServices
             .GetRequiredService<AppDbContext>()
             .RecruiterProfiles
@@ -160,7 +142,6 @@ public class UsersController : ControllerBase
                 .SaveChangesAsync();
         }
 
-        // Delete Identity user
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
             return BadRequest(result.Errors.Select(e => e.Description));
@@ -168,8 +149,6 @@ public class UsersController : ControllerBase
         return Ok(new { message = "User deleted successfully." });
     }
 
-
-    // Verify Student
     [Authorize(Roles = "Admin")]
     [HttpPut("admin/students/{id}/verify")]
     public async Task<IActionResult> VerifyStudent(string id)
@@ -183,8 +162,6 @@ public class UsersController : ControllerBase
         return Ok(new { message = "Student verified" });
     }
 
-
-    // Delete Student
     [Authorize(Roles = "Admin")]
     [HttpDelete("admin/students/{id}")]
     public async Task<IActionResult> DeleteStudent(string id)
@@ -197,65 +174,58 @@ public class UsersController : ControllerBase
         return Ok(new { message = "User deleted" });
     }
 
-
     // Notify Student
     [Authorize(Roles = "Admin")]
     [HttpPost("admin/students/{id}/notify")]
     public async Task<IActionResult> NotifyStudent(string id, [FromBody] NotifyRequest request)
     {
-        // Check if user exists
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
             return NotFound("User not found.");
 
-        // Validate input
         if (string.IsNullOrWhiteSpace(request.Message))
             return BadRequest("Message is required.");
 
-        // Create notification
         var notification = new Notification
         {
             UserId = id,
+            Title = string.IsNullOrWhiteSpace(request.Title) ? "Notification" : request.Title,
             Message = request.Message,
             Type = "warning",
             IsRead = false,
-            CreatedAt = DateTime.UtcNow
+            IsArchived = false,
+            CreatedAtUtc = DateTime.UtcNow
         };
 
-        // Save to DB
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
-        // Return response
         return Ok(new { message = "Notification sent successfully." });
     }
-
 
     // Notify Recruiter
     [Authorize(Roles = "Admin")]
     [HttpPost("admin/recruiters/{id}/notify")]
     public async Task<IActionResult> NotifyRecruiter(string id, [FromBody] NotifyRequest request)
     {
-        // Check if user exists
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
             return NotFound("User not found.");
 
-        // Validate input
         if (string.IsNullOrWhiteSpace(request.Message))
             return BadRequest("Message is required.");
 
-        // Create notification
         var notification = new Notification
         {
             UserId = id,
+            Title = string.IsNullOrWhiteSpace(request.Title) ? "Notification" : request.Title,
             Message = request.Message,
             Type = "warning",
             IsRead = false,
-            CreatedAt = DateTime.UtcNow
+            IsArchived = false,
+            CreatedAtUtc = DateTime.UtcNow
         };
 
-        // Save to DB
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
@@ -437,38 +407,41 @@ public class UsersController : ControllerBase
     {
         var profiles = await _context.RecruiterProfiles.ToListAsync();
 
-        // group recruiters by company name (normalized)
         var companies = profiles
             .GroupBy(p => p.CompanyName.Trim().ToLower())
             .Select(group =>
             {
-                // first recruiter from the company recruiters grouped
                 var first = group.First();
 
                 return new
                 {
                     Id = group.Key,
                     Name = first.CompanyName,
-                    Email = first.Email,
+
+                    Email = _context.Users
+                        .Where(u => u.Id == first.UserId)
+                        .Select(u => u.Email)
+                        .FirstOrDefault() ?? first.Email,
+
                     Website = first.WebsiteUrl,
                     Linkedin = first.LinkedinUrl,
                     Instagram = first.InstagramUrl,
 
-                    // number of recruiters grouped
                     RecruiterCount = group.Count(),
 
-                    // a company is verified if at least one of its recruiters is verified
                     Status = group.Any(p => p.VerificationStatus == RecruiterVerificationStatus.Verified)
                         ? "Verified"
                         : group.Any(p => p.VerificationStatus == RecruiterVerificationStatus.Pending)
                             ? "Pending"
                             : "Unverified",
 
-                    // the list of recruiters of the company
                     Recruiters = group.Select(p => new
                     {
                         Id = p.UserId,
-                        Email = p.Email,
+                        Email = _context.Users
+                            .Where(u => u.Id == p.UserId)
+                            .Select(u => u.Email)
+                            .FirstOrDefault() ?? p.Email,
                         JoinedAt = p.CreatedAtUtc,
                         Status = p.VerificationStatus.ToString()
                     })
@@ -528,7 +501,6 @@ public class UsersController : ControllerBase
     // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
 
-    
     public class StudentAdminDto
     {
         public string? Id { get; set; }
@@ -536,7 +508,7 @@ public class UsersController : ControllerBase
         public string? FullName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
-    };
+    }
 
     public class RecruiterAdminDto
     {
@@ -547,7 +519,6 @@ public class UsersController : ControllerBase
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
     }
-
 
     public class NotifyRequest
     {

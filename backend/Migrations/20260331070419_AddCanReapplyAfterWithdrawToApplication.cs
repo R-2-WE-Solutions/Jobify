@@ -5,24 +5,25 @@
 namespace Jobify.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIsVerifiedToStudentProfile : Migration
+    public partial class AddCanReapplyAfterWithdrawToApplication : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(
-                name: "isVerified",
-                table: "StudentProfiles",
+                name: "CanReapplyAfterWithdraw",
+                table: "Applications",
                 type: "bit",
-                nullable: true);
+                nullable: false,
+                defaultValue: false);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "isVerified",
-                table: "StudentProfiles");
+                name: "CanReapplyAfterWithdraw",
+                table: "Applications");
         }
     }
 }

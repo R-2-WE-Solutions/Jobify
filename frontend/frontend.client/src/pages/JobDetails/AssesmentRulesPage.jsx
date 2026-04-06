@@ -47,7 +47,7 @@ export default function AssessmentRulesPage() {
         setRulesDataError("");
 
         // Swagger shows /api/Applications/{applicationId}
-        const res = await fetch(`${API_URL}/api/Application/${applicationId}`, {
+        const res = await fetch(`${API_URL}/Application/${applicationId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -57,6 +57,11 @@ export default function AssessmentRulesPage() {
         }
 
         const data = await res.json();
+
+        if (!data?.hasAssessment || !data?.assessment) {
+            navigate(`/application/${applicationId}/result`);
+            return;
+        }
 
         // your backend likely returns:
         // { hasAssessment, attempt: { ... }, assessment: { questions }, ... }
@@ -148,7 +153,7 @@ export default function AssessmentRulesPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_URL}/api/Application/${applicationId}/assessment/start`, {
+      const res = await fetch(`${API_URL}/Application/${applicationId}/assessment/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,0 +1,240 @@
+.al-footer {
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+    padding: 12px 20px;
+    background: var(--surface);
+}
+
+.al-footerInner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.al-footerLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.al-footerBrand {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.al-footerText {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.al-footerRight {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.footer-icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-link {
+    position: relative;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 2px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 0;
+    height: 2px;
+    background: var(--primary, #2563eb);
+    transition: width 0.22s ease;
+}
+
+.footer-link:hover {
+    color: var(--primary, #2563eb);
+    transform: translateY(-1px);
+}
+
+.footer-link:hover::after {
+    width: 100%;
+}
+
+.footer-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    text-decoration: none;
+    background: transparent;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.footer-icon:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary, #2563eb);
+    color: var(--primary, #2563eb);
+    background: rgba(37, 99, 235, 0.08);
+}
+
+.footer-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.al-footerBottom {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.footer-modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 2000;
+}
+
+.footer-modal {
+    width: min(620px, 100%);
+    background: var(--card, #ffffff); /* FIX */
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 24px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+    padding: 24px 24px 20px;
+}
+
+.footer-modalHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.footer-modalTitle {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text);
+    margin: 0;
+}
+
+.footer-modalClose {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    border: 1px solid var(--border, #dbe3ef);
+    background: var(--surface-2, #f8fafc);
+    color: var(--text, #0f172a);
+    font-size: 24px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.footer-modalClose:hover {
+    transform: scale(1.04);
+    background: #eef4ff;
+    border-color: #93c5fd;
+}
+
+.footer-modalBody {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text);
+}
+
+.footer-modalBody p {
+    margin: 0 0 16px;
+}
+
+.footer-modalBody p:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+    .al-footerInner {
+        gap: 14px;
+    }
+
+    .al-footerText {
+        white-space: normal;
+    }
+}
+
+@media (max-width: 768px) {
+    .al-footer {
+        padding: 14px 16px;
+    }
+
+    .al-footerInner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .al-footerLeft {
+        flex-wrap: wrap;
+    }
+
+    .al-footerRight {
+        gap: 14px;
+    }
+
+    .al-footerBottom {
+        white-space: normal;
+    }
+}
+
+@media (max-width: 640px) {
+    .footer-modal {
+        padding: 20px 18px 18px;
+        border-radius: 18px;
+    }
+
+    .footer-modalTitle {
+        font-size: 24px;
+    }
+
+    .footer-modalBody {
+        font-size: 15px;
+        line-height: 1.7;
+    }
+}

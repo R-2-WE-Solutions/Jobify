@@ -36,6 +36,34 @@ export default function RecruiterInterviewsPage() {
         );
     }
 
+    function getCandidateName(interview) {
+        const safeUserName =
+            interview.userName &&
+                interview.userName.trim().toLowerCase() !== "candidate"
+                ? interview.userName
+                : null;
+
+        const email =
+            interview.candidateEmail ||
+            interview.studentEmail ||
+            interview.email ||
+            interview.userEmail ||
+            null;
+
+        return (
+            interview.candidateName ||
+            interview.studentName ||
+            interview.applicantName ||
+            interview.fullName ||
+            interview.name ||
+            interview.student?.fullName ||
+            interview.candidate?.fullName ||
+            interview.user?.fullName ||
+            safeUserName ||
+            (email ? email.split("@")[0] : "Unknown")
+        );
+    }
+
     return (
         <div className="recruiter-interviews-page">
             <div className="recruiter-interviews-header">
@@ -69,7 +97,7 @@ export default function RecruiterInterviewsPage() {
 
                             <div className="recruiter-interview-meta">
                                 <span className="recruiter-interview-pill">
-                                    Candidate: {i.candidateName || "Unknown"}
+                                    Candidate: {getCandidateName(i)}
                                 </span>
 
                                 <span className="recruiter-interview-pill">

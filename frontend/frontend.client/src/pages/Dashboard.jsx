@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCandidateDashboard } from "../services/dashboardService";
 import { api } from "../api/api";
+// import "../pages/styles/dashboard.css";
+import "./styles/dashboard.css";
 
 export default function Dashboard() {
     const [role, setRole] = useState(null);
@@ -47,10 +49,7 @@ function RecruiterDashboard() {
         interviews: 0,
         unansweredQa: 0,
     });
-
     const [upcomingInterviews, setUpcomingInterviews] = useState([]);
-    const [interviewPreview, setInterviewPreview] = useState([]);
-    const [showingSoonOnly, setShowingSoonOnly] = useState(false);
     const [unansweredQuestions, setUnansweredQuestions] = useState([]);
     const [dashboardLoading, setDashboardLoading] = useState(true);
 
@@ -150,18 +149,6 @@ function RecruiterDashboard() {
                     .filter((i) => new Date(i.scheduledAtUtc) > now)
                     .sort((a, b) => new Date(a.scheduledAtUtc) - new Date(b.scheduledAtUtc));
 
-                const soonLimit = new Date();
-                soonLimit.setDate(soonLimit.getDate() + 14);
-
-                const soonInterviews = allFutureInterviews.filter(
-                    (i) => new Date(i.scheduledAtUtc) <= soonLimit
-                );
-
-                const preview =
-                    soonInterviews.length > 0
-                        ? soonInterviews.slice(0, 3)
-                        : allFutureInterviews.slice(0, 3);
-
                 const activeListings = opportunities.filter((o) => !o.isClosed).length;
 
                 const totalApplications = opportunities.reduce(
@@ -170,8 +157,6 @@ function RecruiterDashboard() {
                 );
 
                 setUpcomingInterviews(allFutureInterviews);
-                setInterviewPreview(preview);
-                setShowingSoonOnly(soonInterviews.length > 0);
                 setUnansweredQuestions(pendingQuestions);
 
                 setRecruiterStats({
@@ -183,8 +168,6 @@ function RecruiterDashboard() {
             } catch (error) {
                 console.error("Failed to load recruiter dashboard data:", error);
                 setUpcomingInterviews([]);
-                setInterviewPreview([]);
-                setShowingSoonOnly(false);
                 setUnansweredQuestions([]);
                 setRecruiterStats({
                     activeListings: 0,
@@ -228,58 +211,48 @@ function RecruiterDashboard() {
         },
     ];
 
+    const sortedInterviews = [...upcomingInterviews].sort(
+        (a, b) => new Date(a.scheduledAtUtc) - new Date(b.scheduledAtUtc)
+    );
+
+    const soonestInterview = sortedInterviews[0];
+
     return (
-        <div style={{ padding: "24px", background: "#ffffff", minHeight: "100vh" }}>
-            <div
-                style={{
-                    background: "linear-gradient(135deg, #2563eb, #60a5fa)",
-                    color: "white",
-                    borderRadius: "20px",
-                    padding: "28px",
-                    marginBottom: "28px",
-                    boxShadow: "0 10px 20px rgba(0,0,0,0.08)",
-                }}
-            >
-                <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700" }}>
+        <div className="dashboard-page">
+            <div className="dashboard-hero">
+                <h1 className="dashboard-hero-title">
                     Welcome back, {companyName} 👋
                 </h1>
 
-                <p style={{ marginTop: "8px", marginBottom: "18px", opacity: 0.95 }}>
+                <p className="dashboard-hero-text">
                     Manage your opportunities, review candidates, and keep hiring activity organized from one place.
                 </p>
 
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                <div className="dashboard-actions">
                     <button
                         onClick={() => navigate("/organization")}
-                        style={primaryButtonStyle}
+                        className="btn-primary"
                     >
                         Go to Organization
                     </button>
 
                     <button
                         onClick={() => navigate("/organization/interviews")}
-                        style={secondaryButtonStyle}
+                        className="btn-secondary"
                     >
                         Interviews
                     </button>
 
                     <button
                         onClick={() => navigate("/organization/qanda")}
-                        style={secondaryButtonStyle}
+                        className="btn-secondary"
                     >
                         Q&A
                     </button>
                 </div>
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: "16px",
-                    marginBottom: "28px",
-                }}
-            >
+            <div className="dashboard-stats">
                 {stats.map((item) => (
                     <StatCard
                         key={item.title}
@@ -290,43 +263,22 @@ function RecruiterDashboard() {
                 ))}
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr",
-                    gap: "20px",
-                }}
-            >
-                <div style={panelStyle}>
-                    <h2 style={panelTitleStyle}>Recruiter Overview</h2>
+            <div className="dashboard-grid">
+                <div className="dashboard-panel">
+                    <h2 className="dashboard-panel-title">Recruiter Overview</h2>
 
-                    <div style={{ display: "grid", gap: "14px" }}>
+                    <div className="dashboard-stack-sm">
                         {quickActions.map((item) => (
-                            <div
-                                key={item.title}
-                                style={{
-                                    border: "1px solid #e5e7eb",
-                                    borderRadius: "14px",
-                                    padding: "18px",
-                                    background: "#fff",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontSize: "18px",
-                                        fontWeight: "700",
-                                        color: "#111827",
-                                        marginBottom: "8px",
-                                    }}
-                                >
+                            <div key={item.title} className="dashboard-item dashboard-item-static">
+                                <div className="dashboard-item-title">
                                     {item.title}
                                 </div>
 
-                                <div style={{ color: "#6b7280", marginBottom: "12px" }}>
+                                <div className="dashboard-item-text">
                                     {item.description}
                                 </div>
 
-                                <button onClick={item.onClick} style={primaryButtonStyle}>
+                                <button onClick={item.onClick} className="btn-primary">
                                     {item.button}
                                 </button>
                             </div>
@@ -334,94 +286,67 @@ function RecruiterDashboard() {
                     </div>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                    <div style={panelStyle}>
-                        <h2 style={panelTitleStyle}>
-                            {showingSoonOnly ? "Upcoming Interviews" : "Scheduled Interviews"}
-                        </h2>
-
+                <div className="dashboard-side-column">
+                    <div className="dashboard-panel">
+                        <h2 className="dashboard-panel-title">Upcoming Interview</h2>
                         {dashboardLoading ? (
                             <p style={{ color: "#666" }}>Loading interviews...</p>
-                        ) : interviewPreview.length === 0 ? (
-                            <p style={{ color: "#666" }}>No interviews scheduled yet.</p>
+                        ) : !soonestInterview ? (
+                            <p style={{ color: "#666" }}>No upcoming interviews.</p>
                         ) : (
-                            interviewPreview.map((interview) => (
-                                <div
-                                    key={interview.id}
-                                    style={modernCardStyle}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = "translateY(-3px)";
-                                        e.currentTarget.style.boxShadow = "0 12px 24px rgba(15, 23, 42, 0.08)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = "translateY(0)";
-                                        e.currentTarget.style.boxShadow = "0 4px 14px rgba(15, 23, 42, 0.04)";
-                                    }}
-                                >
-                                    <h3 style={jobTitleStyle}>
-                                        {interview.opportunityTitle}
-                                    </h3>
+                            <div key={soonestInterview.id} className="dashboard-item">
+                                <h3 className="dashboard-item-title">
+                                    {soonestInterview.opportunityTitle}
+                                </h3>
 
-                                    <div style={{ ...metaTextStyle, marginTop: "8px", fontWeight: "600", color: "#334155" }}>
-                                        {interview.companyName}
-                                    </div>
-
-                                    <div style={badgeRowStyle}>
-                                        <span style={softBadgeStyle}>
-                                            Candidate: {interview.candidateName}
-                                        </span>
-                                        <span style={softBadgeStyle}>
-                                            {new Date(interview.scheduledAtUtc).toLocaleString()}
-                                        </span>
-                                    </div>
-
-                                    {interview.meetingLink && (
-                                        <a
-                                            href={interview.meetingLink}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            style={actionButtonStyle}
-                                        >
-                                            Join Meeting
-                                        </a>
-                                    )}
+                                <div className="dashboard-meta dashboard-meta-strong">
+                                    {soonestInterview.companyName}
                                 </div>
-                            ))
+
+                                <div className="dashboard-badge-row">
+                                    <span className="dashboard-badge">
+                                        Candidate: {soonestInterview.candidateName}
+                                    </span>
+                                    <span className="dashboard-badge">
+                                        {new Date(soonestInterview.scheduledAtUtc).toLocaleString()}
+                                    </span>
+                                </div>
+
+                                {soonestInterview.meetingLink && (
+                                    <a
+                                        href={soonestInterview.meetingLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="dashboard-link-button"
+                                    >
+                                        Join Meeting
+                                    </a>
+                                )}
+                            </div>
                         )}
                     </div>
 
-                    <div style={panelStyle}>
-                        <h2 style={panelTitleStyle}>Candidate Q&A</h2>
+                    <div className="dashboard-panel">
+                        <h2 className="dashboard-panel-title">Unanswered Questions</h2>
 
                         {dashboardLoading ? (
                             <p style={{ color: "#666" }}>Loading questions...</p>
                         ) : unansweredQuestions.length === 0 ? (
-                            <p style={{ color: "#666" }}>No candidate questions yet.</p>
+                            <p style={{ color: "#666" }}>No unanswered questions right now.</p>
                         ) : (
                             unansweredQuestions.slice(0, 3).map((q) => (
-                                <div
-                                    key={q.id}
-                                    style={modernCardStyle}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = "translateY(-3px)";
-                                        e.currentTarget.style.boxShadow = "0 12px 24px rgba(15, 23, 42, 0.08)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = "translateY(0)";
-                                        e.currentTarget.style.boxShadow = "0 4px 14px rgba(15, 23, 42, 0.04)";
-                                    }}
-                                >
-                                    <h3 style={jobTitleStyle}>
+                                <div key={q.id} className="dashboard-item">
+                                    <h3 className="dashboard-item-title">
                                         {q.opportunityTitle}
                                     </h3>
 
-                                    <div style={badgeRowStyle}>
-                                        <span style={softBadgeStyle}>
+                                    <div className="dashboard-badge-row">
+                                        <span className="dashboard-badge">
                                             {q.studentName ? `From: ${q.studentName}` : "Candidate question"}
                                         </span>
                                     </div>
 
-                                    <div style={subtleQuestionStyle}>
+                                    <div className="dashboard-question-box">
                                         {q.question}
                                     </div>
                                 </div>
@@ -504,60 +429,34 @@ function CandidateDashboard() {
         (job) => (job.matchScore ?? 0) >= MATCH_THRESHOLD
     );
 
+    const now = new Date();
+
     const upcomingDeadlines = recommendedOpportunities
-        .filter((job) => job.deadlineUtc)
+        .filter((job) => job.deadlineUtc && new Date(job.deadlineUtc) >= now)
         .sort((a, b) => new Date(a.deadlineUtc) - new Date(b.deadlineUtc))
         .slice(0, 3);
 
     return (
-        <div style={{ padding: "24px", background: "#ffffff", minHeight: "100vh" }}>
-            <div
-                style={{
-                    background: "linear-gradient(135deg, #2563eb, #60a5fa)",
-                    color: "white",
-                    borderRadius: "20px",
-                    padding: "28px",
-                    marginBottom: "28px",
-                    boxShadow: "0 10px 20px rgba(0,0,0,0.08)"
-                }}
-            >
-                <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700" }}>
+        <div className="dashboard-page">
+            <div className="dashboard-hero">
+                <h1 className="dashboard-hero-title">
                     Welcome back, {data?.fullName || "Student"} 👋
                 </h1>
 
-                <p style={{ marginTop: "8px", marginBottom: "16px", opacity: 0.95 }}>
+                <p className="dashboard-hero-text">
                     Your profile is {data?.profileCompletionPercentage ?? 0}% complete.
                     Complete your profile to unlock better job matches.
                 </p>
 
-                <div
-                    style={{
-                        width: "100%",
-                        height: "10px",
-                        background: "rgba(255,255,255,0.3)",
-                        borderRadius: "999px",
-                        overflow: "hidden"
-                    }}
-                >
+                <div className="dashboard-progress">
                     <div
-                        style={{
-                            width: `${data?.profileCompletionPercentage ?? 0}%`,
-                            height: "100%",
-                            background: "white",
-                            borderRadius: "999px"
-                        }}
+                        className="dashboard-progress-bar"
+                        style={{ width: `${data?.profileCompletionPercentage ?? 0}%` }}
                     />
                 </div>
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: "16px",
-                    marginBottom: "28px"
-                }}
-            >
+            <div className="dashboard-stats">
                 <StatCard
                     title="Profile Completion"
                     value={`${data?.profileCompletionPercentage ?? 0}%`}
@@ -568,16 +467,9 @@ function CandidateDashboard() {
                 <StatCard title="Matches Found" value={data?.matchesCount ?? 0} icon="⭐" />
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 2fr) minmax(320px, 1fr)",
-                    gap: "20px",
-                    alignItems: "start",
-                }}
-            >
-                <div style={panelStyle}>
-                    <h2 style={panelTitleStyle}>Recommended Opportunities</h2>
+            <div className="dashboard-grid">
+                <div className="dashboard-panel">
+                    <h2 className="dashboard-panel-title">Recommended Opportunities</h2>
 
                     {recommendedOpportunities.length === 0 ? (
                         <p style={{ color: "#666" }}>
@@ -591,8 +483,8 @@ function CandidateDashboard() {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                    <div style={panelStyle}>
-                        <h2 style={panelTitleStyle}>Saved Opportunities</h2>
+                    <div className="dashboard-panel">
+                        <h2 className="dashboard-panel-title">Saved Opportunities</h2>
 
                         {savedLoading ? (
                             <p style={{ color: "#666" }}>Loading saved opportunities...</p>
@@ -608,23 +500,14 @@ function CandidateDashboard() {
 
                         <button
                             onClick={() => navigate("/browse")}
-                            style={{
-                                marginTop: "12px",
-                                padding: "10px 14px",
-                                borderRadius: "10px",
-                                border: "none",
-                                background: "#2563eb",
-                                color: "white",
-                                fontWeight: "600",
-                                cursor: "pointer"
-                            }}
+                            className="btn-primary dashboard-mt-sm"
                         >
                             View All
                         </button>
                     </div>
 
-                    <div style={panelStyle}>
-                        <h2 style={panelTitleStyle}>Upcoming Deadlines</h2>
+                    <div className="dashboard-panel">
+                        <h2 className="dashboard-panel-title">Upcoming Deadlines</h2>
 
                         {upcomingDeadlines.length === 0 ? (
                             <p style={{ color: "#666" }}>No upcoming deadlines found.</p>
@@ -642,33 +525,14 @@ function CandidateDashboard() {
 
 function StatCard({ title, value, icon }) {
     return (
-        <div
-            style={{
-                background: "white",
-                borderRadius: "16px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                transition: "transform 0.15s ease, box-shadow 0.15s ease"
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,0,0,0.08)";
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.06)";
-            }}
-        >
-            <div style={{ fontSize: "28px" }}>{icon}</div>
+        <div className="stat-card">
+            <div className="stat-card-icon">{icon}</div>
 
             <div>
-                <div style={{ color: "#666", marginBottom: "6px", fontSize: "14px" }}>
+                <div className="stat-card-label">
                     {title}
                 </div>
-                <div style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>
+                <div className="stat-card-value">
                     {value}
                 </div>
             </div>
@@ -679,54 +543,30 @@ function StatCard({ title, value, icon }) {
 function OpportunityCard({ job, showScore }) {
     const rawScore = job?.matchScore ?? job?.matchPercentage ?? null;
 
-    const badgeBackground =
-        rawScore >= 80 ? "#16a34a" : rawScore >= 60 ? "#2563eb" : "#6b7280";
+    const badgeClass =
+        rawScore >= 80
+            ? "match-badge match-badge-green"
+            : rawScore >= 60
+                ? "match-badge match-badge-blue"
+                : "match-badge match-badge-gray";
 
     return (
-        <div
-            style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: "14px",
-                padding: "16px",
-                marginBottom: "14px",
-                background: "#fff",
-                transition: "transform 0.15s ease, box-shadow 0.15s ease"
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-3px)";
-                e.currentTarget.style.boxShadow = "0 8px 18px rgba(0,0,0,0.06)";
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-            }}
-        >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                <div>
-                    <h3 style={{ margin: "0 0 6px 0", fontSize: "18px", color: "#111827" }}>
+        <div className="opportunity-card">
+            <div className="opportunity-card-top">
+                <div className="opportunity-card-main">
+                    <h3 className="opportunity-title">
                         {job.title}
                     </h3>
-                    <p style={{ margin: "0 0 4px 0", color: "#555", fontWeight: "500" }}>
+                    <p className="opportunity-company">
                         {job.companyName}
                     </p>
-                    <p style={{ margin: 0, color: "#777", fontSize: "14px" }}>
+                    <p className="opportunity-meta">
                         {job.location} {job.workMode ? `• ${job.workMode}` : ""}
                     </p>
                 </div>
 
                 {showScore && rawScore !== null && (
-                    <div
-                        style={{
-                            background: badgeBackground,
-                            color: "white",
-                            padding: "8px 12px",
-                            borderRadius: "999px",
-                            fontWeight: "bold",
-                            fontSize: "13px",
-                            height: "fit-content",
-                            whiteSpace: "nowrap"
-                        }}
-                    >
+                    <div className={badgeClass}>
                         {rawScore}% match
                     </div>
                 )}
@@ -739,130 +579,16 @@ function DeadlineCard({ job }) {
     const formattedDeadline = new Date(job.deadlineUtc).toLocaleDateString();
 
     return (
-        <div
-            style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: "14px",
-                padding: "16px",
-                marginBottom: "14px",
-                background: "#fff"
-            }}
-        >
-            <h3 style={{ margin: "0 0 6px 0", fontSize: "18px", color: "#111827" }}>
+        <div className="deadline-card">
+            <h3 className="opportunity-title">
                 {job.title}
             </h3>
-            <p style={{ margin: "0 0 4px 0", color: "#555", fontWeight: "500" }}>
+            <p className="opportunity-company">
                 {job.companyName}
             </p>
-            <p style={{ margin: 0, color: "#777", fontSize: "14px" }}>
+            <p className="opportunity-meta">
                 Closes on {formattedDeadline}
             </p>
         </div>
     );
 }
-
-const panelStyle = {
-    background: "#ffffff",
-    borderRadius: "20px",
-    padding: "22px",
-    border: "1px solid #eef2f7",
-    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
-};
-
-const panelTitleStyle = {
-    margin: 0,
-    marginBottom: "18px",
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "#0f172a",
-    letterSpacing: "-0.02em",
-};
-
-const modernCardStyle = {
-    border: "1px solid #e5e7eb",
-    borderRadius: "18px",
-    padding: "18px",
-    background: "#ffffff",
-    boxShadow: "0 4px 14px rgba(15, 23, 42, 0.04)",
-    transition: "all 0.18s ease",
-};
-
-const jobTitleStyle = {
-    margin: 0,
-    fontSize: "18px",
-    fontWeight: "800",
-    lineHeight: 1.25,
-    color: "#0f172a",
-    letterSpacing: "-0.02em",
-};
-
-const metaTextStyle = {
-    fontSize: "14px",
-    color: "#64748b",
-    lineHeight: 1.5,
-};
-
-const badgeRowStyle = {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
-    marginTop: "12px",
-};
-
-const softBadgeStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    color: "#334155",
-    fontSize: "13px",
-    fontWeight: "600",
-};
-
-const actionButtonStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: "14px",
-    padding: "10px 14px",
-    borderRadius: "12px",
-    background: "#eff6ff",
-    border: "1px solid #bfdbfe",
-    color: "#2563eb",
-    fontSize: "14px",
-    fontWeight: "700",
-    textDecoration: "none",
-};
-
-const subtleQuestionStyle = {
-    marginTop: "12px",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    color: "#1e293b",
-    fontSize: "14px",
-    lineHeight: 1.5,
-};
-
-const primaryButtonStyle = {
-    padding: "10px 14px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#2563eb",
-    color: "white",
-    fontWeight: "600",
-    cursor: "pointer"
-};
-
-const secondaryButtonStyle = {
-    padding: "10px 14px",
-    borderRadius: "10px",
-    border: "1px solid #d1d5db",
-    background: "white",
-    color: "#111827",
-    fontWeight: "600",
-    cursor: "pointer"
-};

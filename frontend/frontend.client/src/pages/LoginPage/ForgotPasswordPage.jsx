@@ -80,10 +80,8 @@ function FloatingIcons() {
 export default function ForgotPasswordPage() {
     const navigate = useNavigate();
 
-    /** UI theme state (local only) */
-    const { darkMode, setDarkMode } = useTheme();
-
-    const toggleDarkMode = () => setDarkMode(d => !d);
+    /** UI theme state (local only)// global now */
+   const { darkMode, toggleTheme } = useTheme();
 
     /** Form & request state */
     const [email, setEmail] = useState("");
@@ -141,7 +139,7 @@ export default function ForgotPasswordPage() {
         const API_BASE = import.meta.env.VITE_API_URL;
 
         try {
-            const res = await fetch(`${API_BASE}/api/Auth/forgot-password`, {
+            const res = await fetch(`${API_BASE}/Auth/forgot-password`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
@@ -248,7 +246,7 @@ export default function ForgotPasswordPage() {
                             <div className="lp-darktoggle-desktop">
                                 <button
                                     className="lp-iconbtn"
-                                    onClick={toggleDarkMode}
+                                    onClick={toggleTheme}
                                     type="button"
                                     aria-label="Toggle theme"
                                 >

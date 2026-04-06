@@ -5,25 +5,25 @@
 namespace Jobify.Migrations
 {
     /// <inheritdoc />
-    public partial class AddEmailToRecruiterProfile : Migration
+    public partial class AddIsArchivedToNotifications : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Email",
-                table: "RecruiterProfiles",
-                type: "nvarchar(max)",
+            migrationBuilder.AddColumn<bool>(
+                name: "IsArchived",
+                table: "Notifications",
+                type: "bit",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: false);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Email",
-                table: "RecruiterProfiles");
+                name: "IsArchived",
+                table: "Notifications");
         }
     }
 }

@@ -20,7 +20,6 @@ public enum ApplicationStatus
     Withdrawn = 11
 }
 
-
 public class Application
 {
     public int Id { get; set; }
@@ -45,6 +44,8 @@ public class Application
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public DateTime? WithdrawndAt { get; set; }
+
+    public bool CanReapplyAfterWithdraw { get; set; } = true;
 
     public string? Note { get; set; }
 

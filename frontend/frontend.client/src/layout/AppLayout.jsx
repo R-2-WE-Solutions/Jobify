@@ -1,299 +1,643 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-    Search,
-    Moon,
-    User,
-    LayoutGrid,
-    Sparkles,
-    Star,
-    UserCircle,
-    Building2,
+  Search,
+  Moon,
+  Sun,
+  User,
+  LayoutGrid,
+  Sparkles,
+  Star,
+  UserCircle,
+  Building2,
+  FileText,
+  Bell,
+  Github,
+  Mail,
 } from "lucide-react";
 import { api } from "../api/api";
+import { useTheme } from "./useTheme";
 import "../pages/styles/layout.css";
-import { FileText } from "lucide-react";
+import "../pages/styles/footer.css";
 
-export default function AppLayout() {
-    const navigate = useNavigate();
+const RECRUITER_SEARCH_OPTIONS = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    hint: "Overview metrics and updates",
+    keywords: "dashboard home overview",
+    path: "/dashboard",
+  },
+  {
+    id: "org-post",
+    label: "Posting - Post a Job",
+    hint: "Open posting form",
+    keywords: "organization posting post create job",
+    path: "/organization",
+    query: { tab: "post" },
+  },
+  {
+    id: "org-listings",
+    label: "Posting - My Listings",
+    hint: "View and manage listings",
+    keywords: "organization postings listings opportunities jobs",
+    path: "/organization",
+    query: { tab: "listings" },
+  },
+  {
+    id: "app-all",
+    label: "Applicants - All Stages",
+    hint: "All candidates",
+    keywords: "applicants candidates all stages",
+    path: "/organization/applicants",
+    query: { stage: "All" },
+  },
+  {
+    id: "app-pending",
+    label: "Applicants - Pending",
+    hint: "Candidates waiting review",
+    keywords: "applicants pending",
+    path: "/organization/applicants",
+    query: { stage: "Pending" },
+  },
+  {
+    id: "app-inreview",
+    label: "Applicants - In Review",
+    hint: "Candidates under review",
+    keywords: "applicants in review",
+    path: "/organization/applicants",
+    query: { stage: "InReview" },
+  },
+  {
+    id: "app-shortlisted",
+    label: "Applicants - Shortlisted",
+    hint: "Shortlisted candidates",
+    keywords: "applicants shortlisted",
+    path: "/organization/applicants",
+    query: { stage: "Shortlisted" },
+  },
+  {
+    id: "app-accepted",
+    label: "Applicants - Accepted",
+    hint: "Accepted candidates",
+    keywords: "applicants accepted",
+    path: "/organization/applicants",
+    query: { stage: "Accepted" },
+  },
+  {
+    id: "app-rejected",
+    label: "Applicants - Rejected",
+    hint: "Rejected candidates",
+    keywords: "applicants rejected",
+    path: "/organization/applicants",
+    query: { stage: "Rejected" },
+  },
+  {
+    id: "interviews",
+    label: "Interviews",
+    hint: "Manage upcoming interviews",
+    keywords: "interviews schedule",
+    path: "/organization/interviews",
+  },
+  {
+    id: "qa-all",
+    label: "Q&A - All",
+    hint: "All candidate questions",
+    keywords: "qa q&a questions all",
+    path: "/organization/qanda",
+    query: { filter: "all" },
+  },
+  {
+    id: "qa-pending",
+    label: "Q&A - Pending",
+    hint: "Questions waiting for answer",
+    keywords: "qa q&a pending unanswered",
+    path: "/organization/qanda",
+    query: { filter: "pending" },
+  },
+  {
+    id: "qa-answered",
+    label: "Q&A - Answered",
+    hint: "Already answered questions",
+    keywords: "qa q&a answered",
+    path: "/organization/qanda",
+    query: { filter: "answered" },
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    hint: "Open notifications",
+    keywords: "notifications alerts",
+    path: "/notifications",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    hint: "Account and company profile",
+    keywords: "profile account settings",
+    path: "/profile",
+  },
+];
 
-    const [scrolled, setScrolled] = useState(false);
-    const [role, setRole] = useState(null);
-    const [displayName, setDisplayName] = useState("Loading...");
-    const [avatarLetter, setAvatarLetter] = useState("?");
-    const [loadingProfile, setLoadingProfile] = useState(true);
-    const [profileError, setProfileError] = useState("");
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-    const profileMenuRef = useRef(null);
-
-    useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 8);
-        onScroll();
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []);
-
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (
-                profileMenuRef.current &&
-                !profileMenuRef.current.contains(event.target)
-            ) {
-                setShowProfileMenu(false);
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    useEffect(() => {
-        async function fetchProfile() {
-            try {
-                setLoadingProfile(true);
-                setProfileError("");
-
-                const res = await api.get("/profile");
-                const data = res.data;
-
-                console.log("PROFILE DATA:", data);
-                console.log("ROLE:", data?.role);
-
-                const userRole = data?.role ?? null;
-                setRole(userRole);
-
-                if (userRole === "Recruiter") {
-                    const company = data?.profile?.companyName || "Recruiter";
-                    setDisplayName(company);
-                    setAvatarLetter(company.charAt(0)?.toUpperCase() || "R");
-                } else if (userRole === "Student") {
-                    const fullName = data?.profile?.fullName || "Student";
-                    setDisplayName(fullName);
-                    setAvatarLetter(fullName.charAt(0)?.toUpperCase() || "S");
-                } else {
-                    setDisplayName("Unknown User");
-                    setAvatarLetter("?");
-                    setProfileError("Profile role was not recognized.");
-                }
-            } catch (error) {
-                console.error("Failed to load profile in layout:", error);
-                setProfileError("Failed to load profile.");
-                setRole(null);
-                setDisplayName("Profile Error");
-                setAvatarLetter("!");
-            } finally {
-                setLoadingProfile(false);
-            }
-        }
-
-        fetchProfile();
-    }, []);
-
-    function handleLogout() {
-        setShowProfileMenu(false);
-        localStorage.removeItem("token");
-        localStorage.removeItem("jobify_user");
-        localStorage.removeItem("jobify_signup");
-        navigate("/login");
-    }
-
-    function handleGoToProfile() {
-        setShowProfileMenu(false);
-        navigate("/profile");
-    }
-
-    return (
-        <div className="al-shell">
-            <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
-                <div className="al-headerInner">
-                    <div className="al-headerSide al-left">
-                        <div className="al-logo">Jobify</div>
-                    </div>
-
-                    <div className="al-headerCenter">
-                        <div className="al-search">
-                            <Search className="al-searchIcon" size={18} />
-                            <input placeholder="Quick search: pages, users, settings… (Ctrl K)" />
-                            <kbd className="al-kbd">Ctrl K</kbd>
-                        </div>
-                    </div>
-
-                    <div className="al-headerSide al-right">
-                        <button className="al-iconBtn" type="button" title="Toggle theme">
-                            <Moon size={18} />
-                        </button>
-
-                        <div
-                            ref={profileMenuRef}
-                            style={{ position: "relative", display: "inline-block" }}
-                        >
-                            <button
-                                className="al-iconBtn"
-                                type="button"
-                                title="Account"
-                                onClick={() => setShowProfileMenu((prev) => !prev)}
-                            >
-                                <User size={18} />
-                            </button>
-
-                            {showProfileMenu && (
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        top: "48px",
-                                        right: 0,
-                                        width: "170px",
-                                        background: "white",
-                                        border: "1px solid #e5e7eb",
-                                        borderRadius: "12px",
-                                        boxShadow: "0 10px 24px rgba(0,0,0,0.10)",
-                                        padding: "8px",
-                                        zIndex: 1000,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "6px",
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={handleGoToProfile}
-                                        style={menuItemStyle}
-                                    >
-                                        Profile
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleLogout}
-                                        style={menuItemStyle}
-                                    >
-                                        Log out
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <div className="al-body">
-                <aside className="al-sidebar">
-                    <nav className="al-nav">
-                        <NavLink to="/dashboard" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                            <span className="al-linkIcon"><LayoutGrid size={18} /></span>
-                            <span className="al-linkText">Dashboard</span>
-                        </NavLink>
-
-                        {!loadingProfile && role === "Recruiter" && (
-                            <NavLink to="/organization" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                                <span className="al-linkIcon"><Building2 size={18} /></span>
-                                <span className="al-linkText">Posting</span>
-                            </NavLink>
-                        )}
-
-                        {!loadingProfile && role === "Recruiter" && (
-                            <NavLink
-                                to="/applicants"
-                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-                            >
-                                <span className="al-linkIcon"><FileText size={18} /></span>
-                                <span className="al-linkText">Applicants</span>
-                            </NavLink>
-                        )}
-
-                        {!loadingProfile && role === "Student" && (
-                            <NavLink
-                                to="/browse"
-                                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
-                            >
-                                <span className="al-linkIcon"><Sparkles size={18} /></span>
-                                <span className="al-linkText">Browse</span>
-                            </NavLink>
-                        )}
-
-                        {!loadingProfile && role === "Student" && (
-                            <NavLink to="/match" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                                <span className="al-linkIcon"><Star size={18} /></span>
-                                <span className="al-linkText">Matches</span>
-                            </NavLink>
-                        )}
-
-                        <NavLink to="/profile" className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}>
-                            <span className="al-linkIcon"><UserCircle size={18} /></span>
-                            <span className="al-linkText">Profile</span>
-                        </NavLink>
-                    </nav>
-
-                    <div className="al-sidebarBottom">
-                        <div className="al-userCard">
-                            <div className="al-userAvatar">{avatarLetter}</div>
-                            <div className="al-userMeta">
-                                <div className="al-userName">{displayName}</div>
-                                <div className="al-userRole">
-                                    {loadingProfile ? "Loading..." : role || "Unknown"}
-                                </div>
-                                {profileError && (
-                                    <div style={{ color: "red", fontSize: "12px" }}>
-                                        {profileError}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
-                <main className="al-main">
-                    <div className="al-content">
-                        <Outlet />
-                    </div>
-                </main>
-            </div>
-
-            <footer className="al-footer">
-                <div className="al-footerInner">
-                    <div>
-                        <div className="al-footerBrand">Jobify</div>
-                        <p className="al-footerText">
-                            Smart matching platform connecting talent with opportunities through AI-powered recommendations.
-                        </p>
-                    </div>
-
-                    <div className="al-footerCols">
-                        <div>
-                            <div className="al-footerTitle">Company</div>
-                            <ul className="al-footerList">
-                                <li>About Us</li>
-                                <li>Careers</li>
-                                <li>Contact</li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <div className="al-footerTitle">Legal</div>
-                            <ul className="al-footerList">
-                                <li>Terms of Service</li>
-                                <li>Privacy Policy</li>
-                                <li>Cookie Policy</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="al-footerBottom">© 2026 Jobify. All rights reserved.</div>
-            </footer>
-        </div>
-    );
+function buildPath(option) {
+  if (!option.query) return option.path;
+  return `${option.path}?${new URLSearchParams(option.query).toString()}`;
 }
 
-const menuItemStyle = {
-    border: "none",
-    background: "white",
-    textAlign: "left",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "500",
-    color: "#111827",
-    width: "100",
-};
+function getSearchMatches(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return RECRUITER_SEARCH_OPTIONS;
+
+  return RECRUITER_SEARCH_OPTIONS.filter((option) =>
+    `${option.label} ${option.hint} ${option.keywords}`
+      .toLowerCase()
+      .includes(q)
+  );
+}
+
+export default function AppLayout() {
+  const navigate = useNavigate();
+  const { darkMode, toggleTheme } = useTheme();
+
+  const [scrolled, setScrolled] = useState(false);
+  const [role, setRole] = useState(null);
+  const [displayName, setDisplayName] = useState("Loading...");
+  const [avatarLetter, setAvatarLetter] = useState("?");
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState("");
+
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [openFooter, setOpenFooter] = useState(null);
+  const [globalQuery, setGlobalQuery] = useState("");
+  const [showSearchMenu, setShowSearchMenu] = useState(false);
+
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
+  const profileMenuRef = useRef(null);
+  const globalSearchRef = useRef(null);
+  const searchMenuRef = useRef(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setShowProfileMenu(false);
+      }
+
+      if (
+        searchMenuRef.current &&
+        !searchMenuRef.current.contains(event.target)
+      ) {
+        setShowSearchMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        setLoadingProfile(true);
+        setProfileError("");
+
+        const res = await api.get("/profile");
+        const data = res.data;
+
+        const userRole = data?.role ?? null;
+        setRole(userRole);
+
+        if (userRole === "Recruiter") {
+          const company = data?.profile?.companyName || "Recruiter";
+          setDisplayName(company);
+          setAvatarLetter(company.charAt(0)?.toUpperCase() || "R");
+        } else if (userRole === "Student") {
+          const fullName = data?.profile?.fullName || "Student";
+          setDisplayName(fullName);
+          setAvatarLetter(fullName.charAt(0)?.toUpperCase() || "S");
+        } else {
+          setDisplayName("Unknown User");
+          setAvatarLetter("?");
+          setProfileError("Profile role was not recognized.");
+        }
+      } catch (error) {
+        console.error("Failed to load profile in layout:", error);
+        setProfileError("Failed to load profile.");
+        setRole(null);
+        setDisplayName("Profile Error");
+        setAvatarLetter("!");
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    async function loadUnreadCount() {
+      try {
+        const unreadRes = await api.get("/Notifications/unread-count");
+        setUnreadCount(unreadRes.data?.unreadCount ?? 0);
+      } catch (err) {
+        console.error("Failed to load unread count:", err);
+        setUnreadCount(0);
+      }
+    }
+
+    loadUnreadCount();
+  }, []);
+
+  useEffect(() => {
+    function handleGlobalHotkey(event) {
+      if (role !== "Recruiter") return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        globalSearchRef.current?.focus();
+        globalSearchRef.current?.select();
+        setShowSearchMenu(true);
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalHotkey);
+    return () => window.removeEventListener("keydown", handleGlobalHotkey);
+  }, [role]);
+
+  function runGlobalSearch() {
+    if (role !== "Recruiter") return;
+    const q = globalQuery.trim();
+    const matches = getSearchMatches(q);
+
+    if (matches.length > 0) {
+      navigate(buildPath(matches[0]));
+      setShowSearchMenu(false);
+      return;
+    }
+
+    if (!q) {
+      setShowSearchMenu(true);
+      return;
+    }
+
+    navigate("/organization");
+    setShowSearchMenu(false);
+  }
+
+  function selectSearchOption(option) {
+    navigate(buildPath(option));
+    setGlobalQuery(option.label);
+    setShowSearchMenu(false);
+  }
+
+  function handleLogout() {
+    setShowProfileMenu(false);
+    localStorage.removeItem("jobify_token");
+    localStorage.removeItem("jobify_user");
+    localStorage.removeItem("jobify_signup");
+    navigate("/login");
+  }
+
+  function handleGoToChangePassword() {
+    setShowProfileMenu(false);
+    navigate("/change-password");
+  }
+
+  function toggleFooter(section) {
+    setOpenFooter((prev) => (prev === section ? null : section));
+  }
+
+  const filteredSearchOptions = getSearchMatches(globalQuery).slice(0, 10);
+
+  return (
+    <div className="al-shell">
+      <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
+        <div className="al-headerInner">
+          <div className="al-headerSide al-left">
+            <div className="al-logo">Jobify</div>
+            <button
+              className="al-hamburger"
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              type="button"
+            >
+              ☰
+            </button>
+          </div>
+
+          <div className="al-headerCenter">
+            {!loadingProfile && role === "Recruiter" && (
+              <form
+                ref={searchMenuRef}
+                className="al-search"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  runGlobalSearch();
+                }}
+              >
+                <Search className="al-searchIcon" size={18} />
+                <input
+                  ref={globalSearchRef}
+                  value={globalQuery}
+                  onChange={(e) => {
+                    setGlobalQuery(e.target.value);
+                    setShowSearchMenu(true);
+                  }}
+                  onFocus={() => setShowSearchMenu(true)}
+                  placeholder="Recruiter quick search: pages and tabs... (Ctrl K)"
+                />
+                <kbd className="al-kbd">Ctrl K</kbd>
+
+                {showSearchMenu && (
+                  <div className="al-searchMenu">
+                    {filteredSearchOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className="al-searchOption"
+                        onClick={() => selectSearchOption(option)}
+                      >
+                        <span className="al-searchOptionLabel">{option.label}</span>
+                        <span className="al-searchOptionHint">{option.hint}</span>
+                      </button>
+                    ))}
+
+                    {filteredSearchOptions.length === 0 && (
+                      <div className="al-searchEmpty">
+                        No matching destination. Try "Applicants", "Q&A", or "My Listings".
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form>
+            )}
+          </div>
+
+          <div className="al-headerSide al-right">
+            <button
+              className="al-iconBtn"
+              type="button"
+              title="Toggle theme"
+              onClick={toggleTheme}
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            <div className="al-notifWrap">
+              <button
+                className="al-iconBtn"
+                type="button"
+                title="Notifications"
+                onClick={() => navigate("/notifications")}
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="notif-badge">{unreadCount}</span>
+                )}
+              </button>
+            </div>
+
+            <div ref={profileMenuRef} className="al-profileMenuWrap">
+              <button
+                className="al-iconBtn"
+                type="button"
+                title="Account"
+                onClick={() => setShowProfileMenu((prev) => !prev)}
+              >
+                <User size={18} />
+              </button>
+
+              {showProfileMenu && (
+                <div className="al-profileMenu">
+                  <button
+                    type="button"
+                    onClick={handleGoToChangePassword}
+                    className="al-profileMenuItem"
+                  >
+                    Reset Password
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="al-profileMenuItem"
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="al-body">
+        {sidebarOpen && (
+          <div
+            className="al-overlay"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        <aside className={`al-sidebar ${sidebarOpen ? "open" : ""}`}>
+          <nav className="al-nav">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+            >
+              <span className="al-linkIcon">
+                <LayoutGrid size={18} />
+              </span>
+              <span className="al-linkText">Dashboard</span>
+            </NavLink>
+
+            {!loadingProfile && role === "Recruiter" && (
+              <NavLink
+                to="/organization"
+                end
+                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+              >
+                <span className="al-linkIcon">
+                  <Building2 size={18} />
+                </span>
+                <span className="al-linkText">Posting</span>
+              </NavLink>
+            )}
+
+            {!loadingProfile && role === "Recruiter" && (
+              <NavLink
+                to="/organization/applicants"
+                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+              >
+                <span className="al-linkIcon">
+                  <FileText size={18} />
+                </span>
+                <span className="al-linkText">Applicants</span>
+              </NavLink>
+            )}
+
+            {!loadingProfile && role === "Student" && (
+              <NavLink
+                to="/browse"
+                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+              >
+                <span className="al-linkIcon">
+                  <Sparkles size={18} />
+                </span>
+                <span className="al-linkText">Browse</span>
+              </NavLink>
+            )}
+
+            {!loadingProfile && role === "Student" && (
+              <NavLink
+                to="/match"
+                className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+              >
+                <span className="al-linkIcon">
+                  <Star size={18} />
+                </span>
+                <span className="al-linkText">Matches</span>
+              </NavLink>
+            )}
+
+            <NavLink
+              to="/profile"
+              className={({ isActive }) => `al-link ${isActive ? "isActive" : ""}`}
+            >
+              <span className="al-linkIcon">
+                <UserCircle size={18} />
+              </span>
+              <span className="al-linkText">Profile</span>
+            </NavLink>
+          </nav>
+
+          <div className="al-sidebarBottom">
+            <div className="al-userCard">
+              <div className="al-userAvatar">{avatarLetter}</div>
+              <div className="al-userMeta">
+                <div className="al-userName">{displayName}</div>
+                <div className="al-userRole">
+                  {loadingProfile ? "Loading..." : role || "Unknown"}
+                </div>
+                {profileError && <div className="al-errorText">{profileError}</div>}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main className="al-main">
+          <div className="al-content">
+            <Outlet context={{ displayName, role, loadingProfile }} />
+          </div>
+        </main>
+      </div>
+
+      <footer className="al-footer">
+        <div className="al-footerInner">
+          <div className="al-footerLeft">
+            <span className="al-footerBrand">Jobify</span>
+            <span className="al-footerText">
+              AI-powered matching platform
+            </span>
+          </div>
+
+          <div className="al-footerRight">
+            <a href="/" className="footer-link">About</a>
+
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() => setShowPrivacyModal(true)}
+            >
+              Privacy Policy
+            </button>
+
+            <div className="footer-icons">
+              <a
+                href="https://github.com/R-2-WE-Solutions/Jobify"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Github size={18} />
+              </a>
+
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Mail size={18} />
+              </a>
+            </div>
+          </div>
+
+          <div className="al-footerBottom">
+            (c) 2026 Jobify. All rights reserved.
+          </div>
+        </div>
+
+        {showPrivacyModal && (
+          <div
+            className="footer-modalOverlay"
+            onClick={() => setShowPrivacyModal(false)}
+          >
+            <div
+              className="footer-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="footer-modalHeader">
+                <div className="footer-modalTitle">Privacy Policy</div>
+                <button
+                  type="button"
+                  className="footer-modalClose"
+                  onClick={() => setShowPrivacyModal(false)}
+                >
+                  X
+                </button>
+              </div>
+
+              <div className="footer-modalBody">
+                <p>
+                  Jobify is committed to protecting your privacy and personal information.
+                </p>
+
+                <p>
+                  Only verified organizations are allowed to access applicant profiles.
+                  Recruiters must go through a verification process before they can view
+                  candidate information on the platform.
+                </p>
+
+                <p>
+                  Your personal information is used strictly for recruitment and job
+                  matching purposes within the Jobify platform.
+                </p>
+
+                <p>
+                  Jobify does <strong>not sell, rent, or share your personal data</strong>
+                  with third parties for advertising or commercial purposes.
+                </p>
+
+                <p>
+                  We aim to maintain a safe environment where students and professionals
+                  can connect with legitimate opportunities.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </footer>
+    </div>
+  );
+}
