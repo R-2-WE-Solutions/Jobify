@@ -11,9 +11,9 @@ import {
   UserCircle,
   Building2,
   FileText,
-    Bell,
-    Github,
-    Mail
+  Bell,
+  Github,
+  Mail,
 } from "lucide-react";
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
@@ -34,8 +34,6 @@ export default function AppLayout() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [openFooter, setOpenFooter] = useState(null);
-
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const profileMenuRef = useRef(null);
@@ -44,6 +42,7 @@ export default function AppLayout() {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -127,16 +126,13 @@ export default function AppLayout() {
     navigate("/change-password");
   }
 
-  function toggleFooter(section) {
-    setOpenFooter((prev) => (prev === section ? null : section));
-  }
-
   return (
     <div className="al-shell">
       <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
         <div className="al-headerInner">
           <div className="al-headerSide al-left">
             <div className="al-logo">Jobify</div>
+
             <button
               className="al-hamburger"
               onClick={() => setSidebarOpen((prev) => !prev)}
@@ -214,10 +210,7 @@ export default function AppLayout() {
 
       <div className="al-body">
         {sidebarOpen && (
-          <div
-            className="al-overlay"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="al-overlay" onClick={() => setSidebarOpen(false)} />
         )}
 
         <aside className={`al-sidebar ${sidebarOpen ? "open" : ""}`}>
@@ -295,6 +288,7 @@ export default function AppLayout() {
           <div className="al-sidebarBottom">
             <div className="al-userCard">
               <div className="al-userAvatar">{avatarLetter}</div>
+
               <div className="al-userMeta">
                 <div className="al-userName">{displayName}</div>
                 <div className="al-userRole">
@@ -313,103 +307,103 @@ export default function AppLayout() {
         </main>
       </div>
 
-          <footer className="al-footer">
-              <div className="al-footerInner">
-                  <div className="al-footerLeft">
-                      <span className="al-footerBrand">Jobify</span>
-                      <span className="al-footerText">
-                          AI-powered matching platform
-                      </span>
-                  </div>
+      <footer className="al-footer">
+        <div className="al-footerInner">
+          <div className="al-footerLeft">
+            <span className="al-footerBrand">Jobify</span>
+            <span className="al-footerText">AI-powered matching platform</span>
+          </div>
 
-                  <div className="al-footerRight">
-                      <a href="/" className="footer-link">About</a>
+          <div className="al-footerRight">
+            <a href="/" className="footer-link">
+              About
+            </a>
 
-                      <button
-                          type="button"
-                          className="footer-link"
-                          onClick={() => setShowPrivacyModal(true)}
-                      >
-                          Privacy Policy
-                      </button>
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() => setShowPrivacyModal(true)}
+            >
+              Privacy Policy
+            </button>
 
-                      <div className="footer-icons">
-                          <a
-                              href="https://github.com/R-2-WE-Solutions/Jobify"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="footer-icon"
-                          >
-                              <Github size={18} />
-                          </a>
+            <div className="footer-icons">
+              <a
+                href="https://github.com/R-2-WE-Solutions/Jobify"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Github size={18} />
+              </a>
 
-                          <a
-                              href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="footer-icon"
-                          >
-                              <Mail size={18} />
-                          </a>
-                      </div>
-                  </div>
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Mail size={18} />
+              </a>
+            </div>
+          </div>
 
-                  <div className="al-footerBottom">
-                      © 2026 Jobify. All rights reserved.
-                  </div>
+          <div className="al-footerBottom">© 2026 Jobify. All rights reserved.</div>
+        </div>
+
+        {showPrivacyModal && (
+          <div
+            className="footer-modalOverlay"
+            onClick={() => setShowPrivacyModal(false)}
+          >
+            <div className="footer-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="footer-modalHeader">
+                <div className="footer-modalTitle">Privacy Policy</div>
+
+                <button
+                  type="button"
+                  className="footer-modalClose"
+                  onClick={() => setShowPrivacyModal(false)}
+                >
+                  ×
+                </button>
               </div>
 
-              {showPrivacyModal && (
-                  <div
-                      className="footer-modalOverlay"
-                      onClick={() => setShowPrivacyModal(false)}
-                  >
-                      <div
-                          className="footer-modal"
-                          onClick={(e) => e.stopPropagation()}
-                      >
-                          <div className="footer-modalHeader">
-                              <div className="footer-modalTitle">Privacy Policy</div>
-                              <button
-                                  type="button"
-                                  className="footer-modalClose"
-                                  onClick={() => setShowPrivacyModal(false)}
-                              >
-                                  ×
-                              </button>
-                          </div>
+              <div className="footer-modalBody">
+                <p>
+                  Jobify is committed to protecting your privacy and personal
+                  information.
+                </p>
 
-                          <div className="footer-modalBody">
-                              <p>
-                                  Jobify is committed to protecting your privacy and personal information.
-                              </p>
+                <p>
+                  All recruiters and organizations must go through a verification
+                  process before accessing the platform and viewing applicant
+                  profiles. This helps ensure that only legitimate and approved
+                  parties can interact with student information.
+                </p>
 
-                              <p>
-                                  Only verified organizations are allowed to access applicant profiles.
-                                  Recruiters must go through a verification process before they can view
-                                  candidate information on the platform.
-                              </p>
+                <p>
+                  Student data is securely stored and protected against
+                  unauthorized access, misuse, or loss. Personal information is
+                  used strictly for recruitment, job matching, and
+                  application-related processes within the Jobify platform.
+                </p>
 
-                              <p>
-                                  Your personal information is used strictly for recruitment and job
-                                  matching purposes within the Jobify platform.
-                              </p>
+                <p>
+                  Jobify does <strong>not sell, rent, or share your personal data</strong>{" "}
+                  with third parties for advertising or commercial purposes.
+                </p>
 
-                              <p>
-                                  Jobify does <strong>not sell, rent, or share your personal data</strong>
-                                  with third parties for advertising or commercial purposes.
-                              </p>
-
-                              <p>
-                                  We aim to maintain a safe environment where students and professionals
-                                  can connect with legitimate opportunities.
-                              </p>
-                          </div>
-                      </div>
-                  </div>
-              )}
-          </footer>
-             
+                <p>
+                  Our goal is to provide a safe and trustworthy environment where
+                  students and professionals can connect with verified
+                  opportunities.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </footer>
     </div>
   );
 }
