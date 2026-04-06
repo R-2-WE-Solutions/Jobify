@@ -1183,6 +1183,67 @@ public class OpportunitiesController : ControllerBase
         return Ok(new { message = "Report submitted" });
     }
 
+
+    // Admin: Get Reported Opportunities
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/reported-opportunities")]
+    public async Task<IActionResult> GetReportedOpportunities()
+    {
+        var result = await _db.OpportunityReports
+            .Include(r => r.Opportunity)
+            .GroupBy(r => r.OpportunityId)
+            .Select(g => new
+                {
+                    opportunityId = g.Key,
+                    opportunityTitle = g.First().Opportunity!.Title,
+                    company = g.First().Opportunity!.CompanyName,
+                    reportsCount = g.Count()
+                })
+            .ToListAsync();
+
+        return Ok(result);
+    }
+
+    // Admin: Get Reports for an Opportunity
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/get-reports/{opportunityId}")]
+    public async Task<IActionResult> GetOpportunityReports(int opportunityId)
+    {
+        var reports = await _db.OpportunityReports
+            .Where(r => r.OpportunityId == opportunityId)
+            .ToListAsync();
+
+        var result = reports.Select(r => new
+            {
+                reportId = r.Id,
+                studentId = r.ReporterUserId,
+                reason = r.Reason,
+                details = r.Details,
+                createdAt = r.CreatedAt,
+                isResolved = r.IsResolved
+            });
+
+        return Ok(result);
+    }
+
+    // Admin: Resolve a selected report
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("admin/resolve-report/{reportId}")]
+    public async Task<IActionResult> ResolveReport(int reportId)
+    {
+        var report = await _db.OpportunityReports.FindAsync(reportId);
+
+        if (report == null)
+            return NotFound();
+
+        report.IsResolved = true;
+
+        await _db.SaveChangesAsync();
+
+        return Ok();
+    }
+
+
     private static AssessmentDto? ReadAssessmentForBuilder(string? assessmentJson)
     {
         if (string.IsNullOrWhiteSpace(assessmentJson))

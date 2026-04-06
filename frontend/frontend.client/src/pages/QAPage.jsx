@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-    MessageSquare,
-    Clock,
-    CheckCircle2,
-    ChevronDown,
-    ChevronUp,
-    Send,
-    RefreshCw,
-    AlertCircle
-} from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { MessageSquare, Clock, CheckCircle2, ChevronDown, ChevronUp, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { api } from "../api/api";
 import "./styles/qa.css";
 
@@ -262,6 +254,7 @@ function EmptyState({ filter }) {
 }
 
 export default function QAPage() {
+    const [searchParams] = useSearchParams();
     const [postings, setPostings] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [questions, setQuestions] = useState([]);
@@ -269,6 +262,13 @@ export default function QAPage() {
     const [loadingPostings, setLoadingPostings] = useState(true);
     const [loadingQuestions, setLoadingQuestions] = useState(false);
     const [postingsError, setPostingsError] = useState(null);
+
+    useEffect(() => {
+        const filterParam = String(searchParams.get("filter") || "").toLowerCase();
+        if (filterParam === "all" || filterParam === "pending" || filterParam === "answered") {
+            setFilter(filterParam);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         setLoadingPostings(true);

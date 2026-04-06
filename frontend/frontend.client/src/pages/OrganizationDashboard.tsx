@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Briefcase,
     MapPin,
@@ -111,6 +111,7 @@ function parseLines(value: string) {
 
 export default function OrganizationDashboard() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [activeTab, setActiveTab] = useState<Tab>("post");
 
@@ -220,6 +221,13 @@ export default function OrganizationDashboard() {
     useEffect(() => {
         fetchProfile();
     }, []);
+
+    useEffect(() => {
+        const tab = (searchParams.get("tab") || "").toLowerCase();
+        if (tab === "post" || tab === "listings") {
+            setActiveTab(tab as Tab);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (companyName) fetchListings();

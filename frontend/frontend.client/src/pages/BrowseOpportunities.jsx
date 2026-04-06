@@ -10,7 +10,7 @@ import {
     TrendingUp,
     ArrowUpDown
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "./styles/browseopportunities.css";
 
@@ -27,6 +27,7 @@ function getOppLogo(type, level) {
 
 export function BrowseOpportunities() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -41,6 +42,11 @@ export function BrowseOpportunities() {
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(false);
     const [savingId, setSavingId] = useState(null);
+
+    useEffect(() => {
+        const q = searchParams.get("q") || "";
+        setSearchQuery(q);
+    }, [searchParams]);
 
     const toggleSaved = async (id) => {
         try {
