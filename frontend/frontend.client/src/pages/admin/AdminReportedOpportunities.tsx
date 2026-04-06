@@ -23,6 +23,7 @@ export default function AdminReportedOpportunities() {
   // Reports
   const [reports, setReports] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
 
   // Reported Opportunities Fetching
