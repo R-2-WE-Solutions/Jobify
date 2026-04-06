@@ -15,15 +15,35 @@ import {
     User, GraduationCap, Briefcase, Heart, Code2, FileText,
     TrendingUp, Building2, Settings, ShieldCheck, BarChart3,
     Plus, X, Edit, Trash2, Upload, CheckCircle, AlertCircle,
-    Clock, Camera, Moon, Sun, Info, Save, ExternalLink,
+    Clock, Info, Save, ExternalLink,
     Target, Lightbulb, Phone, MapPin, Mail, Download
 } from 'lucide-react';
 import './styles/profile.css';
-
 import { extractSkillsFromCv } from "../api/CvExtract";
 
 /* ─────────────────────────────────────────────
-   Top-level ProfilePage — keeps all API logic
+   Profile strength calculator
+───────────────────────────────────────────── */
+function calcStrength(formData, profile, counts) {
+    let score = 0;
+    if (formData?.fullName?.trim())     score += 10;
+    if (formData?.bio?.trim())          score += 10;
+    if (formData?.location?.trim())     score += 5;
+    if (formData?.phoneNumber?.trim())  score += 5;
+    if (formData?.portfolioUrl?.trim()) score += 5;
+    if (profile?.hasResume)             score += 15;
+    if (profile?.hasUniversityProof)    score += 10;
+    if (counts.skills >= 3)             score += 15;
+    else if (counts.skills >= 1)        score += 8;
+    if (counts.education >= 1)          score += 10;
+    if (counts.experience >= 1)         score += 10;
+    if (counts.projects >= 1)           score += 5;
+    if (counts.interests >= 1)          score += 5;
+    return Math.min(score, 100);
+}
+
+/* ─────────────────────────────────────────────
+   Top-level ProfilePage
 ───────────────────────────────────────────── */
 const ProfilePage = () => {
     const [profile, setProfile] = useState(null);
@@ -34,13 +54,12 @@ const ProfilePage = () => {
     const [success, setSuccess] = useState(false);
     const [formData, setFormData] = useState({});
     const [bannerDismissed, setBannerDismissed] = useState(false);
-
     const [skillsRefreshKey, setSkillsRefreshKey] = useState(0);
-    
 
-    useEffect(() => {
-        fetchProfileData();
-    }, []);
+    // Section counts for profile strength
+    const [counts, setCounts] = useState({ skills: 0, education: 0, experience: 0, projects: 0, interests: 0 });
+
+    useEffect(() => { fetchProfileData(); }, []);
 
     const fetchProfileData = async () => {
         try {
@@ -80,47 +99,36 @@ const ProfilePage = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="pf-page">
-                <div className="pf-loading">
-                    <div className="pf-spinner" />
-                    <p>Loading profile…</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="pf-page">
+            <div className="pf-loading"><div className="pf-spinner" /><p>Loading profile…</p></div>
+        </div>
+    );
 
-    if (!profile) {
-        return (
-            <div className="pf-page">
-                <div className="pf-alert pf-alert--error">{error || 'Profile not found.'}</div>
-            </div>
-        );
-    }
+    if (!profile) return (
+        <div className="pf-page">
+            <div className="pf-alert pf-alert--error">{error || 'Profile not found.'}</div>
+        </div>
+    );
 
-    if (!userRole) {
-        return (
-            <div className="pf-page">
-                <div className="pf-alert pf-alert--error">{error || 'User role missing.'}</div>
-            </div>
-        );
-    }
+    if (!userRole) return (
+        <div className="pf-page">
+            <div className="pf-alert pf-alert--error">{error || 'User role missing.'}</div>
+        </div>
+    );
 
     const isStudent = userRole === 'Student';
+    const strength = isStudent ? calcStrength(formData, profile, counts) : null;
 
     return (
         <div className="pf-page">
             <header className="pf-header">
-    <div className="pf-header__inner">
-        <div className="pf-header__body">
+                <div className="pf-header__inner">
+                    <div className="pf-header__body">
                         <div className="pf-avatar-wrap">
                             <div className="pf-avatar">
                                 <span>{(profile.fullName || profile.companyName || '?').charAt(0).toUpperCase()}</span>
                             </div>
-                            <button className="pf-avatar__cam" aria-label="Change photo" type="button">
-                                <Camera size={16} />
-                            </button>
                         </div>
 
                         <div className="pf-header__info">
@@ -141,10 +149,10 @@ const ProfilePage = () => {
                                 <div className="pf-strength">
                                     <div className="pf-strength__label">
                                         <span>Profile Strength</span>
-                                        <span className="pf-strength__pct">72%</span>
+                                        <span className="pf-strength__pct">{strength}%</span>
                                     </div>
                                     <div className="pf-strength__bar">
-                                        <div className="pf-strength__fill" style={{ width: '72%' }} />
+                                        <div className="pf-strength__fill" style={{ width: `${strength}%` }} />
                                     </div>
                                 </div>
                             )}
@@ -181,6 +189,8 @@ const ProfilePage = () => {
                         onProfileUpdate={setProfile}
                         skillsRefreshKey={skillsRefreshKey}
                         refreshSkills={() => setSkillsRefreshKey(k => k + 1)}
+                        counts={counts}
+                        setCounts={setCounts}
                     />
                 ) : (
                     <RecruiterSections profile={profile} formData={formData} onChange={handleInputChange} />
@@ -200,21 +210,21 @@ const ProfilePage = () => {
 /* ─────────────────────────────────────────────
    Student sections
 ───────────────────────────────────────────── */
-const StudentSections = ({ profile, formData, onChange, onProfileUpdate, skillsRefreshKey, refreshSkills }) => (
+const StudentSections = ({ profile, formData, onChange, onProfileUpdate, skillsRefreshKey, refreshSkills, counts, setCounts }) => (
     <div className="pf-sections">
         <PersonalInfoCard profile={profile} formData={formData} onChange={onChange} />
-        <EducationCard profile={profile} />
+        <EducationCard onCountChange={n => setCounts(c => ({ ...c, education: n }))} />
         <div className="pf-grid-2">
-            <SkillsCard refreshKey={skillsRefreshKey} />
-            <InterestsCard profile={profile} />
+            <SkillsCard refreshKey={skillsRefreshKey} onCountChange={n => setCounts(c => ({ ...c, skills: n }))} />
+            <InterestsCard onCountChange={n => setCounts(c => ({ ...c, interests: n }))} />
         </div>
-        <ExperienceCard profile={profile} />
-        <ProjectsCard profile={profile} />
+        <ExperienceCard onCountChange={n => setCounts(c => ({ ...c, experience: n }))} />
+        <ProjectsCard onCountChange={n => setCounts(c => ({ ...c, projects: n }))} />
         <div className="pf-grid-2">
             <ResumeCard profile={profile} onProfileUpdate={onProfileUpdate} onSkillsUpdated={refreshSkills} />
             <UniversityProofCard profile={profile} onProfileUpdate={onProfileUpdate} />
         </div>
-        <MatchingInsightsCard />
+        <MatchingInsightsCard counts={counts} profile={profile} formData={formData} />
     </div>
 );
 
@@ -239,9 +249,7 @@ const Card = ({ icon: Icon, title, subtitle, action, children, highlight }) => (
     <div className={`pf-card ${highlight ? 'pf-card--highlight' : ''}`}>
         <div className="pf-card__head">
             <div className="pf-card__title-row">
-                <div className="pf-card__icon-wrap">
-                    <Icon size={18} />
-                </div>
+                <div className="pf-card__icon-wrap"><Icon size={18} /></div>
                 <div>
                     <h2 className="pf-card__title">{title}</h2>
                     {subtitle && <p className="pf-card__sub">{subtitle}</p>}
@@ -291,16 +299,6 @@ const PersonalInfoCard = ({ profile, formData, onChange }) => (
             <label className="pf-label">Portfolio URL</label>
             <input className="pf-input" name="portfolioUrl" value={formData.portfolioUrl || ''} onChange={onChange} placeholder="https://yourportfolio.com" />
         </div>
-        <div className="pf-field pf-remote-toggle">
-            <div>
-                <label className="pf-label">Open to Remote Work</label>
-                <p className="pf-hint">Show availability for remote opportunities</p>
-            </div>
-            <label className="pf-switch">
-                <input type="checkbox" defaultChecked />
-                <span className="pf-switch__track" />
-            </label>
-        </div>
         <div className="pf-field">
             <label className="pf-label">About Me</label>
             <textarea className="pf-textarea" name="bio" value={formData.bio || ''} onChange={onChange} rows={4} placeholder="Tell us about yourself…" />
@@ -312,7 +310,7 @@ const PersonalInfoCard = ({ profile, formData, onChange }) => (
 /* ─────────────────────────────────────────────
    Education
 ───────────────────────────────────────────── */
-const EducationCard = ({ profile }) => {
+const EducationCard = ({ onCountChange }) => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
@@ -322,7 +320,7 @@ const EducationCard = ({ profile }) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        getEducation().then(setItems).catch(() => { }).finally(() => setLoading(false));
+        getEducation().then(data => { setItems(data); onCountChange?.(data.length); }).catch(() => {}).finally(() => setLoading(false));
     }, []);
 
     const submit = async (e) => {
@@ -333,19 +331,16 @@ const EducationCard = ({ profile }) => {
             const payload = { university: form.university, degree: form.degree, major: form.major, gpa: form.gpa || null, graduationYear: form.graduationYear };
             if (editId) {
                 const updated = await updateEducation(editId, payload);
-                setItems(prev => prev.map(i => i.id === editId ? updated : i));
+                setItems(prev => { const next = prev.map(i => i.id === editId ? updated : i); onCountChange?.(next.length); return next; });
             } else {
                 const added = await addEducation(payload);
-                setItems(prev => [added, ...prev]);
+                setItems(prev => { const next = [added, ...prev]; onCountChange?.(next.length); return next; });
             }
             setForm({ university: '', degree: '', major: '', gpa: '', graduationYear: '' });
             setEditId(null);
             setOpen(false);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
-        }
+        } catch (err) { setError(err.message); }
+        finally { setSaving(false); }
     };
 
     const startEdit = (item) => {
@@ -357,10 +352,8 @@ const EducationCard = ({ profile }) => {
     const handleDelete = async (id) => {
         try {
             await deleteEducation(id);
-            setItems(prev => prev.filter(i => i.id !== id));
-        } catch (err) {
-            setError(err.message);
-        }
+            setItems(prev => { const next = prev.filter(i => i.id !== id); onCountChange?.(next.length); return next; });
+        } catch (err) { setError(err.message); }
     };
 
     return (
@@ -412,21 +405,18 @@ const EducationCard = ({ profile }) => {
 };
 
 /* ─────────────────────────────────────────────
-   Skills
+   Skills  (no proficiency selector)
 ───────────────────────────────────────────── */
-const PROFICIENCY = ['Beginner', 'Intermediate', 'Advanced'];
-
-const SkillsCard = ({ refreshKey }) => {
+const SkillsCard = ({ refreshKey, onCountChange }) => {
     const [skills, setSkills] = useState([]);
     const [name, setName] = useState('');
-    const [proficiency, setProficiency] = useState('Beginner');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         setLoading(true);
         getSkills()
-            .then(setSkills)
+            .then(data => { setSkills(data); onCountChange?.(data.length); })
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, [refreshKey]);
@@ -436,20 +426,16 @@ const SkillsCard = ({ refreshKey }) => {
         setError(null);
         try {
             const added = await addSkill(name.trim());
-            setSkills(prev => [...prev, added]);
+            setSkills(prev => { const next = [...prev, added]; onCountChange?.(next.length); return next; });
             setName('');
-        } catch (err) {
-            setError(err.message);
-        }
+        } catch (err) { setError(err.message); }
     };
 
     const remove = async (id) => {
         try {
             await deleteSkill(id);
-            setSkills(prev => prev.filter(s => s.id !== id));
-        } catch (err) {
-            setError(err.message);
-        }
+            setSkills(prev => { const next = prev.filter(s => s.id !== id); onCountChange?.(next.length); return next; });
+        } catch (err) { setError(err.message); }
     };
 
     return (
@@ -462,9 +448,6 @@ const SkillsCard = ({ refreshKey }) => {
                 <input className="pf-input pf-input--flex" value={name} onChange={e => setName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
                     placeholder="e.g. React, Python…" />
-                <select className="pf-select" value={proficiency} onChange={e => setProficiency(e.target.value)}>
-                    {PROFICIENCY.map(p => <option key={p}>{p}</option>)}
-                </select>
                 <button className="pf-btn pf-btn--primary" onClick={add}><Plus size={14} /> Add</button>
             </div>
 
@@ -475,7 +458,6 @@ const SkillsCard = ({ refreshKey }) => {
                             <span key={s.id} className="pf-tag pf-tag--skill">
                                 {s.verified && <CheckCircle size={11} className="pf-tag__verified" />}
                                 {s.name}
-                                <span className="pf-tag__level">({s.proficiency || proficiency})</span>
                                 <button className="pf-tag__remove" onClick={() => remove(s.id)}><X size={11} /></button>
                             </span>
                         ))}
@@ -496,14 +478,14 @@ const SkillsCard = ({ refreshKey }) => {
 ───────────────────────────────────────────── */
 const SUGGESTED = ['Artificial Intelligence', 'Web Development', 'Mobile Development', 'Cloud Computing', 'Cybersecurity', 'Data Science', 'UI/UX Design', 'DevOps'];
 
-const InterestsCard = () => {
+const InterestsCard = ({ onCountChange }) => {
     const [interests, setInterests] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        getInterests().then(data => setInterests(data)).catch(err => setError(err.message)).finally(() => setLoading(false));
+        getInterests().then(data => { setInterests(data); onCountChange?.(data.length); }).catch(err => setError(err.message)).finally(() => setLoading(false));
     }, []);
 
     const add = async (val) => {
@@ -512,20 +494,16 @@ const InterestsCard = () => {
         setError(null);
         try {
             const added = await addInterest(v);
-            setInterests(prev => [...prev, added]);
+            setInterests(prev => { const next = [...prev, added]; onCountChange?.(next.length); return next; });
             setInput('');
-        } catch (err) {
-            setError(err.message);
-        }
+        } catch (err) { setError(err.message); }
     };
 
     const remove = async (id) => {
         try {
             await deleteInterest(id);
-            setInterests(prev => prev.filter(i => i.id !== id));
-        } catch (err) {
-            setError(err.message);
-        }
+            setInterests(prev => { const next = prev.filter(i => i.id !== id); onCountChange?.(next.length); return next; });
+        } catch (err) { setError(err.message); }
     };
 
     const interestNames = interests.map(i => i.interest);
@@ -571,7 +549,7 @@ const InterestsCard = () => {
 /* ─────────────────────────────────────────────
    Experience
 ───────────────────────────────────────────── */
-const ExperienceCard = () => {
+const ExperienceCard = ({ onCountChange }) => {
     const [items, setItems] = useState([]);
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState({ role: '', company: '', duration: '', description: '' });
@@ -581,7 +559,7 @@ const ExperienceCard = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        getExperience().then(setItems).catch(err => setError(err.message)).finally(() => setLoading(false));
+        getExperience().then(data => { setItems(data); onCountChange?.(data.length); }).catch(err => setError(err.message)).finally(() => setLoading(false));
     }, []);
 
     const submit = async (e) => {
@@ -592,19 +570,16 @@ const ExperienceCard = () => {
             const payload = { role: form.role, company: form.company, duration: form.duration, description: form.description };
             if (editId) {
                 const updated = await updateExperience(editId, payload);
-                setItems(prev => prev.map(i => i.id === editId ? updated : i));
+                setItems(prev => { const next = prev.map(i => i.id === editId ? updated : i); onCountChange?.(next.length); return next; });
             } else {
                 const added = await addExperience(payload);
-                setItems(prev => [added, ...prev]);
+                setItems(prev => { const next = [added, ...prev]; onCountChange?.(next.length); return next; });
             }
             setForm({ role: '', company: '', duration: '', description: '' });
             setEditId(null);
             setOpen(false);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
-        }
+        } catch (err) { setError(err.message); }
+        finally { setSaving(false); }
     };
 
     const startEdit = (item) => {
@@ -616,10 +591,8 @@ const ExperienceCard = () => {
     const handleDelete = async (id) => {
         try {
             await deleteExperience(id);
-            setItems(prev => prev.filter(x => x.id !== id));
-        } catch (err) {
-            setError(err.message);
-        }
+            setItems(prev => { const next = prev.filter(x => x.id !== id); onCountChange?.(next.length); return next; });
+        } catch (err) { setError(err.message); }
     };
 
     return (
@@ -632,22 +605,10 @@ const ExperienceCard = () => {
                         <h3 className="pf-modal__title">{editId ? 'Edit' : 'Add'} Experience</h3>
                         {error && <div className="pf-alert pf-alert--error">{error}</div>}
                         <form onSubmit={submit} className="pf-modal__form">
-                            <div className="pf-field">
-                                <label className="pf-label">Role / Position</label>
-                                <input className="pf-input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} placeholder="Software Engineer Intern" required />
-                            </div>
-                            <div className="pf-field">
-                                <label className="pf-label">Company</label>
-                                <input className="pf-input" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} required />
-                            </div>
-                            <div className="pf-field">
-                                <label className="pf-label">Duration</label>
-                                <input className="pf-input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="Jun 2024 – Aug 2024" required />
-                            </div>
-                            <div className="pf-field">
-                                <label className="pf-label">Description</label>
-                                <textarea className="pf-textarea" rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="• Key responsibilities and achievements" required />
-                            </div>
+                            <div className="pf-field"><label className="pf-label">Role / Position</label><input className="pf-input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} placeholder="Software Engineer Intern" required /></div>
+                            <div className="pf-field"><label className="pf-label">Company</label><input className="pf-input" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} required /></div>
+                            <div className="pf-field"><label className="pf-label">Duration</label><input className="pf-input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="Jun 2024 – Aug 2024" required /></div>
+                            <div className="pf-field"><label className="pf-label">Description</label><textarea className="pf-textarea" rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="• Key responsibilities and achievements" required /></div>
                             <div className="pf-modal__footer">
                                 <button type="button" className="pf-btn pf-btn--outline" onClick={() => setOpen(false)}>Cancel</button>
                                 <button type="submit" className="pf-btn pf-btn--primary" disabled={saving}>{saving ? 'Saving…' : editId ? 'Update' : 'Add'}</button>
@@ -690,7 +651,7 @@ const ExperienceCard = () => {
 /* ─────────────────────────────────────────────
    Projects
 ───────────────────────────────────────────── */
-const ProjectsCard = () => {
+const ProjectsCard = ({ onCountChange }) => {
     const [items, setItems] = useState([]);
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState({ title: '', description: '', tech: '', links: '' });
@@ -700,10 +661,11 @@ const ProjectsCard = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        getProjects().then(data => setItems(data.map(p => ({
-            ...p,
-            techStack: Array.isArray(p.techStack) ? p.techStack : (p.techStack || '').split(',').map(t => t.trim()).filter(Boolean)
-        })))).catch(err => setError(err.message)).finally(() => setLoading(false));
+        getProjects().then(data => {
+            const mapped = data.map(p => ({ ...p, techStack: Array.isArray(p.techStack) ? p.techStack : (p.techStack || '').split(',').map(t => t.trim()).filter(Boolean) }));
+            setItems(mapped);
+            onCountChange?.(mapped.length);
+        }).catch(err => setError(err.message)).finally(() => setLoading(false));
     }, []);
 
     const submit = async (e) => {
@@ -715,25 +677,18 @@ const ProjectsCard = () => {
             const payload = { title: form.title, description: form.description, techStack, links: form.links || null };
             if (editId) {
                 const updated = await updateProject(editId, payload);
-                setItems(prev => prev.map(i => i.id === editId ? {
-                    ...updated,
-                    techStack: Array.isArray(updated.techStack) ? updated.techStack : (updated.techStack || '').split(',').map(t => t.trim()).filter(Boolean)
-                } : i));
+                const norm = { ...updated, techStack: Array.isArray(updated.techStack) ? updated.techStack : (updated.techStack || '').split(',').map(t => t.trim()).filter(Boolean) };
+                setItems(prev => { const next = prev.map(i => i.id === editId ? norm : i); onCountChange?.(next.length); return next; });
             } else {
                 const added = await addProject(payload);
-                setItems(prev => [{
-                    ...added,
-                    techStack: Array.isArray(added.techStack) ? added.techStack : (added.techStack || '').split(',').map(t => t.trim()).filter(Boolean)
-                }, ...prev]);
+                const norm = { ...added, techStack: Array.isArray(added.techStack) ? added.techStack : (added.techStack || '').split(',').map(t => t.trim()).filter(Boolean) };
+                setItems(prev => { const next = [norm, ...prev]; onCountChange?.(next.length); return next; });
             }
             setForm({ title: '', description: '', tech: '', links: '' });
             setEditId(null);
             setOpen(false);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
-        }
+        } catch (err) { setError(err.message); }
+        finally { setSaving(false); }
     };
 
     const startEdit = (item) => {
@@ -745,10 +700,8 @@ const ProjectsCard = () => {
     const handleDelete = async (id) => {
         try {
             await deleteProject(id);
-            setItems(prev => prev.filter(p => p.id !== id));
-        } catch (err) {
-            setError(err.message);
-        }
+            setItems(prev => { const next = prev.filter(p => p.id !== id); onCountChange?.(next.length); return next; });
+        } catch (err) { setError(err.message); }
     };
 
     return (
@@ -761,22 +714,10 @@ const ProjectsCard = () => {
                         <h3 className="pf-modal__title">{editId ? 'Edit' : 'Add'} Project</h3>
                         {error && <div className="pf-alert pf-alert--error">{error}</div>}
                         <form onSubmit={submit} className="pf-modal__form">
-                            <div className="pf-field">
-                                <label className="pf-label">Project Title</label>
-                                <input className="pf-input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
-                            </div>
-                            <div className="pf-field">
-                                <label className="pf-label">Description</label>
-                                <textarea className="pf-textarea" rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
-                            </div>
-                            <div className="pf-field">
-                                <label className="pf-label">Tech Stack (comma-separated)</label>
-                                <input className="pf-input" value={form.tech} onChange={e => setForm(f => ({ ...f, tech: e.target.value }))} placeholder="React, Python, Flask" />
-                            </div>
-                            <div className="pf-field">
-                                <label className="pf-label">Link (optional)</label>
-                                <input className="pf-input" value={form.links} onChange={e => setForm(f => ({ ...f, links: e.target.value }))} placeholder="github.com/user/project" />
-                            </div>
+                            <div className="pf-field"><label className="pf-label">Project Title</label><input className="pf-input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required /></div>
+                            <div className="pf-field"><label className="pf-label">Description</label><textarea className="pf-textarea" rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required /></div>
+                            <div className="pf-field"><label className="pf-label">Tech Stack (comma-separated)</label><input className="pf-input" value={form.tech} onChange={e => setForm(f => ({ ...f, tech: e.target.value }))} placeholder="React, Python, Flask" /></div>
+                            <div className="pf-field"><label className="pf-label">Link (optional)</label><input className="pf-input" value={form.links} onChange={e => setForm(f => ({ ...f, links: e.target.value }))} placeholder="github.com/user/project" /></div>
                             <div className="pf-modal__footer">
                                 <button type="button" className="pf-btn pf-btn--outline" onClick={() => setOpen(false)}>Cancel</button>
                                 <button type="submit" className="pf-btn pf-btn--primary" disabled={saving}>{saving ? 'Saving…' : editId ? 'Update' : 'Add'}</button>
@@ -820,9 +761,10 @@ const ProjectsCard = () => {
 };
 
 /* ─────────────────────────────────────────────
-   Resume — wired to real API
+   Resume
 ───────────────────────────────────────────── */
 const normalizeSkill = (s) => (s || "").trim().toLowerCase();
+
 const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
     const [hasResume, setHasResume] = useState(profile?.hasResume || false);
     const [uploadedAt, setUploadedAt] = useState(profile?.resumeUploadedAtUtc || null);
@@ -835,56 +777,47 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
     const handleFile = async (e) => {
         const f = e.target.files?.[0];
         if (!f) return;
-
         setError(null);
         setUploading(true);
         setProgress("Uploading CV...");
-
         try {
             const saved = await uploadResume(f);
-
             setProgress("Extracting skills...");
-            const extracted = await extractSkillsFromCv(f);
-            const extractedSkills = (extracted.skills || []).map(normalizeSkill);
-
-            setProgress("Saving skills...");
-            const existing = await getSkills();
-            const existingSet = new Set(existing.map(x => normalizeSkill(x.name)));
-
-            for (const sk of extractedSkills) {
-                if (!sk || existingSet.has(sk)) continue;
-                await addSkill(sk);
-                existingSet.add(sk);
+            try {
+                const extracted = await extractSkillsFromCv(f);
+                const extractedSkills = (extracted.skills || []).map(normalizeSkill);
+                setProgress("Saving skills...");
+                const existing = await getSkills();
+                const existingSet = new Set(existing.map(x => normalizeSkill(x.name)));
+                for (const sk of extractedSkills) {
+                    if (!sk || existingSet.has(sk)) continue;
+                    await addSkill(sk);
+                    existingSet.add(sk);
+                }
+                onSkillsUpdated?.();
+            } catch {
+                // skill extraction failure is non-fatal
             }
-
             setHasResume(true);
             setUploadedAt(saved.profile?.resumeUploadedAtUtc || new Date().toISOString());
             onProfileUpdate?.(prev => ({ ...prev, hasResume: true }));
-            onSkillsUpdated?.();
         } catch (err) {
             setError(err.message || "Upload failed");
         } finally {
             setUploading(false);
             setProgress("");
-            fileRef.current.value = "";
+            if (fileRef.current) fileRef.current.value = "";
         }
-    };
-
-    const deleteAllSkills = async () => {
-        const skills = await getSkills();
-        await Promise.all(skills.map(s => deleteSkill(s.id)));
     };
 
     const handleDelete = async () => {
         if (!confirm("Remove your resume? This will also delete your skills.")) return;
-
         setDeleting(true);
         setError(null);
-
         try {
             await deleteResume();
-            await deleteAllSkills();
-
+            const skills = await getSkills();
+            await Promise.all(skills.map(s => deleteSkill(s.id)));
             setHasResume(false);
             setUploadedAt(null);
             onProfileUpdate?.(prev => ({ ...prev, hasResume: false }));
@@ -897,21 +830,16 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
     };
 
     const handleDownload = async () => {
-        try {
-            await downloadResumeFile();
-        } catch (err) {
-            setError(err.message || 'Download failed');
-        }
+        try { await downloadResumeFile(); }
+        catch (err) { setError(err.message || 'Download failed'); }
     };
 
-    const formatDate = (iso) => {
-        if (!iso) return '';
-        return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    };
+    const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
 
     return (
         <Card icon={FileText} title="Resume / CV" subtitle="Upload your resume to increase visibility" highlight>
             {error && <div className="pf-alert pf-alert--error">{error}</div>}
+            {progress && <div className="pf-alert pf-alert--info">{progress}</div>}
 
             {hasResume ? (
                 <div className="pf-resume-uploaded">
@@ -924,24 +852,22 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
                         </div>
                         <div className="pf-resume-file__actions">
                             <button className="pf-icon-btn" onClick={handleDownload} title="Download"><Download size={15} /></button>
-                            <button className="pf-icon-btn pf-icon-btn--danger" onClick={handleDelete} disabled={deleting} title="Remove">
-                                <Trash2 size={15} />
-                            </button>
+                            <button className="pf-icon-btn pf-icon-btn--danger" onClick={handleDelete} disabled={deleting} title="Remove"><Trash2 size={15} /></button>
                         </div>
                     </div>
                     <button className="pf-btn pf-btn--outline pf-btn--full" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                        <Upload size={15} /> {uploading ? 'Uploading…' : 'Replace Resume'}
+                        <Upload size={15} /> {uploading ? progress || 'Uploading…' : 'Replace Resume'}
                     </button>
                 </div>
             ) : (
                 <div>
                     <div className="pf-dropzone" onClick={() => fileRef.current?.click()}>
                         {uploading ? <div className="pf-spinner pf-spinner--sm" /> : <Upload size={36} className="pf-dropzone__icon" />}
-                        <p className="pf-dropzone__label">{uploading ? 'Uploading…' : 'Click to upload resume'}</p>
-                        <p className="pf-dropzone__sub">PDF or DOC up to 10MB</p>
+                        <p className="pf-dropzone__label">{uploading ? progress || 'Uploading…' : 'Click to upload resume'}</p>
+                        <p className="pf-dropzone__sub">PDF, DOC, or DOCX up to 10MB</p>
                     </div>
                     <button className="pf-btn pf-btn--primary pf-btn--full" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                        <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload Resume'}
+                        <Upload size={15} /> {uploading ? progress || 'Uploading…' : 'Upload Resume'}
                     </button>
                 </div>
             )}
@@ -956,7 +882,7 @@ const ResumeCard = ({ profile, onProfileUpdate, onSkillsUpdated }) => {
 };
 
 /* ─────────────────────────────────────────────
-   University Proof — wired to real API
+   University Proof
 ───────────────────────────────────────────── */
 const UniversityProofCard = ({ profile, onProfileUpdate }) => {
     const [hasProof, setHasProof] = useState(profile?.hasUniversityProof || false);
@@ -980,7 +906,7 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
             setError(err.message || 'Upload failed');
         } finally {
             setUploading(false);
-            fileRef.current.value = '';
+            if (fileRef.current) fileRef.current.value = '';
         }
     };
 
@@ -1001,17 +927,11 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
     };
 
     const handleDownload = async () => {
-        try {
-            await downloadUniversityProofFile();
-        } catch (err) {
-            setError(err.message || 'Download failed');
-        }
+        try { await downloadUniversityProofFile(); }
+        catch (err) { setError(err.message || 'Download failed'); }
     };
 
-    const formatDate = (iso) => {
-        if (!iso) return '';
-        return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    };
+    const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
 
     return (
         <Card icon={GraduationCap} title="University Proof" subtitle="Proof of enrollment or university ID" highlight>
@@ -1028,9 +948,7 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
                         </div>
                         <div className="pf-resume-file__actions">
                             <button className="pf-icon-btn" onClick={handleDownload} title="Download"><Download size={15} /></button>
-                            <button className="pf-icon-btn pf-icon-btn--danger" onClick={handleDelete} disabled={deleting} title="Remove">
-                                <Trash2 size={15} />
-                            </button>
+                            <button className="pf-icon-btn pf-icon-btn--danger" onClick={handleDelete} disabled={deleting} title="Remove"><Trash2 size={15} /></button>
                         </div>
                     </div>
                     <button className="pf-btn pf-btn--outline pf-btn--full" onClick={() => fileRef.current?.click()} disabled={uploading}>
@@ -1042,7 +960,7 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
                     <div className="pf-dropzone" onClick={() => fileRef.current?.click()}>
                         {uploading ? <div className="pf-spinner pf-spinner--sm" /> : <GraduationCap size={36} className="pf-dropzone__icon" />}
                         <p className="pf-dropzone__label">{uploading ? 'Uploading…' : 'Upload university proof'}</p>
-                        <p className="pf-dropzone__sub">Upload a clear, cropped image showing the document text only</p>
+                        <p className="pf-dropzone__sub">PDF, PNG, or JPG</p>
                     </div>
                     <button className="pf-btn pf-btn--primary pf-btn--full" onClick={() => fileRef.current?.click()} disabled={uploading}>
                         <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload Proof'}
@@ -1060,15 +978,28 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
 };
 
 /* ─────────────────────────────────────────────
-   Matching Insights
+   Matching Insights  (dynamic)
 ───────────────────────────────────────────── */
-const MatchingInsightsCard = () => {
+const MatchingInsightsCard = ({ counts, profile, formData }) => {
+    const skillPct   = Math.min(Math.round((counts.skills / 5) * 100), 100);
+    const expPct     = Math.min(counts.experience * 33, 100);
+    const interestPct = Math.min(Math.round((counts.interests / 3) * 100), 100);
+    const completeness = calcStrength(formData, profile, counts);
+
     const metrics = [
-        { label: 'Skill Coverage', value: 60, icon: Target },
-        { label: 'Experience Alignment', value: 20, icon: Briefcase },
-        { label: 'Interest Match Strength', value: 67, icon: Heart },
-        { label: 'Profile Completeness', value: 60, icon: TrendingUp },
+        { label: 'Skill Coverage',           value: skillPct,    icon: Target },
+        { label: 'Experience Alignment',      value: expPct,      icon: Briefcase },
+        { label: 'Interest Match Strength',   value: interestPct, icon: Heart },
+        { label: 'Profile Completeness',      value: completeness, icon: TrendingUp },
     ];
+
+    const suggestions = [];
+    if (counts.skills < 3)      suggestions.push(`Add ${3 - counts.skills} more skill${3 - counts.skills > 1 ? 's' : ''} to improve match quality`);
+    if (!profile?.hasResume)    suggestions.push('Upload your CV to increase recruiter visibility');
+    if (counts.experience === 0) suggestions.push('Add at least one experience entry');
+    if (counts.projects === 0)  suggestions.push('Add a project to showcase practical skills');
+    if (counts.interests === 0) suggestions.push('Add your interests to improve match recommendations');
+    if (!formData?.bio?.trim()) suggestions.push('Write a short bio to help recruiters know you');
 
     return (
         <Card icon={TrendingUp} title="How Jobify Sees Your Profile" subtitle="Insights on your matching potential" highlight>
@@ -1086,28 +1017,29 @@ const MatchingInsightsCard = () => {
                     );
                 })}
             </div>
-            <div className="pf-suggestions">
-                <div className="pf-suggestions__title"><Lightbulb size={14} /> Suggestions to Improve</div>
-                {['Add 3 more skills to improve match quality', 'Upload CV to increase visibility by 40%', 'Add a project to showcase practical experience'].map((s, i) => (
-                    <div key={i} className="pf-suggestion">
-                        <span className="pf-suggestion__num">{i + 1}</span>
-                        <span>{s}</span>
-                    </div>
-                ))}
-            </div>
+
+            {suggestions.length > 0 && (
+                <div className="pf-suggestions">
+                    <div className="pf-suggestions__title"><Lightbulb size={14} /> Suggestions to Improve</div>
+                    {suggestions.slice(0, 4).map((s, i) => (
+                        <div key={i} className="pf-suggestion">
+                            <span className="pf-suggestion__num">{i + 1}</span>
+                            <span>{s}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </Card>
     );
 };
 
 /* ─────────────────────────────────────────────
-   Recruiter — Org Info
+   Recruiter cards (unchanged)
 ───────────────────────────────────────────── */
 const OrgInfoCard = ({ profile, formData, onChange }) => (
     <Card icon={Building2} title="Organization Information" subtitle="Company details and branding">
         <div className="pf-org-logo-row">
-            <div className="pf-org-logo">
-                <Building2 size={28} />
-            </div>
+            <div className="pf-org-logo"><Building2 size={28} /></div>
             <button className="pf-btn pf-btn--outline"><Upload size={14} /> Upload Logo</button>
         </div>
         <div className="pf-form-grid">
@@ -1141,16 +1073,12 @@ const OrgInfoCard = ({ profile, formData, onChange }) => (
     </Card>
 );
 
-/* ─────────────────────────────────────────────
-   Recruiter — Hiring Prefs
-───────────────────────────────────────────── */
 const HIRING_LEVELS = ['Interns', 'Junior Developers', 'Mid-level Developers', 'Senior Developers', 'Tech Leads'];
 
 const HiringPrefsCard = () => {
     const [focus, setFocus] = useState(['Interns']);
     const [skills, setSkills] = useState(['React', 'Python']);
     const [skillInput, setSkillInput] = useState('');
-
     const toggle = (l) => setFocus(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]);
     const addSkillLocal = () => {
         if (skillInput.trim() && !skills.includes(skillInput.trim())) {
@@ -1158,7 +1086,6 @@ const HiringPrefsCard = () => {
             setSkillInput('');
         }
     };
-
     return (
         <Card icon={Settings} title="Role & Hiring Preferences" subtitle="What type of talent you're looking for">
             <div className="pf-field">
@@ -1205,9 +1132,6 @@ const HiringPrefsCard = () => {
     );
 };
 
-/* ─────────────────────────────────────────────
-   Recruiter — Verification
-───────────────────────────────────────────── */
 const VerificationCard = ({ profile }) => {
     const verified = profile.verificationStatus === 'Verified';
     return (
@@ -1238,16 +1162,12 @@ const VerificationCard = ({ profile }) => {
     );
 };
 
-/* ─────────────────────────────────────────────
-   Recruiter — Activity
-───────────────────────────────────────────── */
 const ActivityCard = ({ profile }) => {
     const stats = [
-        { label: 'Active Opportunities', value: 12, color: 'blue', icon: Briefcase },
-        { label: 'Candidates Reviewed', value: 87, color: 'purple', icon: User },
-        { label: 'Interviews Scheduled', value: 15, color: 'green', icon: TrendingUp },
+        { label: 'Active Opportunities', value: 12, color: 'blue',   icon: Briefcase },
+        { label: 'Candidates Reviewed',  value: 87, color: 'purple', icon: User },
+        { label: 'Interviews Scheduled', value: 15, color: 'green',  icon: TrendingUp },
     ];
-
     return (
         <Card icon={BarChart3} title="Activity Snapshot" subtitle="Your recent hiring activity">
             <div className="pf-stats">
