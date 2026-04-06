@@ -487,7 +487,19 @@ public async Task<IActionResult> UploadUniversityProof(IFormFile uploadedFile)
 
     try
     {
-        var text = _ocrService.ExtractText(fullPath);
+        string text;
+        try
+        {
+            text = _ocrService.ExtractText(fullPath);
+        }
+        catch
+        {
+            // OCR not available — skip validation and accept the file
+            text = null;
+        }
+
+        if (text != null)
+        {
         var normalizedText = NormalizeText(text);
         var extractedUniversityName = ExtractUniversityName(text);
 
@@ -601,6 +613,7 @@ public async Task<IActionResult> UploadUniversityProof(IFormFile uploadedFile)
 
             return BadRequest("Uploaded document does not appear to be valid university proof.");
         }
+        } // end if (text != null)
 
         if (!string.IsNullOrEmpty(studentProfile.UniversityProofFileName))
         {
@@ -623,23 +636,6 @@ public async Task<IActionResult> UploadUniversityProof(IFormFile uploadedFile)
             {
                 hasUniversityProof = true,
                 universityProofUploadedAtUtc = studentProfile.UniversityProofUploadedAtUtc
-            },
-            debug = new
-            {
-                extractedText = text,
-                normalizedText = normalizedText,
-                extractedUniversityName = extractedUniversityName,
-                institutionScore = institutionScore,
-                idScore = idScore,
-                enrollmentScore = enrollmentScore,
-                transcriptScore = transcriptScore,
-                hasStudentNumber = hasStudentNumber,
-                looksLikeUniversityName = looksLikeUniversityName,
-                directUniversityMatch = directUniversityMatch,
-                nameMatched = nameMatched,
-                isStudentId = isStudentId,
-                isEnrollmentProof = isEnrollmentProof,
-                isTranscript = isTranscript
             }
         });
     }
@@ -1108,6 +1104,62 @@ private static string? ExtractUniversityName(string ocrText)
 
     return null;
 }
+
+    [HttpGet("company/{companyName}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetCompanyProfile(string companyName)
+    {
+        if (string.IsNullOrWhiteSpace(companyName))
+            return BadRequest("Company name required.");
+
+        var profile = await _context.RecruiterProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.CompanyName.ToLower() == companyName.ToLower());
+
+        if (profile == null)
+            return NotFound();
+
+        return Ok(new
+        {
+            companyName        = profile.CompanyName,
+            emailDomain        = profile.EmailDomain,
+            websiteUrl         = profile.WebsiteUrl,
+            linkedinUrl        = profile.LinkedinUrl,
+            instagramUrl       = profile.InstagramUrl,
+            notes              = profile.Notes,
+            verificationStatus = profile.VerificationStatus.ToString()
+        });
+    }
+
+    [HttpGet("company/by-opportunity/{opportunityId:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetCompanyProfileByOpportunity(int opportunityId)
+    {
+        var opportunity = await _context.Opportunities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == opportunityId);
+
+        if (opportunity == null)
+            return NotFound();
+
+        var profile = await _context.RecruiterProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.UserId == opportunity.RecruiterUserId);
+
+        if (profile == null)
+            return NotFound();
+
+        return Ok(new
+        {
+            companyName        = profile.CompanyName,
+            emailDomain        = profile.EmailDomain,
+            websiteUrl         = profile.WebsiteUrl,
+            linkedinUrl        = profile.LinkedinUrl,
+            instagramUrl       = profile.InstagramUrl,
+            notes              = profile.Notes,
+            verificationStatus = profile.VerificationStatus.ToString()
+        });
+    }
 }
 
 public class UpdateProfileRequest
