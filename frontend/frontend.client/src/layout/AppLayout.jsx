@@ -35,6 +35,7 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const profileMenuRef = useRef(null);
 
@@ -124,6 +125,11 @@ export default function AppLayout() {
   function handleGoToChangePassword() {
     setShowProfileMenu(false);
     navigate("/change-password");
+  }
+
+  function closeAllFooterModals() {
+    setShowAboutModal(false);
+    setShowPrivacyModal(false);
   }
 
   return (
@@ -315,14 +321,24 @@ export default function AppLayout() {
           </div>
 
           <div className="al-footerRight">
-            <a href="/" className="footer-link">
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() => {
+                setShowPrivacyModal(false);
+                setShowAboutModal(true);
+              }}
+            >
               About
-            </a>
+            </button>
 
             <button
               type="button"
               className="footer-link"
-              onClick={() => setShowPrivacyModal(true)}
+              onClick={() => {
+                setShowAboutModal(false);
+                setShowPrivacyModal(true);
+              }}
             >
               Privacy Policy
             </button>
@@ -351,11 +367,87 @@ export default function AppLayout() {
           <div className="al-footerBottom">© 2026 Jobify. All rights reserved.</div>
         </div>
 
+        {showAboutModal && (
+          <div className="footer-modalOverlay" onClick={closeAllFooterModals}>
+            <div className="footer-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="footer-modalHeader">
+                <div className="footer-modalTitle">About Jobify</div>
+
+                <button
+                  type="button"
+                  className="footer-modalClose"
+                  onClick={closeAllFooterModals}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="footer-modalBody">
+                <p>
+                  Jobify is an AI-powered recruitment platform built to make the
+                  hiring process smarter, more transparent, and more skill-based
+                  for both students and recruiters.
+                </p>
+
+                <p>
+                  Our platform goes beyond traditional job boards by offering
+                  creative features that help students understand their strengths
+                  and help recruiters evaluate candidates more fairly and
+                  accurately.
+                </p>
+
+                <p>
+                  <strong>CV Review:</strong> Students receive a detailed analysis
+                  of their CVs, helping them understand what is strong, what is
+                  missing, and how they can improve their profile before applying.
+                </p>
+
+                <p>
+                  <strong>Real Assessments:</strong> Instead of relying only on
+                  basic applications, Jobify allows students to go through actual
+                  opportunity assessments, including multiple choice questions,
+                  open-ended questions, and coding evaluations through code runner
+                  integration.
+                </p>
+
+                <p>
+                  <strong>Proctoring Tools:</strong> To support fair evaluation,
+                  the platform includes proctoring measures such as webcam
+                  snapshots, suspicious behavior tracking, and restrictions on
+                  actions like copy and paste during assessments.
+                </p>
+
+                <p>
+                  <strong>University Proof Verification:</strong> Jobify includes
+                  a university proof checking feature that helps confirm student
+                  status and strengthen trust between students and recruiters.
+                </p>
+
+                <p>
+                  <strong>Matching Recommendations:</strong> Jobify does more than
+                  list opportunities. It intelligently matches students to
+                  relevant opportunities and shows a matching percentage, giving
+                  users clear insight into how well they fit each role.
+                </p>
+
+                <p>
+                  <strong>Skill Transparency:</strong> The platform highlights the
+                  skills connected to each opportunity and profile so that both
+                  students and recruiters can clearly understand why a match is
+                  strong or where improvement is needed.
+                </p>
+
+                <p>
+                  With these features, Jobify aims to create a more reliable,
+                  innovative, and transparent hiring experience.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showPrivacyModal && (
-          <div
-            className="footer-modalOverlay"
-            onClick={() => setShowPrivacyModal(false)}
-          >
+          <div className="footer-modalOverlay" onClick={closeAllFooterModals}>
             <div className="footer-modal" onClick={(e) => e.stopPropagation()}>
               <div className="footer-modalHeader">
                 <div className="footer-modalTitle">Privacy Policy</div>
@@ -363,7 +455,7 @@ export default function AppLayout() {
                 <button
                   type="button"
                   className="footer-modalClose"
-                  onClick={() => setShowPrivacyModal(false)}
+                  onClick={closeAllFooterModals}
                 >
                   ×
                 </button>
