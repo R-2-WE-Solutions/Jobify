@@ -66,6 +66,26 @@
     margin-bottom: 8px;
 }
 
+.apps-company-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: var(--primary, #2563eb);
+    font-size: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s;
+}
+
+.apps-company-link:hover {
+    opacity: 0.75;
+    text-decoration-style: solid;
+}
+
 .apps-meta {
     font-size: 14px;
     color: var(--muted);

@@ -1,4 +1,3 @@
-
 // App DB + services
 using Jobify.Api.Data;
 using Jobify.Api.Services;
@@ -132,28 +131,38 @@ builder.Services
     })
 
     // Cookie used ONLY for external OAuth (Google / GitHub)
-    .AddCookie("External")
+    .AddCookie("External");
 
-    // Google OAuth login
-    .AddGoogle("Google", options =>
-    {
-        options.SignInScheme = "External";
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-        options.SaveTokens = true;
-        options.Scope.Add("email");
-        options.Scope.Add("profile");
-    })
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle("Google", options =>
+        {
+            options.SignInScheme = "External";
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.SaveTokens = true;
+            options.Scope.Add("email");
+            options.Scope.Add("profile");
+        });
+}
 
-    // GitHub OAuth login
-    .AddGitHub("GitHub", options =>
-    {
-        options.SignInScheme = "External";
-        options.ClientId = builder.Configuration["Authentication:GitHub:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"]!;
-        options.SaveTokens = true;
-        options.Scope.Add("user:email");
-    });
+var githubClientId = builder.Configuration["Authentication:GitHub:ClientId"];
+var githubClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(githubClientId) && !string.IsNullOrWhiteSpace(githubClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGitHub("GitHub", options =>
+        {
+            options.SignInScheme = "External";
+            options.ClientId = githubClientId;
+            options.ClientSecret = githubClientSecret;
+            options.SaveTokens = true;
+            options.Scope.Add("user:email");
+        });
+}
 
 // Authorization
 builder.Services.AddAuthorization();

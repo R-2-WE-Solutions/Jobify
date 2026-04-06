@@ -5,7 +5,7 @@ export async function uploadResume(file) {
     const form = new FormData();
     form.append("file", file);
 
-    const res = await rawRequest("/Profile/student/resume", {
+    const res = await rawRequest("/api/Profile/student/resume", {
         method: "POST",
         body: form,
     });
@@ -17,7 +17,7 @@ export async function uploadUniversityProof(file) {
     const form = new FormData();
     form.append("uploadedFile", file);
 
-    const res = await rawRequest("/Profile/student/university-proof", {
+    const res = await rawRequest("/api/Profile/student/university-proof", {
         method: "POST",
         body: form,
     });
@@ -26,13 +26,13 @@ export async function uploadUniversityProof(file) {
 }
 
 export async function deleteResume() {
-    const res = await rawRequest("/Profile/student/resume", { method: "DELETE" });
+    const res = await rawRequest("/api/Profile/student/resume", { method: "DELETE" });
     return res.json();
 }
 
 
 export async function deleteUniversityProof() {
-    const res = await rawRequest("/Profile/student/university-proof", { method: "DELETE" });
+    const res = await rawRequest("/api/Profile/student/university-proof", { method: "DELETE" });
     return res.json();
 }
 
@@ -55,9 +55,9 @@ async function downloadWithAuth(path, fallbackName) {
 }
 
 export async function downloadResumeFile() {
-    return downloadWithAuth("/Profile/student/resume", "resume");
+    return downloadWithAuth("/api/Profile/student/resume", "resume");
 }
 
 export async function downloadUniversityProofFile() {
-    return downloadWithAuth("/Profile/student/university-proof", "university_proof");
+    return downloadWithAuth("/api/Profile/student/university-proof", "university_proof");
 }

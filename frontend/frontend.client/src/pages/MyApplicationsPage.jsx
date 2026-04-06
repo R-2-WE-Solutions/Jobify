@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api/api";
 import "./styles/myapplications.css";
+import OrganizationProfileModal from "./components/OrganizationProfileModal";
 
 function canEdit(status) {
     return ["Draft", "Pending", "InReview", "Submitted"].includes(status);
@@ -18,6 +19,7 @@ export default function MyApplicationsPage() {
     const [editedNote, setEditedNote] = useState("");
     const [savingId, setSavingId] = useState(null);
     const [withdrawingId, setWithdrawingId] = useState(null);
+    const [orgModal, setOrgModal] = useState(null);
 
     async function loadApplications() {
         try {
@@ -139,7 +141,14 @@ export default function MyApplicationsPage() {
                                 <div className="apps-cardTop">
                                     <div>
                                         <h2 className="apps-jobTitle">{app.opportunityTitle}</h2>
-                                        <div className="apps-company">{app.companyName}</div>
+                                        <div className="apps-company">
+                                            <button
+                                                className="apps-company-link"
+                                                onClick={() => setOrgModal({ companyName: app.companyName, opportunityId: app.opportunityId })}
+                                            >
+                                                {app.companyName}
+                                            </button>
+                                        </div>
                                         <div className="apps-meta">
                                             <strong>Status:</strong> {app.status}
                                         </div>
@@ -218,5 +227,13 @@ export default function MyApplicationsPage() {
                 </div>
             )}
         </div>
+        {orgModal && (
+            <OrganizationProfileModal
+                companyName={orgModal.companyName}
+                opportunityId={orgModal.opportunityId}
+                onClose={() => setOrgModal(null)}
+            />
+        )}
+    </div>
     );
 }

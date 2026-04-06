@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../../../api/api";
+import { useApp } from "../.././../app/context/AppContext";
 import "../../styles/matches.css";
 
 function getInitials(company = "") {
@@ -48,20 +49,15 @@ function stepInfo(status) {
     switch (status) {
         case "Draft":
             return { step: "Stage 1", filled: 1 };
-
         case "Pending":
             return { step: "Stage 2", filled: 2 };
-
         case "In Review":
             return { step: "Stage 3", filled: 3 };
-
         case "Shortlisted":
             return { step: "Stage 4", filled: 4 };
-
         case "Accepted":
         case "Rejected":
             return { step: "Stage 5", filled: 5 };
-
         default:
             return { step: "Stage 1", filled: 1 };
     }
@@ -85,6 +81,20 @@ function Steps({ status }) {
     );
 }
 
+function CompanyLink({ name, opportunityId }) {
+    const { openOrgModal } = useApp();
+    return (
+        <button
+            type="button"
+            className="match-company-link"
+            onClick={(e) => { e.stopPropagation(); openOrgModal(name, opportunityId); }}
+        >
+            <Building2 size={15} />
+            {name}
+        </button>
+    );
+}
+
 export function OpportunityCard({ match }) {
     const [expanded, setExpanded] = useState(false);
     const navigate = useNavigate();
@@ -101,10 +111,7 @@ export function OpportunityCard({ match }) {
                         <h3 className="match-job-title">{match.jobTitle}</h3>
 
                         <div className="match-meta">
-                            <span className="match-company">
-                                <Building2 size={15} />
-                                {match.company}
-                            </span>
+                            <CompanyLink name={match.company} opportunityId={match.id} />
 
                             <span className="match-dot">•</span>
 
@@ -134,17 +141,8 @@ export function OpportunityCard({ match }) {
                             <ChevronDown size={16} style={{ marginLeft: 6 }} />
                         </button>
 
-                        <button
-                            type="button"
-                            className={`match-btn-icon ${match.isSaved ? "isSaved" : ""}`}
-                            onClick={() => onToggleSave?.(match.id)}
-                            disabled={match.isSaving}
-                            title={match.isSaved ? "Unsave" : "Save"}
-                        >
-                            <Bookmark
-                                size={18}
-                                fill={match.isSaved ? "currentColor" : "none"}
-                            />
+                        <button type="button" className="match-btn-icon">
+                            <Bookmark size={18} />
                         </button>
                     </div>
                 </div>
@@ -202,7 +200,7 @@ export function OpportunityCard({ match }) {
     );
 }
 
-export function OpportunitiesTab({ matches = [], onToggleSave }) {
+export function OpportunitiesTab({ matches = [] }) {
     const opportunities = matches.filter((m) => m.type === "opportunity");
 
     if (!opportunities.length) {
@@ -212,11 +210,7 @@ export function OpportunitiesTab({ matches = [], onToggleSave }) {
     return (
         <div className="matches-content">
             {opportunities.map((match) => (
-                <OpportunityCard
-                    key={match.id}
-                    match={match}
-                    onToggleSave={onToggleSave}
-                />
+                <OpportunityCard key={match.id} match={match} />
             ))}
         </div>
     );
@@ -231,75 +225,74 @@ export function ApplicationsTab({ matches = [], onWithdrawApplication }) {
     }
 
     return (
-        <div className="matches-content">
-            {applications.map((match) => (
-                <div key={match.id} className="match-card app-card">
-                    <div className="app-card-row">
-                        <div className="app-left">
-                            <div className={`match-logo ${match.logoColor || "blue"}`}>
-                                {getInitials(match.company)}
-                            </div>
-
-                            <div className="match-main">
-                                <h3 className="match-job-title">{match.jobTitle}</h3>
-
-                                <div className="match-meta">
-                                    <span className="match-company">
-                                        <Building2 size={15} />
-                                        {match.company}
-                                    </span>
-
-                                    <span className="match-dot">•</span>
-
-                                    <span className={statusClass(match.status)}>
-                                        {match.status}
-                                    </span>
+        <>
+            <div className="matches-content">
+                {applications.map((match) => (
+                    <div key={match.id} className="match-card app-card">
+                        <div className="app-card-row">
+                            <div className="app-left">
+                                <div className={`match-logo ${match.logoColor || "blue"}`}>
+                                    {getInitials(match.company)}
                                 </div>
 
-                                <div className="app-extra-left">
-                                    <Steps status={match.status} />
+                                <div className="match-main">
+                                    <h3 className="match-job-title">{match.jobTitle}</h3>
 
-                                    {match.status === "Draft" && (
-                                        <div className="assessment-pill">
-                                            <Clock size={14} />
-                                            Assessment Available
-                                        </div>
-                                    )}
+                                    <div className="match-meta">
+                                        <CompanyLink name={match.company} opportunityId={match.id} />
+
+                                        <span className="match-dot">•</span>
+
+                                        <span className={statusClass(match.status)}>
+                                            {match.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="app-extra-left">
+                                        <Steps status={match.status} />
+
+                                        {match.status === "Draft" && (
+                                            <div className="assessment-pill">
+                                                <Clock size={14} />
+                                                Assessment Available
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="app-right">
-                            {match.canWithdraw && (
+                            <div className="app-right">
+                                {match.canWithdraw && (
+                                    <button
+                                        type="button"
+                                        className="withdraw-btn"
+                                        onClick={() => onWithdrawApplication?.(match)}
+                                        disabled={match.isWithdrawing}
+                                        title={
+                                            match.isDraftStage
+                                                ? "Withdraw and reapply later"
+                                                : "Withdraw permanently from this opportunity"
+                                        }
+                                    >
+                                        {match.isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                                    </button>
+                                )}
+
                                 <button
                                     type="button"
-                                    className="withdraw-btn"
-                                    onClick={() => onWithdrawApplication?.(match)}
-                                    disabled={match.isWithdrawing}
-                                    title={
-                                        match.isDraftStage
-                                            ? "Withdraw and reapply later"
-                                            : "Withdraw permanently from this opportunity"
-                                    }
+                                    className="arrow-btn"
+                                    onClick={() => navigate(`/apply/${match.id}/review`)}
+                                    aria-label="Open application"
+                                    title="Open application"
                                 >
-                                    {match.isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                                    →
                                 </button>
-                            )}
-
-                            <button
-                                type="button"
-                                className="arrow-btn"
-                                onClick={() => navigate(`/apply/${match.id}/review`)}
-                                aria-label="Open application"
-                                title="Open application"
-                            >
-                                →
-                            </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
+        </>
     );
 }
 

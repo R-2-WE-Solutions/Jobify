@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
+import { AppProvider } from "../app/context/AppContext";
 import "../pages/styles/layout.css";
 import "../pages/styles/footer.css";
 
@@ -321,6 +322,7 @@ export default function AppLayout() {
   const filteredSearchOptions = getSearchMatches(globalQuery).slice(0, 10);
 
   return (
+    <AppProvider>
     <div className="al-shell">
       <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
         <div className="al-headerInner">
@@ -639,5 +641,6 @@ export default function AppLayout() {
         )}
       </footer>
     </div>
+    </AppProvider>
   );
 }
