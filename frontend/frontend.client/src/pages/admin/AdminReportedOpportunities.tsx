@@ -10,6 +10,14 @@ interface Opportunity {
   reportCount: number;
 }
 
+interface Report {
+  reportId: number;
+  studentId: string;
+  reason: string;
+  details: string | null;
+  createdAt: string;
+  isResolved: boolean;
+}
 
 export default function AdminReportedOpportunities() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,9 +29,9 @@ export default function AdminReportedOpportunities() {
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
 
   // Reports
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<any | null>(null);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
 
   // Reported Opportunities Fetching
@@ -173,6 +181,7 @@ export default function AdminReportedOpportunities() {
                       key={opportunity.id}
                       onClick={async () => {
                         setSelectedOpportunity(opportunity);
+                        setSelectedReport(null);
                         await fetchOpportunityReports(opportunity.opportunityId);
                       }}
                       onMouseEnter={() => setHoveredRow(opportunity.id)}
@@ -254,20 +263,26 @@ export default function AdminReportedOpportunities() {
                 ) : (
                   reports.map((report) => (
                     <div
-                      key={report.id}
+                      key={report.reportId}
+                      onClick={() =>
+                        setSelectedReport((prev) =>
+                          prev?.reportId === report.reportId ? null : report
+                        )
+                      }
                       style={{
                         border: "1px solid #e5e7eb",
                         borderRadius: "8px",
                         padding: "20px",
                         opacity: report.isResolved ? 0.5 : 1,
                         transition: "opacity 0.3s",
+                        cursor: "pointer",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
                             <h3 style={{ fontSize: "16px", fontWeight: "600" }}>
-                              {report.studentName}
+                              {report.reason}
                             </h3>
                             <code
                               style={{
@@ -290,11 +305,11 @@ export default function AdminReportedOpportunities() {
                               marginBottom: "8px",
                             }}
                           >
-                            {report.comment}
+                            {report.details || "No details provided."}
                           </p>
                           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                             <p style={{ fontSize: "12px", color: "#9ca3af" }}>
-                              Reported on {report.date}
+                              Reported on {new Date(report.createdAt).toLocaleString()}
                             </p>
                             {report.isResolved && (
                               <span
@@ -346,6 +361,30 @@ export default function AdminReportedOpportunities() {
                           {report.isResolved ? "Resolved" : "Resolve"}
                         </button>
                       </div>
+                      {selectedReport?.reportId === report.reportId && (
+                        <div
+                          style={{
+                            marginTop: "12px",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "10px",
+                            padding: "12px",
+                            backgroundColor: "#f9fafb",
+                          }}
+                        >
+                          <p style={{ fontSize: "14px", marginBottom: "6px" }}>
+                            <strong>Reason:</strong> {report.reason}
+                          </p>
+                          <p style={{ fontSize: "14px", marginBottom: "6px" }}>
+                            <strong>Student ID:</strong> {report.studentId}
+                          </p>
+                          <p style={{ fontSize: "14px", marginBottom: "6px" }}>
+                            <strong>Details:</strong> {report.details || "No details provided."}
+                          </p>
+                          <p style={{ fontSize: "12px", color: "#6b7280" }}>
+                            Reported on {new Date(report.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
