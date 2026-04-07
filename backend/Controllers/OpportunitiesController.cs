@@ -1316,7 +1316,7 @@ public class OpportunitiesController : ControllerBase
                                 ? starterEl.GetString() ?? ""
                                 : "",
 
-                            ExpectedOutput = q.TryGetProperty("expectedOutput", out var outputEl) && outputEl.ValueKind == JsonValueKind.String
+                            ExpectedOutput= q.TryGetProperty("expectedOutput", out var outputEl) && outputEl.ValueKind == JsonValueKind.String
                                 ? outputEl.GetString() ?? ""
                                 : ""
                         };
