@@ -97,7 +97,31 @@ function CompanyLink({ name, opportunityId }) {
 
 export function OpportunityCard({ match }) {
     const [expanded, setExpanded] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem("jobify_token");
+        if (!token || !match.id) return;
+        import("../../../api/api").then(({ api }) => {
+            api.get("/opportunities/saved/ids")
+                .then(res => setIsSaved(Array.isArray(res.data) && res.data.includes(match.id)))
+                .catch(() => {});
+        });
+    }, [match.id]);
+
+    const handleToggleSave = async (e) => {
+        e.stopPropagation();
+        const { api } = await import("../../../api/api");
+        try {
+            if (isSaved) {
+                await api.delete(`/opportunities/${match.id}/save`);
+            } else {
+                await api.post(`/opportunities/${match.id}/save`);
+            }
+            setIsSaved(s => !s);
+        } catch (err) { console.error(err); }
+    };
 
     return (
         <div className={`match-card opportunity-card ${expanded ? "expanded" : ""}`}>
@@ -141,8 +165,8 @@ export function OpportunityCard({ match }) {
                             <ChevronDown size={16} style={{ marginLeft: 6 }} />
                         </button>
 
-                        <button type="button" className="match-btn-icon">
-                            <Bookmark size={18} />
+                        <button type="button" className={`match-btn-icon ${isSaved ? "match-btn-icon--saved" : ""}`} onClick={handleToggleSave}>
+                            <Bookmark size={18} fill={isSaved ? "currentColor" : "none"} />
                         </button>
                     </div>
                 </div>

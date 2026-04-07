@@ -559,15 +559,13 @@ function OpportunityCard({ job, showScore }) {
                     <h3 className="opportunity-title">
                         {job.title}
                     </h3>
-                    <p className="opportunity-company">
-                        <button
-                            type="button"
-                            className="dashboard-company-link"
-                            onClick={() => openOrgModal(job.companyName, job.id)}
-                        >
-                            {job.companyName}
-                        </button>
-                    </p>
+                    <button
+                        type="button"
+                        className="dashboard-company-link"
+                        onClick={() => openOrgModal(job.companyName, job.id)}
+                    >
+                        {job.companyName}
+                    </button>
                     <p className="opportunity-meta">
                         {job.location} {job.workMode ? `• ${job.workMode}` : ""}
                     </p>

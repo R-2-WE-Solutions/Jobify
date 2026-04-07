@@ -66,3 +66,29 @@ textarea,
 select {
   font: inherit;
 }
+/* ── Global company name link style ─────────────── */
+.bo-company-link,
+.dashboard-company-link {
+    display: block;
+    margin: 4px 0 0;
+    background: none;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: var(--primary, #2563eb);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s;
+}
+.bo-company-link:hover,
+.dashboard-company-link:hover {
+    opacity: 0.75;
+    text-decoration-style: solid;
+}

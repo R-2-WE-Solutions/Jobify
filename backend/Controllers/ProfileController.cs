@@ -298,7 +298,16 @@ public class ProfileController : ControllerBase
             }
 
             if (!string.IsNullOrEmpty(request.CompanyName))
+            {
                 recruiterProfile.CompanyName = request.CompanyName;
+
+                // Keep all existing opportunities in sync with the new company name
+                var opportunities = await _context.Opportunities
+                    .Where(o => o.RecruiterUserId == userId)
+                    .ToListAsync();
+                foreach (var opp in opportunities)
+                    opp.CompanyName = request.CompanyName;
+            }
 
             recruiterProfile.EmailDomain = request.EmailDomain;
             recruiterProfile.WebsiteUrl = request.WebsiteUrl;

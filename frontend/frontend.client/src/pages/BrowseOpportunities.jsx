@@ -10,7 +10,8 @@ import {
     TrendingUp,
     ArrowUpDown
 } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../app/context/AppContext";
 
 import "./styles/browseopportunities.css";
 
@@ -27,7 +28,7 @@ function getOppLogo(type, level) {
 
 export function BrowseOpportunities() {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const { openOrgModal } = useApp();
 
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -42,11 +43,6 @@ export function BrowseOpportunities() {
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(false);
     const [savingId, setSavingId] = useState(null);
-
-    useEffect(() => {
-        const q = searchParams.get("q") || "";
-        setSearchQuery(q);
-    }, [searchParams]);
 
     const toggleSaved = async (id) => {
         try {
@@ -401,9 +397,15 @@ export function BrowseOpportunities() {
                                                         >
                                                             {opp.title}
                                                         </button>
-                                                        <p className="bo-company">{opp.company}</p>
                                                     </div>
                                                 </div>
+                                                <button
+                                                    type="button"
+                                                    className="bo-company-link"
+                                                    onClick={() => openOrgModal(opp.company, opp.id)}
+                                                >
+                                                    {opp.company}
+                                                </button>
 
                                                 <div className="bo-meta">
                                                     <span className={badgeTypeClass(opp.type)}>{opp.type}</span>

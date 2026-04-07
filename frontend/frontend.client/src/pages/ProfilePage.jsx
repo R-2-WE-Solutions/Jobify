@@ -162,7 +162,7 @@ const ProfilePage = () => {
             </header>
 
             <main className="pf-main">
-                {!bannerDismissed && (
+                {!bannerDismissed && strength < 100 && (
                     <div className="pf-banner">
                         <Info size={16} className="pf-banner__icon" />
                         <div className="pf-banner__text">

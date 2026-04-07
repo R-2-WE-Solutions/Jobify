@@ -124,6 +124,33 @@ export default function JobDetailsPage() {
 
 
     const [isSaved, setIsSaved] = useState(false);
+    const [savingToggle, setSavingToggle] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem("jobify_token");
+        if (!token || !id) return;
+        fetch(`${API_URL}/opportunities/saved/ids`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(r => r.ok ? r.json() : [])
+            .then(ids => setIsSaved(Array.isArray(ids) && ids.includes(Number(id))))
+            .catch(() => {});
+    }, [id]);
+
+    const handleToggleSave = async () => {
+        const token = localStorage.getItem("jobify_token");
+        if (!token) { navigate("/login"); return; }
+        setSavingToggle(true);
+        try {
+            if (isSaved) {
+                await fetch(`${API_URL}/opportunities/${id}/save`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+            } else {
+                await fetch(`${API_URL}/opportunities/${id}/save`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+            }
+            setIsSaved(s => !s);
+        } catch (e) { console.error(e); }
+        finally { setSavingToggle(false); }
+    };
 
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -526,7 +553,8 @@ export default function JobDetailsPage() {
                             <div className="heroActions">
                                 <button
                                     className={`btnOutline ${isSaved ? "btnOutlineSaved" : ""}`}
-                                    onClick={() => setIsSaved((s) => !s)}
+                                    onClick={handleToggleSave}
+                                    disabled={savingToggle}
                                 >
                                     <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
                                     <span className="hideOnMobile">{isSaved ? "Saved" : "Save"}</span>
@@ -873,7 +901,9 @@ export default function JobDetailsPage() {
                                             title="Save"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-
+                                                const token = localStorage.getItem("jobify_token");
+                                                if (!token) return;
+                                                fetch(`${API_URL}/opportunities/${s.id}/save`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
                                             }}
                                         >
                                             <Bookmark size={20} />
