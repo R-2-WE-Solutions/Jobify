@@ -14,11 +14,149 @@ import {
   Bell,
   Github,
   Mail,
+  Bell,
+  Github,
+  Mail,
 } from "lucide-react";
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
 import "../pages/styles/layout.css";
 import "../pages/styles/footer.css";
+
+const RECRUITER_SEARCH_OPTIONS = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    hint: "Overview metrics and updates",
+    keywords: "dashboard home overview",
+    path: "/dashboard",
+  },
+  {
+    id: "org-post",
+    label: "Posting - Post a Job",
+    hint: "Open posting form",
+    keywords: "organization posting post create job",
+    path: "/organization",
+    query: { tab: "post" },
+  },
+  {
+    id: "org-listings",
+    label: "Posting - My Listings",
+    hint: "View and manage listings",
+    keywords: "organization postings listings opportunities jobs",
+    path: "/organization",
+    query: { tab: "listings" },
+  },
+  {
+    id: "app-all",
+    label: "Applicants - All Stages",
+    hint: "All candidates",
+    keywords: "applicants candidates all stages",
+    path: "/organization/applicants",
+    query: { stage: "All" },
+  },
+  {
+    id: "app-pending",
+    label: "Applicants - Pending",
+    hint: "Candidates waiting review",
+    keywords: "applicants pending",
+    path: "/organization/applicants",
+    query: { stage: "Pending" },
+  },
+  {
+    id: "app-inreview",
+    label: "Applicants - In Review",
+    hint: "Candidates under review",
+    keywords: "applicants in review",
+    path: "/organization/applicants",
+    query: { stage: "InReview" },
+  },
+  {
+    id: "app-shortlisted",
+    label: "Applicants - Shortlisted",
+    hint: "Shortlisted candidates",
+    keywords: "applicants shortlisted",
+    path: "/organization/applicants",
+    query: { stage: "Shortlisted" },
+  },
+  {
+    id: "app-accepted",
+    label: "Applicants - Accepted",
+    hint: "Accepted candidates",
+    keywords: "applicants accepted",
+    path: "/organization/applicants",
+    query: { stage: "Accepted" },
+  },
+  {
+    id: "app-rejected",
+    label: "Applicants - Rejected",
+    hint: "Rejected candidates",
+    keywords: "applicants rejected",
+    path: "/organization/applicants",
+    query: { stage: "Rejected" },
+  },
+  {
+    id: "interviews",
+    label: "Interviews",
+    hint: "Manage upcoming interviews",
+    keywords: "interviews schedule",
+    path: "/organization/interviews",
+  },
+  {
+    id: "qa-all",
+    label: "Q&A - All",
+    hint: "All candidate questions",
+    keywords: "qa q&a questions all",
+    path: "/organization/qanda",
+    query: { filter: "all" },
+  },
+  {
+    id: "qa-pending",
+    label: "Q&A - Pending",
+    hint: "Questions waiting for answer",
+    keywords: "qa q&a pending unanswered",
+    path: "/organization/qanda",
+    query: { filter: "pending" },
+  },
+  {
+    id: "qa-answered",
+    label: "Q&A - Answered",
+    hint: "Already answered questions",
+    keywords: "qa q&a answered",
+    path: "/organization/qanda",
+    query: { filter: "answered" },
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    hint: "Open notifications",
+    keywords: "notifications alerts",
+    path: "/notifications",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    hint: "Account and company profile",
+    keywords: "profile account settings",
+    path: "/profile",
+  },
+];
+
+function buildPath(option) {
+  if (!option.query) return option.path;
+  return `${option.path}?${new URLSearchParams(option.query).toString()}`;
+}
+
+function getSearchMatches(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return RECRUITER_SEARCH_OPTIONS;
+
+  return RECRUITER_SEARCH_OPTIONS.filter((option) =>
+    `${option.label} ${option.hint} ${option.keywords}`
+      .toLowerCase()
+      .includes(q)
+  );
+}
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -34,10 +172,16 @@ export default function AppLayout() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [openFooter, setOpenFooter] = useState(null);
+  const [globalQuery, setGlobalQuery] = useState("");
+  const [showSearchMenu, setShowSearchMenu] = useState(false);
+
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
 
   const profileMenuRef = useRef(null);
+  const globalSearchRef = useRef(null);
+  const searchMenuRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -54,6 +198,13 @@ export default function AppLayout() {
         !profileMenuRef.current.contains(event.target)
       ) {
         setShowProfileMenu(false);
+      }
+
+      if (
+        searchMenuRef.current &&
+        !searchMenuRef.current.contains(event.target)
+      ) {
+        setShowSearchMenu(false);
       }
     }
 
@@ -114,6 +265,47 @@ export default function AppLayout() {
     loadUnreadCount();
   }, []);
 
+  useEffect(() => {
+    function handleGlobalHotkey(event) {
+      if (role !== "Recruiter") return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        globalSearchRef.current?.focus();
+        globalSearchRef.current?.select();
+        setShowSearchMenu(true);
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalHotkey);
+    return () => window.removeEventListener("keydown", handleGlobalHotkey);
+  }, [role]);
+
+  function runGlobalSearch() {
+    if (role !== "Recruiter") return;
+    const q = globalQuery.trim();
+    const matches = getSearchMatches(q);
+
+    if (matches.length > 0) {
+      navigate(buildPath(matches[0]));
+      setShowSearchMenu(false);
+      return;
+    }
+
+    if (!q) {
+      setShowSearchMenu(true);
+      return;
+    }
+
+    navigate("/organization");
+    setShowSearchMenu(false);
+  }
+
+  function selectSearchOption(option) {
+    navigate(buildPath(option));
+    setGlobalQuery(option.label);
+    setShowSearchMenu(false);
+  }
+
   function handleLogout() {
     setShowProfileMenu(false);
     localStorage.removeItem("jobify_token");
@@ -132,6 +324,8 @@ export default function AppLayout() {
     setShowPrivacyModal(false);
   }
 
+  const filteredSearchOptions = getSearchMatches(globalQuery).slice(0, 10);
+
   return (
     <div className="al-shell">
       <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
@@ -149,11 +343,51 @@ export default function AppLayout() {
           </div>
 
           <div className="al-headerCenter">
-            <div className="al-search">
-              <Search className="al-searchIcon" size={18} />
-              <input placeholder="Quick search: pages, users, settings… (Ctrl K)" />
-              <kbd className="al-kbd">Ctrl K</kbd>
-            </div>
+            {!loadingProfile && role === "Recruiter" && (
+              <form
+                ref={searchMenuRef}
+                className="al-search"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  runGlobalSearch();
+                }}
+              >
+                <Search className="al-searchIcon" size={18} />
+                <input
+                  ref={globalSearchRef}
+                  value={globalQuery}
+                  onChange={(e) => {
+                    setGlobalQuery(e.target.value);
+                    setShowSearchMenu(true);
+                  }}
+                  onFocus={() => setShowSearchMenu(true)}
+                  placeholder="Recruiter quick search: pages and tabs... (Ctrl K)"
+                />
+                <kbd className="al-kbd">Ctrl K</kbd>
+
+                {showSearchMenu && (
+                  <div className="al-searchMenu">
+                    {filteredSearchOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className="al-searchOption"
+                        onClick={() => selectSearchOption(option)}
+                      >
+                        <span className="al-searchOptionLabel">{option.label}</span>
+                        <span className="al-searchOptionHint">{option.hint}</span>
+                      </button>
+                    ))}
+
+                    {filteredSearchOptions.length === 0 && (
+                      <div className="al-searchEmpty">
+                        No matching destination. Try "Applicants", "Q&A", or "My Listings".
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form>
+            )}
           </div>
 
           <div className="al-headerSide al-right">
@@ -352,7 +586,26 @@ export default function AppLayout() {
               >
                 <Github size={18} />
               </a>
+            <div className="footer-icons">
+              <a
+                href="https://github.com/R-2-WE-Solutions/Jobify"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Github size={18} />
+              </a>
 
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Mail size={18} />
+              </a>
+            </div>
+          </div>
               <a
                 href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
                 target="_blank"

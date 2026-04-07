@@ -237,9 +237,13 @@ public class UsersController : ControllerBase
     [HttpGet("admin/dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
+        // Dates
         var now = DateTime.UtcNow;
         var yesterday = now.AddDays(-1);
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var previousMonthStart = currentMonthStart.AddMonths(-1);
 
+        // Totals
         var totalStudents = await _context.StudentProfiles.CountAsync();
         var totalRecruiters = await _context.RecruiterProfiles.CountAsync();
 
@@ -250,6 +254,32 @@ public class UsersController : ControllerBase
 
         var totalApplications = await _context.Applications.CountAsync();
 
+        // Trends (this month vs previous month)
+        var studentsThisMonth = await _context.StudentProfiles
+            .CountAsync(s => s.CreatedAt >= currentMonthStart);
+        var studentsLastMonth = await _context.StudentProfiles
+            .CountAsync(s => s.CreatedAt >= previousMonthStart && s.CreatedAt < currentMonthStart);
+
+        var recruitersThisMonth = await _context.RecruiterProfiles
+            .CountAsync(r => r.CreatedAtUtc >= currentMonthStart);
+        var recruitersLastMonth = await _context.RecruiterProfiles
+            .CountAsync(r => r.CreatedAtUtc >= previousMonthStart && r.CreatedAtUtc < currentMonthStart);
+
+        var applicationsThisMonth = await _context.Applications
+            .CountAsync(a => a.CreatedAtUtc >= currentMonthStart);
+        var applicationsLastMonth = await _context.Applications
+            .CountAsync(a => a.CreatedAtUtc >= previousMonthStart && a.CreatedAtUtc < currentMonthStart);
+
+        var companyFirstCreatedDates = await _context.RecruiterProfiles
+            .Where(r => r.CompanyName != null && r.CompanyName != "")
+            .GroupBy(r => r.CompanyName.Trim().ToLower())
+            .Select(g => g.Min(x => x.CreatedAtUtc))
+            .ToListAsync();
+
+        var companiesThisMonth = companyFirstCreatedDates.Count(d => d >= currentMonthStart);
+        var companiesLastMonth = companyFirstCreatedDates.Count(d => d >= previousMonthStart && d < currentMonthStart);
+
+        // Recruiter Status
         var pendingVerification = await _context.RecruiterProfiles
             .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.EmailPending);
 
@@ -262,12 +292,14 @@ public class UsersController : ControllerBase
         var rejectedRecruiters = await _context.RecruiterProfiles
             .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Rejected);
 
+        // Platform Health
         var activeUsers = await _context.Users.CountAsync();
 
         var newSignups = 0;
 
         var pendingActions = pendingApproval + pendingVerification;
 
+        // Recent Activity
         var recentStudents = await _context.StudentProfiles
             .OrderByDescending(s => s.CreatedAt)
             .Take(10)
@@ -357,10 +389,18 @@ public class UsersController : ControllerBase
             newSignups,
             pendingActions,
 
-            recentActivity
+            recentActivity,
+
+            studentsTrendPercent = CalculatePercentageChange(studentsThisMonth, studentsLastMonth),
+            recruitersTrendPercent = CalculatePercentageChange(recruitersThisMonth, recruitersLastMonth),
+            companiesTrendPercent = CalculatePercentageChange(companiesThisMonth, companiesLastMonth),
+            applicationsTrendPercent = CalculatePercentageChange(applicationsThisMonth, applicationsLastMonth),
+
         });
     }
 
+
+    // Get Companies
     [Authorize(Roles = "Admin")]
     [HttpGet("companies")]
     public async Task<IActionResult> GetCompanies()
@@ -412,6 +452,53 @@ public class UsersController : ControllerBase
         return Ok(companies);
     }
 
+    // Admin: Get System Overview Stats
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/system-overview")]
+    public async Task<IActionResult> GetSystemOverview()
+    {
+        var since24h = DateTime.UtcNow.AddHours(-24);
+
+        var pendingVerification = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.EmailPending);
+
+        var pendingApproval = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Pending);
+
+        var verifiedRecruiters = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Verified);
+
+        var rejectedRecruiters = await _context.RecruiterProfiles
+            .CountAsync(r => r.VerificationStatus == RecruiterVerificationStatus.Rejected);
+
+        var activeUsers = await _userManager.Users.CountAsync();
+
+        var newStudentSignups = await _context.StudentProfiles
+            .CountAsync(s => s.CreatedAt >= since24h);
+
+        var newRecruiterSignups = await _context.RecruiterProfiles
+            .CountAsync(r => r.CreatedAtUtc >= since24h);
+
+        var unresolvedReports = await _context.OpportunityReports
+            .CountAsync(r => !r.IsResolved);
+
+        var newSignups = newStudentSignups + newRecruiterSignups;
+        var pendingActions = pendingVerification + pendingApproval + unresolvedReports;
+
+        return Ok(new
+        {
+            pendingVerification,
+            pendingApproval,
+            verifiedRecruiters,
+            rejectedRecruiters,
+            activeUsers,
+            newSignups,
+            pendingActions
+        });
+    }
+
+
+    // DTO returned to frontend to keep API response clean and safe
     public record UserDto(string Id, string Email, string UserName, List<string> Roles);
 
     public class StudentAdminDto
@@ -437,5 +524,16 @@ public class UsersController : ControllerBase
     {
         public string? Title { get; set; }
         public string Message { get; set; } = string.Empty;
+    };
+
+
+    // Helper Method
+    private static double CalculatePercentageChange(int currentPeriodCount, int previousPeriodCount)
+    {
+        if (previousPeriodCount == 0)
+            return currentPeriodCount > 0 ? 100.0 : 0.0;
+
+        return ((currentPeriodCount - previousPeriodCount) / (double)previousPeriodCount) * 100.0;
     }
+
 }

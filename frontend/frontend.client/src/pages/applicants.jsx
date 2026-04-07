@@ -1,6 +1,6 @@
     import React, { useEffect, useMemo, useRef, useState } from "react";
     import { Calendar, Mail, ChevronDown, Check } from "lucide-react";
-    import { useNavigate } from "react-router-dom";
+    import { useNavigate, useSearchParams } from "react-router-dom";
     import { api } from "../api/api";
     import "./styles/applicant.css";
 
@@ -774,8 +774,19 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
         };
     }
 
+    function normalizeStageFilterParam(value) {
+        const v = String(value || "").trim().toLowerCase();
+        if (v === "pending") return "Pending";
+        if (v === "inreview" || v === "in_review" || v === "in review") return "InReview";
+        if (v === "shortlisted") return "Shortlisted";
+        if (v === "accepted") return "Accepted";
+        if (v === "rejected") return "Rejected";
+        return "All";
+    }
+
     export default function Applicants() {
         const navigate = useNavigate();
+        const [searchParams] = useSearchParams();
         const [opportunities, setOpportunities] = useState([]);
         const [selectedOpportunityId, setSelectedOpportunityId] = useState("");
         const [selectedOpportunityTitle, setSelectedOpportunityTitle] = useState("");
@@ -991,6 +1002,13 @@ function AssessmentReviewModal({ open, onClose, applicant, loading }) {
         useEffect(() => {
             fetchOpportunities();
         }, []);
+
+        useEffect(() => {
+            const stage = searchParams.get("stage");
+            if (stage) {
+                setStageFilter(normalizeStageFilterParam(stage));
+            }
+        }, [searchParams]);
 
         useEffect(() => {
             if (selectedOpportunityId) {
