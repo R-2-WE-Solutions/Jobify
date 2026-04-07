@@ -193,7 +193,7 @@ const ProfilePage = () => {
                         setCounts={setCounts}
                     />
                 ) : (
-                    <RecruiterSections profile={profile} formData={formData} onChange={handleInputChange} />
+                    <RecruiterSections profile={profile} formData={formData} onChange={handleInputChange} onProfileUpdate={setProfile} />
                 )}
 
                 <div className="pf-save-row">
@@ -231,13 +231,13 @@ const StudentSections = ({ profile, formData, onChange, onProfileUpdate, skillsR
 /* ─────────────────────────────────────────────
    Recruiter sections
 ───────────────────────────────────────────── */
-const RecruiterSections = ({ profile, formData, onChange }) => (
+const RecruiterSections = ({ profile, formData, onChange, onProfileUpdate }) => (
     <div className="pf-sections">
-        <OrgInfoCard profile={profile} formData={formData} onChange={onChange} />
-        <HiringPrefsCard profile={profile} />
+        <OrgInfoCard profile={profile} formData={formData} onChange={onChange} onProfileUpdate={onProfileUpdate} />
+        <HiringPrefsCard formData={formData} onChange={onChange} />
         <div className="pf-grid-2">
             <VerificationCard profile={profile} />
-            <ActivityCard profile={profile} />
+            <ActivityCard />
         </div>
     </div>
 );
@@ -1036,61 +1036,103 @@ const MatchingInsightsCard = ({ counts, profile, formData }) => {
 /* ─────────────────────────────────────────────
    Recruiter cards (unchanged)
 ───────────────────────────────────────────── */
-const OrgInfoCard = ({ profile, formData, onChange }) => (
-    <Card icon={Building2} title="Organization Information" subtitle="Company details and branding">
-        <div className="pf-org-logo-row">
-            <div className="pf-org-logo"><Building2 size={28} /></div>
-            <button className="pf-btn pf-btn--outline"><Upload size={14} /> Upload Logo</button>
-        </div>
-        <div className="pf-form-grid">
-            <div className="pf-field">
-                <label className="pf-label">Company Name</label>
-                <input className="pf-input" name="companyName" value={formData.companyName || ''} onChange={onChange} placeholder="Acme Corp" required />
+const OrgInfoCard = ({ profile, formData, onChange, onProfileUpdate }) => {
+    const logoRef = useRef();
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [logoError, setLogoError] = useState(null);
+    const [logoUrl, setLogoUrl] = useState(null);
+
+    useEffect(() => {
+        if (profile?.userId && profile?.logoFileName) {
+            setLogoUrl(`http://localhost:5159/api/Profile/recruiter/logo?userId=${profile.userId}`);
+        }
+    }, [profile]);
+
+    const handleLogoFile = async (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        setLogoError(null);
+        setUploadingLogo(true);
+        try {
+            const form = new FormData();
+            form.append('file', f);
+            const token = localStorage.getItem('jobify_token');
+            const res = await fetch('http://localhost:5159/api/Profile/recruiter/logo', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: form,
+            });
+            if (!res.ok) { const t = await res.text(); throw new Error(t || 'Upload failed'); }
+            const data = await res.json();
+            setLogoUrl(`http://localhost:5159/api/Profile/recruiter/logo?userId=${profile.userId}&t=${Date.now()}`);
+            onProfileUpdate?.(prev => ({ ...prev, logoFileName: data.logoFileName }));
+        } catch (err) {
+            setLogoError(err.message || 'Logo upload failed');
+        } finally {
+            setUploadingLogo(false);
+            if (logoRef.current) logoRef.current.value = '';
+        }
+    };
+
+    return (
+        <Card icon={Building2} title="Organization Information" subtitle="Company details and branding">
+            <div className="pf-org-logo-row">
+                <div className="pf-org-logo" style={{ overflow: 'hidden' }}>
+                    {logoUrl
+                        ? <img src={logoUrl} alt="Company logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <Building2 size={28} />
+                    }
+                </div>
+                <div>
+                    <button className="pf-btn pf-btn--outline" onClick={() => logoRef.current?.click()} disabled={uploadingLogo} type="button">
+                        <Upload size={14} /> {uploadingLogo ? 'Uploading…' : 'Upload Logo'}
+                    </button>
+                    {logoError && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{logoError}</p>}
+                </div>
+                <input ref={logoRef} type="file" accept=".png,.jpg,.jpeg,.webp" onChange={handleLogoFile} hidden />
+            </div>
+            <div className="pf-form-grid">
+                <div className="pf-field">
+                    <label className="pf-label">Company Name</label>
+                    <input className="pf-input" name="companyName" value={formData.companyName || ''} onChange={onChange} placeholder="Acme Corp" required />
+                </div>
+                <div className="pf-field">
+                    <label className="pf-label">Website</label>
+                    <input className="pf-input" name="websiteUrl" value={formData.websiteUrl || ''} onChange={onChange} placeholder="company.com" />
+                </div>
             </div>
             <div className="pf-field">
-                <label className="pf-label">Industry</label>
-                <select className="pf-select pf-select--full" name="industry">
-                    {['Technology', 'Finance', 'Healthcare', 'Education', 'Retail', 'Consulting', 'Other'].map(v => <option key={v}>{v}</option>)}
-                </select>
+                <label className="pf-label">Location</label>
+                <input className="pf-input" name="location" value={formData.location || ''} onChange={onChange} placeholder="City, Country" />
             </div>
-        </div>
-        <div className="pf-form-grid">
-            <div className="pf-field">
-                <label className="pf-label">Organization Size</label>
-                <select className="pf-select pf-select--full" name="orgSize">
-                    {['1-10', '11-50', '51-200', '201-500', '500-1000', '1000+'].map(v => <option key={v}>{v} employees</option>)}
-                </select>
-            </div>
-            <div className="pf-field">
-                <label className="pf-label">Website</label>
-                <input className="pf-input" name="websiteUrl" value={formData.websiteUrl || ''} onChange={onChange} placeholder="company.com" />
-            </div>
-        </div>
-        <div className="pf-field">
-            <label className="pf-label">Location</label>
-            <input className="pf-input" name="location" value={formData.location || ''} onChange={onChange} placeholder="City, Country" />
-        </div>
-    </Card>
-);
+        </Card>
+    );
+};
 
 const HIRING_LEVELS = ['Interns', 'Junior Developers', 'Mid-level Developers', 'Senior Developers', 'Tech Leads'];
 
-const HiringPrefsCard = () => {
-    const [focus, setFocus] = useState(['Interns']);
-    const [skills, setSkills] = useState(['React', 'Python']);
+const HiringPrefsCard = ({ formData, onChange }) => {
+    const focus = (() => { try { return JSON.parse(formData?.hiringFocusJson || '[]'); } catch { return []; } })();
+    const skills = (() => { try { return JSON.parse(formData?.assessedSkillsJson || '[]'); } catch { return []; } })();
     const [skillInput, setSkillInput] = useState('');
-    const toggle = (l) => setFocus(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l]);
-    const addSkillLocal = () => {
+
+    const setFocusJson = (newFocus) => onChange({ target: { name: 'hiringFocusJson', value: JSON.stringify(newFocus) } });
+    const setSkillsJson = (newSkills) => onChange({ target: { name: 'assessedSkillsJson', value: JSON.stringify(newSkills) } });
+
+    const toggleFocus = (l) => setFocusJson(focus.includes(l) ? focus.filter(x => x !== l) : [...focus, l]);
+    const addSkill = () => {
         if (skillInput.trim() && !skills.includes(skillInput.trim())) {
-            setSkills(prev => [...prev, skillInput.trim()]);
+            setSkillsJson([...skills, skillInput.trim()]);
             setSkillInput('');
         }
     };
+    const removeSkill = (s) => setSkillsJson(skills.filter(x => x !== s));
+
     return (
         <Card icon={Settings} title="Role & Hiring Preferences" subtitle="What type of talent you're looking for">
             <div className="pf-field">
                 <label className="pf-label">Your Role / Title</label>
-                <input className="pf-input" defaultValue="Talent Acquisition Manager" />
+                <input className="pf-input" name="roleTitle" value={formData?.roleTitle || ''} onChange={onChange} placeholder="e.g. Talent Acquisition Manager" />
             </div>
             <div className="pf-field">
                 <label className="pf-label">Hiring Focus</label>
@@ -1098,7 +1140,7 @@ const HiringPrefsCard = () => {
                 <div className="pf-checkboxes">
                     {HIRING_LEVELS.map(l => (
                         <label key={l} className="pf-checkbox-label">
-                            <input type="checkbox" checked={focus.includes(l)} onChange={() => toggle(l)} className="pf-checkbox" />
+                            <input type="checkbox" checked={focus.includes(l)} onChange={() => toggleFocus(l)} className="pf-checkbox" />
                             {l}
                         </label>
                     ))}
@@ -1108,15 +1150,15 @@ const HiringPrefsCard = () => {
                 <label className="pf-label">Skills Frequently Assessed</label>
                 <div className="pf-skill-add">
                     <input className="pf-input pf-input--flex" value={skillInput} onChange={e => setSkillInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkillLocal())} placeholder="Add a skill" />
-                    <button className="pf-btn pf-btn--primary" onClick={addSkillLocal}><Plus size={14} /> Add</button>
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} placeholder="Add a skill" />
+                    <button className="pf-btn pf-btn--primary" onClick={addSkill} type="button"><Plus size={14} /> Add</button>
                 </div>
                 {skills.length > 0 && (
                     <div className="pf-tags">
                         {skills.map(s => (
                             <span key={s} className="pf-tag pf-tag--skill">
                                 {s}
-                                <button className="pf-tag__remove" onClick={() => setSkills(prev => prev.filter(x => x !== s))}><X size={11} /></button>
+                                <button className="pf-tag__remove" onClick={() => removeSkill(s)} type="button"><X size={11} /></button>
                             </span>
                         ))}
                     </div>
@@ -1124,7 +1166,7 @@ const HiringPrefsCard = () => {
             </div>
             <div className="pf-field">
                 <label className="pf-label">Preferred Work Mode</label>
-                <select className="pf-select pf-select--full">
+                <select className="pf-select pf-select--full" name="preferredWorkMode" value={formData?.preferredWorkMode || 'Remote'} onChange={onChange}>
                     {['Remote', 'On-site', 'Hybrid', 'Flexible'].map(v => <option key={v}>{v}</option>)}
                 </select>
             </div>
@@ -1162,28 +1204,57 @@ const VerificationCard = ({ profile }) => {
     );
 };
 
-const ActivityCard = ({ profile }) => {
-    const stats = [
-        { label: 'Active Opportunities', value: 12, color: 'blue',   icon: Briefcase },
-        { label: 'Candidates Reviewed',  value: 87, color: 'purple', icon: User },
-        { label: 'Interviews Scheduled', value: 15, color: 'green',  icon: TrendingUp },
+const ActivityCard = () => {
+    const [stats, setStats] = useState({ opportunities: null, interviews: null, applicants: null });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const [oppsRes, interviewsRes] = await Promise.all([
+                    import('../api/api').then(({ api }) => api.get('/opportunities/my')),
+                    import('../api/api').then(({ api }) => api.get('/interviews/recruiter')),
+                ]);
+                const opps = Array.isArray(oppsRes.data) ? oppsRes.data : [];
+                const activeOpps = opps.filter(o => !o.isClosed).length;
+                const interviews = Array.isArray(interviewsRes.data) ? interviewsRes.data.length : 0;
+                const totalApplicants = opps.reduce((sum, o) => sum + (o.applicantCount ?? 0), 0);
+                setStats({ opportunities: activeOpps, interviews, applicants: totalApplicants });
+            } catch {
+                setStats({ opportunities: 0, interviews: 0, applicants: 0 });
+            } finally {
+                setLoading(false);
+            }
+        }
+        load();
+    }, []);
+
+    const items = [
+        { label: 'Active Opportunities', value: stats.opportunities, color: 'blue',   icon: Briefcase },
+        { label: 'Total Applicants',     value: stats.applicants,    color: 'purple', icon: User },
+        { label: 'Interviews Scheduled', value: stats.interviews,    color: 'green',  icon: TrendingUp },
     ];
+
     return (
         <Card icon={BarChart3} title="Activity Snapshot" subtitle="Your recent hiring activity">
-            <div className="pf-stats">
-                {stats.map(s => {
-                    const Icon = s.icon;
-                    return (
-                        <div key={s.label} className={`pf-stat pf-stat--${s.color}`}>
-                            <div className="pf-stat__icon"><Icon size={18} /></div>
-                            <div>
-                                <p className="pf-stat__value">{s.value}</p>
-                                <p className="pf-stat__label">{s.label}</p>
+            {loading ? (
+                <div className="pf-empty"><div className="pf-spinner pf-spinner--sm" /></div>
+            ) : (
+                <div className="pf-stats">
+                    {items.map(s => {
+                        const Icon = s.icon;
+                        return (
+                            <div key={s.label} className={`pf-stat pf-stat--${s.color}`}>
+                                <div className="pf-stat__icon"><Icon size={18} /></div>
+                                <div>
+                                    <p className="pf-stat__value">{s.value ?? '—'}</p>
+                                    <p className="pf-stat__label">{s.label}</p>
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </Card>
     );
 };

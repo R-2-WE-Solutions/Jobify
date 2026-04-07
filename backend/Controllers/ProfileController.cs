@@ -202,7 +202,13 @@ public class ProfileController : ControllerBase
                     notes = recruiterProfile.Notes,
                     createdAt = recruiterProfile.CreatedAtUtc,
                     emailConfirmedAt = recruiterProfile.EmailConfirmedAtUtc,
-                    verifiedAt = recruiterProfile.VerifiedAtUtc
+                    verifiedAt = recruiterProfile.VerifiedAtUtc,
+                    roleTitle = recruiterProfile.RoleTitle,
+                    hiringFocusJson = recruiterProfile.HiringFocusJson,
+                    assessedSkillsJson = recruiterProfile.AssessedSkillsJson,
+                    preferredWorkMode = recruiterProfile.PreferredWorkMode,
+                    logoFileName = recruiterProfile.LogoFileName,
+                    location = recruiterProfile.Location
                 }
             });
         }
@@ -314,6 +320,11 @@ public class ProfileController : ControllerBase
             recruiterProfile.LinkedinUrl = request.LinkedinUrl;
             recruiterProfile.InstagramUrl = request.InstagramUrl;
             recruiterProfile.Notes = request.Notes;
+            recruiterProfile.RoleTitle = request.RoleTitle;
+            recruiterProfile.HiringFocusJson = request.HiringFocusJson;
+            recruiterProfile.AssessedSkillsJson = request.AssessedSkillsJson;
+            recruiterProfile.PreferredWorkMode = request.PreferredWorkMode;
+            recruiterProfile.Location = request.Location;
 
             await _context.SaveChangesAsync();
 
@@ -329,7 +340,13 @@ public class ProfileController : ControllerBase
                     linkedinUrl = recruiterProfile.LinkedinUrl,
                     instagramUrl = recruiterProfile.InstagramUrl,
                     verificationStatus = recruiterProfile.VerificationStatus.ToString(),
-                    notes = recruiterProfile.Notes
+                    notes = recruiterProfile.Notes,
+                    roleTitle = recruiterProfile.RoleTitle,
+                    hiringFocusJson = recruiterProfile.HiringFocusJson,
+                    assessedSkillsJson = recruiterProfile.AssessedSkillsJson,
+                    preferredWorkMode = recruiterProfile.PreferredWorkMode,
+                    location = recruiterProfile.Location,
+                    logoFileName = recruiterProfile.LogoFileName
                 }
             });
         }
@@ -1114,6 +1131,68 @@ private static string? ExtractUniversityName(string ocrText)
     return null;
 }
 
+    [HttpPost("recruiter/logo")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadRecruiterLogo(IFormFile file)
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var ur = await GetUserAndRolesAsync(userId);
+        if (ur == null || !ur.Value.roles.Contains("Recruiter"))
+            return Forbid("Only recruiters can upload a logo.");
+
+        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+        if (file.Length > 5 * 1024 * 1024) return BadRequest("File too large. Max 5MB.");
+
+        var ext = SafeExt(file.FileName);
+        var allowed = new[] { ".png", ".jpg", ".jpeg", ".webp" };
+        if (!allowed.Contains(ext.ToLower())) return BadRequest("Only PNG, JPG, JPEG, WEBP allowed.");
+
+        var folder = Path.Combine("Uploads", "Recruiters", userId);
+        Directory.CreateDirectory(folder);
+
+        var profile = await _context.RecruiterProfiles.FirstOrDefaultAsync(r => r.UserId == userId);
+        if (profile == null) return NotFound();
+
+        // Delete old logo
+        if (!string.IsNullOrEmpty(profile.LogoFileName))
+        {
+            var oldPath = Path.Combine(folder, profile.LogoFileName);
+            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+        }
+
+        var storedName = $"logo_{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(folder, storedName);
+        using (var stream = new FileStream(fullPath, FileMode.Create))
+            await file.CopyToAsync(stream);
+
+        profile.LogoFileName = storedName;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { logoFileName = storedName });
+    }
+
+    [HttpGet("recruiter/logo")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRecruiterLogo([FromQuery] string userId)
+    {
+        if (string.IsNullOrEmpty(userId)) return BadRequest();
+
+        var profile = await _context.RecruiterProfiles.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.UserId == userId);
+
+        if (profile == null || string.IsNullOrEmpty(profile.LogoFileName))
+            return NotFound();
+
+        var path = Path.Combine("Uploads", "Recruiters", userId, profile.LogoFileName);
+        if (!System.IO.File.Exists(path)) return NotFound();
+
+        var ext = Path.GetExtension(profile.LogoFileName).ToLower();
+        var mime = ext switch { ".png" => "image/png", ".webp" => "image/webp", _ => "image/jpeg" };
+        return PhysicalFile(Path.GetFullPath(path), mime);
+    }
+
     [HttpGet("company/{companyName}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetCompanyProfile(string companyName)
@@ -1193,6 +1272,10 @@ public class UpdateProfileRequest
     public string? LinkedinUrl { get; set; }
     public string? InstagramUrl { get; set; }
     public string? Notes { get; set; }
+    public string? RoleTitle { get; set; }
+    public string? HiringFocusJson { get; set; }
+    public string? AssessedSkillsJson { get; set; }
+    public string? PreferredWorkMode { get; set; }
 }
 
 public class UploadResumeRequest

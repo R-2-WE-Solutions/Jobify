@@ -41,4 +41,22 @@ public class RecruiterProfile
 
     [MaxLength(500)]
     public string? Notes { get; set; }
+
+    [MaxLength(150)]
+    public string? RoleTitle { get; set; }
+
+    [MaxLength(500)]
+    public string? HiringFocusJson { get; set; }  // stored as JSON array e.g. ["Interns","Junior Developers"]
+
+    [MaxLength(500)]
+    public string? AssessedSkillsJson { get; set; } // stored as JSON array e.g. ["React","Python"]
+
+    [MaxLength(50)]
+    public string? PreferredWorkMode { get; set; }
+
+    [MaxLength(300)]
+    public string? LogoFileName { get; set; }
+
+    [MaxLength(200)]
+    public string? Location { get; set; }
 }

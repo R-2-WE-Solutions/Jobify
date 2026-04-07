@@ -1104,24 +1104,26 @@
 }
 
 .pf-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: .85rem;
-}
-
-@media (max-width: 480px) {
-    .pf-stats {
-        grid-template-columns: 1fr;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
 }
 
 .pf-stat {
     display: flex;
     align-items: center;
     gap: .75rem;
-    padding: .85rem 1rem;
+    padding: .65rem .85rem;
     border-radius: var(--pf-radius-sm);
     border: 1px solid var(--pf-border);
+    justify-content: space-between;
+}
+
+.pf-stat > div:last-child {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-left: auto;
 }
 
 .pf-stat--blue {
@@ -1162,7 +1164,7 @@
 }
 
 .pf-stat__value {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     line-height: 1;
 }
