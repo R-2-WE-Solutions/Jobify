@@ -14,6 +14,9 @@ import {
   Bell,
   Github,
   Mail,
+  Bell,
+  Github,
+  Mail,
 } from "lucide-react";
 import { api } from "../api/api";
 import { useTheme } from "./useTheme";
@@ -174,6 +177,7 @@ export default function AppLayout() {
   const [showSearchMenu, setShowSearchMenu] = useState(false);
 
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const profileMenuRef = useRef(null);
   const globalSearchRef = useRef(null);
@@ -183,6 +187,7 @@ export default function AppLayout() {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -314,8 +319,9 @@ export default function AppLayout() {
     navigate("/change-password");
   }
 
-  function toggleFooter(section) {
-    setOpenFooter((prev) => (prev === section ? null : section));
+  function closeAllFooterModals() {
+    setShowAboutModal(false);
+    setShowPrivacyModal(false);
   }
 
   const filteredSearchOptions = getSearchMatches(globalQuery).slice(0, 10);
@@ -326,6 +332,7 @@ export default function AppLayout() {
         <div className="al-headerInner">
           <div className="al-headerSide al-left">
             <div className="al-logo">Jobify</div>
+
             <button
               className="al-hamburger"
               onClick={() => setSidebarOpen((prev) => !prev)}
@@ -443,10 +450,7 @@ export default function AppLayout() {
 
       <div className="al-body">
         {sidebarOpen && (
-          <div
-            className="al-overlay"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="al-overlay" onClick={() => setSidebarOpen(false)} />
         )}
 
         <aside className={`al-sidebar ${sidebarOpen ? "open" : ""}`}>
@@ -524,6 +528,7 @@ export default function AppLayout() {
           <div className="al-sidebarBottom">
             <div className="al-userCard">
               <div className="al-userAvatar">{avatarLetter}</div>
+
               <div className="al-userMeta">
                 <div className="al-userName">{displayName}</div>
                 <div className="al-userRole">
@@ -546,22 +551,41 @@ export default function AppLayout() {
         <div className="al-footerInner">
           <div className="al-footerLeft">
             <span className="al-footerBrand">Jobify</span>
-            <span className="al-footerText">
-              AI-powered matching platform
-            </span>
+            <span className="al-footerText">AI-powered matching platform</span>
           </div>
 
           <div className="al-footerRight">
-            <a href="/" className="footer-link">About</a>
+            <button
+              type="button"
+              className="footer-link"
+              onClick={() => {
+                setShowPrivacyModal(false);
+                setShowAboutModal(true);
+              }}
+            >
+              About
+            </button>
 
             <button
               type="button"
               className="footer-link"
-              onClick={() => setShowPrivacyModal(true)}
+              onClick={() => {
+                setShowAboutModal(false);
+                setShowPrivacyModal(true);
+              }}
             >
               Privacy Policy
             </button>
 
+            <div className="footer-icons">
+              <a
+                href="https://github.com/R-2-WE-Solutions/Jobify"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Github size={18} />
+              </a>
             <div className="footer-icons">
               <a
                 href="https://github.com/R-2-WE-Solutions/Jobify"
@@ -582,56 +606,101 @@ export default function AppLayout() {
               </a>
             </div>
           </div>
-
-          <div className="al-footerBottom">
-            (c) 2026 Jobify. All rights reserved.
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=lmsbywa@gmail.com&su=Jobify%20Inquiry"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-icon"
+              >
+                <Mail size={18} />
+              </a>
+            </div>
           </div>
+
+          <div className="al-footerBottom">© 2026 Jobify. All rights reserved.</div>
         </div>
 
-        {showPrivacyModal && (
-          <div
-            className="footer-modalOverlay"
-            onClick={() => setShowPrivacyModal(false)}
-          >
-            <div
-              className="footer-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
+        {showAboutModal && (
+          <div className="footer-modalOverlay" onClick={closeAllFooterModals}>
+            <div className="footer-modal" onClick={(e) => e.stopPropagation()}>
               <div className="footer-modalHeader">
-                <div className="footer-modalTitle">Privacy Policy</div>
+                <div className="footer-modalTitle">About Jobify</div>
+
                 <button
                   type="button"
                   className="footer-modalClose"
-                  onClick={() => setShowPrivacyModal(false)}
+                  onClick={closeAllFooterModals}
                 >
-                  X
+                  ×
                 </button>
               </div>
 
               <div className="footer-modalBody">
                 <p>
-                  Jobify is committed to protecting your privacy and personal information.
+                  Jobify is an AI-powered platform that helps students and recruiters
+                  connect through smarter, more transparent hiring tools.
                 </p>
 
                 <p>
-                  Only verified organizations are allowed to access applicant profiles.
-                  Recruiters must go through a verification process before they can view
-                  candidate information on the platform.
+                  Key features include CV review, real opportunity assessments,
+                  coding evaluation, proctoring support, university proof checking,
+                  matching recommendations with percentage-based fit, and clear
+                  skill visibility for both sides.
                 </p>
 
                 <p>
-                  Your personal information is used strictly for recruitment and job
-                  matching purposes within the Jobify platform.
+                  Our goal is to make applications more skill-based, trustworthy,
+                  and helpful instead of being just another simple job board.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPrivacyModal && (
+          <div className="footer-modalOverlay" onClick={closeAllFooterModals}>
+            <div className="footer-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="footer-modalHeader">
+                <div className="footer-modalTitle">Privacy Policy</div>
+
+                <button
+                  type="button"
+                  className="footer-modalClose"
+                  onClick={closeAllFooterModals}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="footer-modalBody">
+                <p>
+                  Jobify is committed to protecting your privacy and personal
+                  information.
                 </p>
 
                 <p>
-                  Jobify does <strong>not sell, rent, or share your personal data</strong>
+                  All recruiters and organizations must go through a verification
+                  process before accessing the platform and viewing applicant
+                  profiles. This helps ensure that only legitimate and approved
+                  parties can interact with student information.
+                </p>
+
+                <p>
+                  Student data is securely stored and protected against
+                  unauthorized access, misuse, or loss. Personal information is
+                  used strictly for recruitment, job matching, and
+                  application-related processes within the Jobify platform.
+                </p>
+
+                <p>
+                  Jobify does <strong>not sell, rent, or share your personal data</strong>{" "}
                   with third parties for advertising or commercial purposes.
                 </p>
 
                 <p>
-                  We aim to maintain a safe environment where students and professionals
-                  can connect with legitimate opportunities.
+                  Our goal is to provide a safe and trustworthy environment where
+                  students and professionals can connect with verified
+                  opportunities.
                 </p>
               </div>
             </div>

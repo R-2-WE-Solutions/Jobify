@@ -18,9 +18,11 @@ public class CodingChallengeDto
     public string Prompt { get; set; } = "";
     public string Language { get; set; } = "";
     public string StarterCode { get; set; } = "";
+     public string ExpectedOutput { get; set; } = "";
 
     public List<TestCaseDto> PublicTests { get; set; } = new();
     public List<TestCaseDto> HiddenTests { get; set; } = new();
+
 }
 
 public class TestCaseDto

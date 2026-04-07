@@ -1,449 +1,433 @@
-/* PAGE */
 .applicant-profile-page {
-    min-height: 100vh;
-    background: #ffffff;
-    padding: 24px 18px 40px;
+  min-height: 100vh;
+  background: transparent;
+  color: var(--text);
+  padding: 24px 18px 40px;
 }
 
 .applicant-profile-container {
-    max-width: 1180px;
-    margin: 0 auto;
+  max-width: 1180px;
+  margin: 0 auto;
 }
 
-/* BACK BUTTON */
+.applicant-loading-card,
+.applicant-empty-card {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
 .applicant-back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    margin-bottom: 20px;
-    border: 1px solid #dbeafe;
-    border-radius: 999px;
-    background: #ffffff;
-    color: #0f172a;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
 
-    .applicant-back-btn:hover {
-        background: #eff6ff;
-        border-color: #93c5fd;
-        color: #2563eb;
-    }
+.applicant-back-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  transform: translateY(-1px);
+}
 
 .applicant-hero {
-    position: relative;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-    border: 1px solid #e5edf8;
-    border-radius: 28px;
-    padding: 28px;
-    margin-bottom: 26px;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
-    overflow: hidden;
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 28px;
+  margin-bottom: 26px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
-    .applicant-hero::before {
-        content: "";
-        position: absolute;
-        inset: 0 0 auto 0;
-        height: 5px;
-        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
-    }
+.applicant-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--blue) 0%, var(--blue2) 100%);
+}
 
 .applicant-hero-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 18px;
-    margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
 .applicant-hero h1 {
-    margin: 0;
-    color: #0f172a;
-    font-size: 42px;
-    line-height: 1;
-    font-weight: 850;
-    letter-spacing: -0.04em;
-    text-transform: capitalize;
+  margin: 0;
+  color: var(--text);
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  text-transform: capitalize;
 }
 
 .applicant-hero-subtitle {
-    margin-top: 8px;
-    color: #64748b;
-    font-size: 15px;
-    font-weight: 500;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .applicant-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1d4ed8;
-    font-size: 14px;
-    font-weight: 700;
-    white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--border));
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-    .applicant-status-pill svg {
-        width: 16px;
-        height: 16px;
-    }
+.applicant-status-pill svg {
+  width: 16px;
+  height: 16px;
+}
 
-/* metadata row */
 .applicant-hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-    .applicant-hero-meta span,
-    .applicant-hero-meta a {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 40px;
-        padding: 0 14px;
-        border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #334155;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-    }
+.applicant-hero-meta span,
+.applicant-hero-meta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
 
-        .applicant-hero-meta span svg,
-        .applicant-hero-meta a svg {
-            width: 16px;
-            height: 16px;
-            color: #2563eb;
-            flex-shrink: 0;
-        }
+.applicant-hero-meta span svg,
+.applicant-hero-meta a svg {
+  width: 16px;
+  height: 16px;
+  color: var(--blue);
+  flex-shrink: 0;
+}
 
-    .applicant-hero-meta a {
-        color: #2563eb;
-        font-weight: 700;
-    }
+.applicant-hero-meta a {
+  color: var(--blue);
+  font-weight: 700;
+}
 
-        .applicant-hero-meta a:hover {
-            background: #eff6ff;
-            border-color: #bfdbfe;
-        }
+.applicant-hero-meta a:hover {
+  border-color: var(--blue);
+}
 
-/* bottom stat row */
 .applicant-hero-stats-row {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    gap: 14px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
 }
 
 .applicant-hero-stat {
-    background: #ffffff;
-    border: 1px solid #e5edf8;
-    border-radius: 20px;
-    padding: 16px 18px;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.03);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.03);
 }
 
-    .applicant-hero-stat:first-child {
-        background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-        border-color: #93c5fd;
-    }
-
-    .applicant-hero-stat span {
-        display: block;
-        margin-bottom: 8px;
-        color: #3b82f6;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-    }
-
-    .applicant-hero-stat strong {
-        display: block;
-        color: #0f172a;
-        font-size: 30px;
-        line-height: 1.1;
-        font-weight: 850;
-        word-break: break-word;
-    }
-
-    .applicant-hero-stat:first-child strong {
-        color: #1d4ed8;
-    }
-
-    .applicant-hero-stat:last-child strong {
-        font-size: 22px;
-        line-height: 1.15;
-    }
-
-/* responsive */
-@media (max-width: 900px) {
-    .applicant-hero-top {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .applicant-hero-stats-row {
-        grid-template-columns: 1fr;
-    }
-
-    .applicant-hero h1 {
-        font-size: 34px;
-    }
+.applicant-hero-stat-accent {
+  background: color-mix(in srgb, var(--blue) 14%, var(--card));
+  border-color: color-mix(in srgb, var(--blue) 35%, var(--border));
 }
 
-@media (max-width: 640px) {
-    .applicant-hero {
-        padding: 20px;
-        border-radius: 20px;
-    }
-
-        .applicant-hero h1 {
-            font-size: 28px;
-        }
-
-    .applicant-hero-meta span,
-    .applicant-hero-meta a {
-        width: 100%;
-        justify-content: flex-start;
-        border-radius: 14px;
-        padding: 10px 12px;
-    }
-
-    .applicant-hero-stat strong {
-        font-size: 24px;
-    }
-
-    .applicant-hero-stat:last-child strong {
-        font-size: 20px;
-    }
+.applicant-hero-stat span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* META */
-.applicant-hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+.applicant-hero-stat strong {
+  display: block;
+  color: var(--text);
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 850;
+  word-break: break-word;
 }
 
-    .applicant-hero-meta span {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        border: 1px solid #dbeafe;
-        background: #f8fbff;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-/* STATS */
-.applicant-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.applicant-hero-stat:last-child strong {
+  font-size: 22px;
+  line-height: 1.15;
 }
-
-.applicant-stat-card {
-    padding: 14px 16px;
-    border-radius: 16px;
-    border: 1px solid #dbeafe;
-    background: #ffffff;
-}
-
-    .applicant-stat-card:first-child {
-        background: #eff6ff;
-    }
-
-    .applicant-stat-card span {
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #3b82f6;
-    }
-
-    .applicant-stat-card strong {
-        font-size: 20px;
-        font-weight: 800;
-    }
-
-/* ========================= */
-/* 🔥 FIXED GRID STRUCTURE */
-/* ========================= */
 
 .applicant-sections {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-areas:
-        "summary education"
-        "experience projects"
-        "skills interests"
-        "additional additional";
-    gap: 22px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "summary education"
+    "experience projects"
+    "skills interests"
+    "additional additional";
+  gap: 22px;
 }
 
-/* MAP SECTIONS */
 .applicant-section:nth-child(1) {
-    grid-area: summary;
+  grid-area: summary;
 }
 
 .applicant-section:nth-child(2) {
-    grid-area: education;
+  grid-area: education;
 }
 
 .applicant-section:nth-child(3) {
-    grid-area: experience;
+  grid-area: experience;
 }
 
 .applicant-section:nth-child(4) {
-    grid-area: projects;
+  grid-area: projects;
 }
 
 .applicant-section:nth-child(5) {
-    grid-area: skills;
+  grid-area: skills;
 }
 
 .applicant-section:nth-child(6) {
-    grid-area: interests;
+  grid-area: interests;
 }
 
 .applicant-section:nth-child(7) {
-    grid-area: additional;
+  grid-area: additional;
 }
 
-/* CARDS */
 .applicant-section {
-    background: #ffffff;
-    border: 1px solid #e6edf7;
-    border-radius: 22px;
-    padding: 22px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-    transition: 0.2s ease;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--shadow);
+  transition: 0.2s ease;
+  color: var(--text);
 }
 
-    .applicant-section:hover {
-        border-color: #bfdbfe;
-        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
-    }
+.applicant-section:hover {
+  border-color: color-mix(in srgb, var(--blue) 40%, var(--border));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
+}
 
-    /* HEADERS */
-    .applicant-section h3 {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0 0 14px;
-        font-size: 18px;
-        font-weight: 800;
-    }
+.applicant-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.applicant-section h3 svg {
+  color: var(--blue);
+}
 
 .applicant-section-subtitle {
-    margin-bottom: 14px;
-    color: #64748b;
-    font-size: 13px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
-/* ENTRY CARDS */
+.applicant-section p {
+  margin: 0;
+  color: var(--text);
+}
+
 .applicant-entry-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .applicant-entry-card {
-    border: 1px solid #dbe5f1;
-    border-radius: 16px;
-    padding: 16px;
-    background: #ffffff;
-    transition: 0.2s ease;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--bg);
+  transition: 0.2s ease;
 }
 
-    .applicant-entry-card:hover {
-        border-color: #93c5fd;
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.08);
-    }
+.applicant-entry-card:hover {
+  border-color: color-mix(in srgb, var(--blue) 40%, var(--border));
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.08);
+}
 
 .applicant-entry-card-title {
-    font-size: 16px;
-    font-weight: 800;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
 }
 
 .applicant-entry-card-subtitle {
-    color: #3b82f6;
-    font-weight: 700;
+  color: var(--blue);
+  font-weight: 700;
+  margin-top: 4px;
 }
 
 .applicant-entry-card-date {
-    font-size: 12px;
-    color: #94a3b8;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .applicant-entry-card-text {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #475569;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
 }
 
-/* TAGS (SKILLS + PROJECTS) */
 .applicant-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .applicant-tag {
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: #e2e8f0;
-    font-size: 12px;
-    font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--border));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-/* INTERESTS */
 .applicant-interest-bubbles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .applicant-interest-bubble {
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: #3b82f6;
-    color: white;
-    font-size: 13px;
-    font-weight: 800;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--blue);
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
 }
 
-.applicant-section:nth-child(7) {
-    padding-top: 20px;
+.applicant-link {
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.applicant-link:hover {
+  text-decoration: underline;
+}
+
+.applicant-link-button {
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--blue) 10%, var(--card));
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.applicant-link-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--blue);
 }
 
 @media (max-width: 900px) {
-    .applicant-sections {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "summary"
-            "education"
-            "experience"
-            "projects"
-            "skills"
-            "interests"
-            "additional";
-    }
+  .applicant-hero-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-    .applicant-hero {
-        grid-template-columns: 1fr;
-    }
+  .applicant-hero-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-hero h1 {
+    font-size: 34px;
+  }
+
+  .applicant-sections {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "education"
+      "experience"
+      "projects"
+      "skills"
+      "interests"
+      "additional";
+  }
+}
+
+@media (max-width: 640px) {
+  .applicant-profile-page {
+    padding: 18px 14px 32px;
+  }
+
+  .applicant-hero {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .applicant-hero h1 {
+    font-size: 28px;
+  }
+
+  .applicant-hero-meta span,
+  .applicant-hero-meta a {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+
+  .applicant-hero-stat strong {
+    font-size: 24px;
+  }
+
+  .applicant-hero-stat:last-child strong {
+    font-size: 20px;
+  }
+
+  .applicant-section {
+    padding: 18px;
+  }
 }
