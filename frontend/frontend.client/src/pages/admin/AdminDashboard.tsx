@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem("jobify_token");
 
-      const res = await fetch("http://localhost:5159/api/users/admin/dashboard", {
+      const res = await fetch("https://localhost:7176/api/users/admin/dashboard", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
     try{
       setLoadingSystemOverview(true);
 
-      const res = await api.get("/api/users/admin/system-overview");
+      const res = await api.get("/users/admin/system-overview");
       setSystemOverview(res.data);
     }
     catch (err) {
