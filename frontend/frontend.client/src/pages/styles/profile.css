@@ -1116,13 +1116,12 @@
     padding: .65rem .85rem;
     border-radius: var(--pf-radius-sm);
     border: 1px solid var(--pf-border);
-    justify-content: space-between;
 }
 
 .pf-stat > div:last-child {
     display: flex;
-    align-items: center;
-    gap: .5rem;
+    align-items: baseline;
+    gap: .4rem;
     margin-left: auto;
 }
 
@@ -1164,16 +1163,18 @@
 }
 
 .pf-stat__value {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     line-height: 1;
 }
 
 .pf-stat__label {
-    font-size: .72rem;
+    font-size: .75rem;
     color: var(--pf-text-muted);
-    margin-top: .15rem;
+    margin-top: 0;
 }
+
+
 
 .pf-checkboxes {
     display: flex;

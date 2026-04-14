@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getProfile, updateProfile } from '../api/profile';
+import { api } from '../api/api';
 import {
     uploadResume, deleteResume, downloadResumeFile,
     uploadUniversityProof, deleteUniversityProof, downloadUniversityProofFile
@@ -235,10 +236,8 @@ const RecruiterSections = ({ profile, formData, onChange, onProfileUpdate }) => 
     <div className="pf-sections">
         <OrgInfoCard profile={profile} formData={formData} onChange={onChange} onProfileUpdate={onProfileUpdate} />
         <HiringPrefsCard formData={formData} onChange={onChange} />
-        <div className="pf-grid-2">
-            <VerificationCard profile={profile} />
-            <ActivityCard />
-        </div>
+        <VerificationCard profile={profile} />
+        <ActivityCard />
     </div>
 );
 
@@ -1044,7 +1043,9 @@ const OrgInfoCard = ({ profile, formData, onChange, onProfileUpdate }) => {
 
     useEffect(() => {
         if (profile?.userId && profile?.logoFileName) {
-            setLogoUrl(`http://localhost:5159/api/Profile/recruiter/logo?userId=${profile.userId}`);
+            api.get(`/Profile/recruiter/logo?userId=${profile.userId}`, { responseType: "blob" })
+                .then(r => setLogoUrl(URL.createObjectURL(r.data)))
+                .catch(() => {});
         }
     }, [profile]);
 
@@ -1056,18 +1057,14 @@ const OrgInfoCard = ({ profile, formData, onChange, onProfileUpdate }) => {
         try {
             const form = new FormData();
             form.append('file', f);
-            const token = localStorage.getItem('jobify_token');
-            const res = await fetch('http://localhost:5159/api/Profile/recruiter/logo', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: form,
-            });
-            if (!res.ok) { const t = await res.text(); throw new Error(t || 'Upload failed'); }
-            const data = await res.json();
-            setLogoUrl(`http://localhost:5159/api/Profile/recruiter/logo?userId=${profile.userId}&t=${Date.now()}`);
-            onProfileUpdate?.(prev => ({ ...prev, logoFileName: data.logoFileName }));
+            const res = await api.post('/Profile/recruiter/logo', form);
+            api.get(`/Profile/recruiter/logo?userId=${profile.userId}`, { responseType: 'blob' })
+                .then(r => setLogoUrl(URL.createObjectURL(r.data)))
+                .catch(() => {});
+            onProfileUpdate?.(prev => ({ ...prev, logoFileName: res.data.logoFileName }));
         } catch (err) {
-            setLogoError(err.message || 'Logo upload failed');
+            const msg = err?.response?.data || err?.response?.statusText || err?.message || 'Logo upload failed';
+            setLogoError(typeof msg === 'string' ? msg : JSON.stringify(msg));
         } finally {
             setUploadingLogo(false);
             if (logoRef.current) logoRef.current.value = '';
@@ -1245,11 +1242,9 @@ const ActivityCard = () => {
                         const Icon = s.icon;
                         return (
                             <div key={s.label} className={`pf-stat pf-stat--${s.color}`}>
-                                <div className="pf-stat__icon"><Icon size={18} /></div>
-                                <div>
-                                    <p className="pf-stat__value">{s.value ?? '—'}</p>
-                                    <p className="pf-stat__label">{s.label}</p>
-                                </div>
+                                <div className="pf-stat__icon"><Icon size={16} /></div>
+                                <p className="pf-stat__label">{s.label}</p>
+                                <p className="pf-stat__value">{s.value ?? '—'}</p>
                             </div>
                         );
                     })}
