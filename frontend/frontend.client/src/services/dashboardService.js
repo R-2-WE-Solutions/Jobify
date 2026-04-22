@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5159/api";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export async function getCandidateDashboard() {
   const token = localStorage.getItem("jobify_token");

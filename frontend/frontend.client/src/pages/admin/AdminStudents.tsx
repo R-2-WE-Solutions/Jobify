@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, FileText, Search } from "lucide-react";
 import { api } from "../../api/api";
-
+import "../styles/admin.css"
 
 // Student Interface
 const API_URL = import.meta.env.VITE_API_URL;
@@ -60,6 +60,8 @@ export default function AdminStudents() {
     const [notifyTitle, setNotifyTitle] = useState("");
     const [notifyMessage, setNotifyMessage] = useState("");
 
+    const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+
     useEffect(() => {
         const fetchStudents = async () => {
             try {
@@ -90,7 +92,7 @@ export default function AdminStudents() {
         const fullName = student.fullName ?? "";
         const email = student.email ?? "";
         const id = student.id ?? "";
-
+        
         return (
             fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
             email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,35 +100,40 @@ export default function AdminStudents() {
         );
     });
 
-  const getInitials = (name: string) => {
-    return name.split(" ").map((n) => n[0]).join("");
-  };
+    const getInitials = (name?: string | null) => {
+        if (!name?.trim()) return "?";
 
-  // Loading Students
-  if(loadingStudents) {
-    return(
-      <div style={{ padding: "24px" }}>
-        <p>Loading Students...</p>
-      </div>
-    );
-  }
+        return name
+            .trim()
+            .split(/\s+/)
+            .map((part) => part[0]?.toUpperCase() ?? "")
+            .join("");
+    };
 
-  // Delete Student
-  async function deleteStudent(student: Student){
-    try {
-      api.delete(`admin/students/${student.id}`);
-
-      console.log("Student Deleted Successfully!");
+    // Loading Students
+    if (loadingStudents) {
+        return (
+            <div style={{ padding: "24px" }}>
+                <p>Loading Students...</p>
+            </div>
+        );
     }
-    catch (error) {
-      console.error("Error in Deleting Student: ", error);
-    }
-  }
 
-  // Fetching Applications
-  async function fetchStudentApplications(student: Student){
-    try {
-      setLoadingApplications(true);
+    // Delete Student
+    async function deleteStudent(student: Student) {
+        try {
+            await api.delete(`/Users/admin/students/${student.id}`);
+            console.log("Student Deleted Successfully!");
+            setStudents((prev) => prev.filter((s) => s.id !== student.id));
+        } catch (error) {
+            console.error("Error in Deleting Student: ", error);
+        }
+    }
+
+    // Fetching Applications
+    async function fetchStudentApplications(student: Student) {
+        try {
+            setLoadingApplications(true);
 
             const token = localStorage.getItem("jobify_token");
 
@@ -229,180 +236,94 @@ export default function AdminStudents() {
                     />
                 </div>
 
-        {/* Students Table */}
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#f9fafb" }}>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>
-                  Student
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>
-                  Student ID
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>
-                  Email
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>
-                  Created At
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>
-                  Last Updated
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    style={{
-                      padding: "48px",
-                      textAlign: "center",
-                      color: "#9ca3af",
-                      fontSize: "14px",
-                    }}
-                  >
-                    No students found
-                  </td>
-                </tr>
-              ) : (
-                filteredStudents.map((student) => (
-                  <tr
-                    key={student.id}
-                    onMouseEnter={() => setHoveredRow(student.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                    style={{
-                      backgroundColor: hoveredRow === student.id ? "#f9fafb" : "white",
-                      transition: "background-color 0.2s",
-                    }}
-                  >
-                    <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            borderRadius: "50%",
-                            backgroundColor: "#3b82f6",
-                            color: "white",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: "600",
-                            fontSize: "14px",
-                          }}
-                        >
-                          {getInitials(student.fullName)}
-                        </div>
-                        <span style={{ fontWeight: "600", fontSize: "14px" }}>{student.fullName}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6" }}>
-                      <code
-                        style={{
-                          backgroundColor: "#f3f4f6",
-                          padding: "4px 8px",
-                          borderRadius: "6px",
-                          fontSize: "13px",
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        {student.id}
-                      </code>
-                    </td>
-                    <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6", color: "#6b7280", fontSize: "14px" }}>
-                      {student.email}
-                    </td>
-                    <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6", color: "#6b7280", fontSize: "14px" }}>
-                      {student.createdAt}
-                    </td>
-                    <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6", color: "#6b7280", fontSize: "14px" }}>
-                      {student.updatedAtUtc}
-                    </td>
-                    <td style={{ padding: "16px", borderTop: "1px solid #f3f4f6", textAlign: "right" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-                        <button
-                          onClick={() => {
-                            fetchStudentApplications(student)
-                          }}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#3b82f6",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3b82f6")}
-                        >
-                          <FileText style={{ width: "14px", height: "14px" }} />
-                          Applications
-                        </button>
-                          <button
-                            onClick={() => {
-                              setSelectedStudentId(student.id);
-                              setNotifyTitle("Warning ⚠️"); // optional default
-                              setNotifyMessage("");
-                              setShowNotifyModal(true);
-                            }}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor: "#55e75f",
-                              color: "#ffffff",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "6px",
-                              fontSize: "13px",
-                              fontWeight: "600",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              transition: "all 0.2s",
-                            }}
-                          >
-                            Notify
-                          </button>
-                        <button
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "white",
-                            color: "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "6px",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            transition: "all 0.2s",
-                          }}
-                          onClick={ () => deleteStudent(student)}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-                        >
-                            Delete 
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                <div className="admin-students-table-wrap">
+                    <div className="admin-students-table-scroll">
+                        <table className="admin-students-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Email</th>
+                                    <th>Created At</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredStudents.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="admin-empty-state">
+                                            No students found
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredStudents.map((student) => (
+                                        <tr
+                                            key={student.id}
+                                            className="admin-students-row"
+                                            onMouseEnter={() => setHoveredRow(student.id)}
+                                            onMouseLeave={() => setHoveredRow(null)}
+                                        >
+                                            <td>
+                                                <div className="admin-student-cell">
+                                                    <div className="admin-student-avatar">
+                                                        {getInitials(student.fullName)}
+                                                    </div>
+                                                    <span className="admin-student-name">
+                                                        {student.fullName?.trim() || "Unnamed Student"}
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                           
+
+                                            <td className="admin-student-email">{student.email}</td>
+
+                                            <td className="admin-student-date">
+                                                {formatDateTime(student.createdAt)}
+                                            </td>
+
+                                            <td className="admin-student-date">
+                                                {formatDateTime(student.updatedAtUtc)}
+                                            </td>
+
+                                            <td>
+                                                <div className="admin-student-actions">
+                                                    <button
+                                                        className="admin-btn admin-btn-primary"
+                                                        onClick={() => fetchStudentApplications(student)}
+                                                    >
+                                                        <FileText style={{ width: "14px", height: "14px" }} />
+                                                        Applications
+                                                    </button>
+
+                                                    <button
+                                                        className="admin-btn admin-btn-warning"
+                                                        onClick={() => {
+                                                            setSelectedStudentId(student.id);
+                                                            setNotifyTitle("Warning ⚠️");
+                                                            setNotifyMessage("");
+                                                            setShowNotifyModal(true);
+                                                        }}
+                                                    >
+                                                        Notify
+                                                    </button>
+
+                                                    <button
+                                                        className="admin-btn admin-btn-secondary"
+                                                        onClick={() => deleteStudent(student)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
             {showApplications && selectedStudent && (
                 <div
