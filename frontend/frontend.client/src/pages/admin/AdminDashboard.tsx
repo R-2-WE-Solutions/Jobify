@@ -30,28 +30,16 @@ export default function AdminDashboard() {
   const [loadingSystemOverview, setLoadingSystemOverview] = useState(false);
 
   // Dashboard Fetching
-  async function fetchDashboard() {
-    try {
-      const token = localStorage.getItem("jobify_token");
-
-      const res = await fetch("https://localhost:7176/api/users/admin/dashboard", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      setDashboard(data);
-    
+    async function fetchDashboard() {
+        try {
+            const res = await api.get("/users/admin/dashboard");
+            setDashboard(res.data);
+        } catch (err) {
+            console.error("Error in Fetching Dashboard:", err);
+        } finally {
+            setLoadingDashboard(false);
+        }
     }
-    catch (err) {
-      console.error("Error in Fetching Dashboard: ",err);
-    }
-    finally {
-      setLoadingDashboard(false);
-    }
-  };
 
   // System Overview
   async function fetchSystemOverview() {
