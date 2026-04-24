@@ -1,64 +1,96 @@
-const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_API_BASE ||
-    "http://localhost:5159";
-
-function getToken() {
-    const token =
-        localStorage.getItem("jobify_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("jwt") ||
-        localStorage.getItem("authToken");
-    return token && token.trim().length > 0 ? token : null;
-}
-
-async function request(path, options = {}) {
-    const token = getToken();
-    if (!token) throw new Error("No token found. Please login again.");
-
-    const res = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {}),
-            Authorization: `Bearer ${token}`,
-        },
-    });
-
-    if (res.status === 401) throw new Error("Unauthorized. Please login again.");
-    if (res.status === 409) throw new Error("Already exists.");
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Request failed (${res.status})`);
-    }
-
-    return res.json();
-}
+import { api } from "./api";
 
 // ─── Skills ───────────────────────────────────────────────
-export const getSkills = () => request("/api/profile/student/skills");
-export const addSkill = (name) => request("/api/profile/student/skills", { method: "POST", body: JSON.stringify({ name }) });
-export const deleteSkill = (id) => request(`/api/profile/student/skills/${id}`, { method: "DELETE" });
+export async function getSkills() {
+  const res = await api.get("/profile/student/skills");
+  return res.data;
+}
+
+export async function addSkill(name) {
+  const res = await api.post("/profile/student/skills", { name });
+  return res.data;
+}
+
+export async function deleteSkill(id) {
+  const res = await api.delete(`/profile/student/skills/${id}`);
+  return res.data;
+}
 
 // ─── Education ────────────────────────────────────────────
-export const getEducation = () => request("/api/profile/student/education");
-export const addEducation = (data) => request("/api/profile/student/education", { method: "POST", body: JSON.stringify(data) });
-export const updateEducation = (id, data) => request(`/api/profile/student/education/${id}`, { method: "PUT", body: JSON.stringify(data) });
-export const deleteEducation = (id) => request(`/api/profile/student/education/${id}`, { method: "DELETE" });
+export async function getEducation() {
+  const res = await api.get("/profile/student/education");
+  return res.data;
+}
+
+export async function addEducation(data) {
+  const res = await api.post("/profile/student/education", data);
+  return res.data;
+}
+
+export async function updateEducation(id, data) {
+  const res = await api.put(`/profile/student/education/${id}`, data);
+  return res.data;
+}
+
+export async function deleteEducation(id) {
+  const res = await api.delete(`/profile/student/education/${id}`);
+  return res.data;
+}
 
 // ─── Experience ───────────────────────────────────────────
-export const getExperience = () => request("/api/profile/student/experience");
-export const addExperience = (data) => request("/api/profile/student/experience", { method: "POST", body: JSON.stringify(data) });
-export const updateExperience = (id, data) => request(`/api/profile/student/experience/${id}`, { method: "PUT", body: JSON.stringify(data) });
-export const deleteExperience = (id) => request(`/api/profile/student/experience/${id}`, { method: "DELETE" });
+export async function getExperience() {
+  const res = await api.get("/profile/student/experience");
+  return res.data;
+}
+
+export async function addExperience(data) {
+  const res = await api.post("/profile/student/experience", data);
+  return res.data;
+}
+
+export async function updateExperience(id, data) {
+  const res = await api.put(`/profile/student/experience/${id}`, data);
+  return res.data;
+}
+
+export async function deleteExperience(id) {
+  const res = await api.delete(`/profile/student/experience/${id}`);
+  return res.data;
+}
 
 // ─── Projects ─────────────────────────────────────────────
-export const getProjects = () => request("/api/profile/student/projects");
-export const addProject = (data) => request("/api/profile/student/projects", { method: "POST", body: JSON.stringify(data) });
-export const updateProject = (id, data) => request(`/api/profile/student/projects/${id}`, { method: "PUT", body: JSON.stringify(data) });
-export const deleteProject = (id) => request(`/api/profile/student/projects/${id}`, { method: "DELETE" });
+export async function getProjects() {
+  const res = await api.get("/profile/student/projects");
+  return res.data;
+}
+
+export async function addProject(data) {
+  const res = await api.post("/profile/student/projects", data);
+  return res.data;
+}
+
+export async function updateProject(id, data) {
+  const res = await api.put(`/profile/student/projects/${id}`, data);
+  return res.data;
+}
+
+export async function deleteProject(id) {
+  const res = await api.delete(`/profile/student/projects/${id}`);
+  return res.data;
+}
 
 // ─── Interests ────────────────────────────────────────────
-export const getInterests = () => request("/api/profile/student/interests");
-export const addInterest = (interest) => request("/api/profile/student/interests", { method: "POST", body: JSON.stringify({ interest }) });
-export const deleteInterest = (id) => request(`/api/profile/student/interests/${id}`, { method: "DELETE" });
+export async function getInterests() {
+  const res = await api.get("/profile/student/interests");
+  return res.data;
+}
+
+export async function addInterest(interest) {
+  const res = await api.post("/profile/student/interests", { interest });
+  return res.data;
+}
+
+export async function deleteInterest(id) {
+  const res = await api.delete(`/profile/student/interests/${id}`);
+  return res.data;
+}

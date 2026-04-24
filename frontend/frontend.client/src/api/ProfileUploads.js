@@ -1,63 +1,79 @@
-import { rawRequest } from "./profile";
-
+import { api } from "./api";
 
 export async function uploadResume(file) {
-    const form = new FormData();
-    form.append("file", file);
+  const form = new FormData();
+  form.append("file", file);
 
-    const res = await rawRequest("/api/Profile/student/resume", {
-        method: "POST",
-        body: form,
-    });
+  const res = await api.post("/profile/student/resume", form, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
-    return res.json();
+  return res.data;
 }
 
 export async function uploadUniversityProof(file) {
-    const form = new FormData();
-    form.append("uploadedFile", file);
+  const form = new FormData();
+  form.append("uploadedFile", file);
 
-    const res = await rawRequest("/api/Profile/student/university-proof", {
-        method: "POST",
-        body: form,
-    });
+  const res = await api.post("/profile/student/university-proof", form, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
-    return res.json();
+  return res.data;
 }
 
 export async function deleteResume() {
-    const res = await rawRequest("/api/Profile/student/resume", { method: "DELETE" });
-    return res.json();
+  const res = await api.delete("/profile/student/resume");
+  return res.data;
 }
 
-
 export async function deleteUniversityProof() {
-    const res = await rawRequest("/api/Profile/student/university-proof", { method: "DELETE" });
-    return res.json();
+  const res = await api.delete("/profile/student/university-proof");
+  return res.data;
+}
+
+function getDownloadFileName(contentDisposition, fallbackName) {
+  if (!contentDisposition) return fallbackName;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const simpleMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+  if (simpleMatch?.[1]) {
+    return simpleMatch[1];
+  }
+
+  return fallbackName;
 }
 
 async function downloadWithAuth(path, fallbackName) {
-    const res = await rawRequest(path, { method: "GET" });
-    const blob = await res.blob();
+  const res = await api.get(path, {
+    responseType: "blob",
+  });
 
-    const cd = res.headers.get("content-disposition") || "";
-    const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
-    const fileName = decodeURIComponent(match?.[1] || fallbackName);
+  const contentDisposition = res.headers["content-disposition"];
+  const fileName = getDownloadFileName(contentDisposition, fallbackName);
 
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(blobUrl);
+  const blobUrl = window.URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(blobUrl);
 }
 
 export async function downloadResumeFile() {
-    return downloadWithAuth("/api/Profile/student/resume", "resume");
+  return downloadWithAuth("/profile/student/resume", "resume");
 }
 
 export async function downloadUniversityProofFile() {
-    return downloadWithAuth("/api/Profile/student/university-proof", "university_proof");
+  return downloadWithAuth("/profile/student/university-proof", "university_proof");
 }
