@@ -98,14 +98,21 @@ function CompanyLink({ name, opportunityId }) {
 export function OpportunityCard({ match }) {
     const [expanded, setExpanded] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
+    const [logoUrl, setLogoUrl] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem("jobify_token");
-        if (!token || !match.id) return;
+        if (!match.id) return;
         import("../../../api/api").then(({ api }) => {
             api.get("/opportunities/saved/ids")
                 .then(res => setIsSaved(Array.isArray(res.data) && res.data.includes(match.id)))
+                .catch(() => {});
+            api.get(`/Profile/company/by-opportunity/${match.id}`)
+                .then(res => {
+                    if (res.data?.userId && res.data?.logoFileName) {
+                        setLogoUrl(`${api.defaults.baseURL}/Profile/recruiter/logo?userId=${res.data.userId}&t=${Date.now()}`);
+                    }
+                })
                 .catch(() => {});
         });
     }, [match.id]);
@@ -127,8 +134,11 @@ export function OpportunityCard({ match }) {
         <div className={`match-card opportunity-card ${expanded ? "expanded" : ""}`}>
             <div className="match-card-row">
                 <div className="match-card-left">
-                    <div className={`match-logo ${match.logoColor || "blue"}`}>
-                        {getInitials(match.company)}
+                    <div className={`match-logo ${match.logoColor || "blue"}`} style={logoUrl ? { padding: 0, overflow: "hidden" } : {}}>
+                        {logoUrl
+                            ? <img src={logoUrl} alt={match.company} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "18px" }} />
+                            : getInitials(match.company)
+                        }
                     </div>
 
                     <div className="match-main">
@@ -240,9 +250,80 @@ export function OpportunitiesTab({ matches = [] }) {
     );
 }
 
+function AppCard({ match, onWithdrawApplication }) {
+    const [logoUrl, setLogoUrl] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!match.id) return;
+        import("../../../api/api").then(({ api }) => {
+            api.get(`/Profile/company/by-opportunity/${match.id}`)
+                .then(res => {
+                    if (res.data?.userId && res.data?.logoFileName) {
+                        setLogoUrl(`${api.defaults.baseURL}/Profile/recruiter/logo?userId=${res.data.userId}&t=${Date.now()}`);
+                    }
+                })
+                .catch(() => {});
+        });
+    }, [match.id]);
+
+    return (
+        <div className="match-card app-card">
+            <div className="app-card-row">
+                <div className="app-left">
+                    <div className={`match-logo ${match.logoColor || "blue"}`} style={logoUrl ? { padding: 0, overflow: "hidden" } : {}}>
+                        {logoUrl
+                            ? <img src={logoUrl} alt={match.company} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "18px" }} />
+                            : getInitials(match.company)
+                        }
+                    </div>
+
+                    <div className="match-main">
+                        <h3 className="match-job-title">{match.jobTitle}</h3>
+                        <div className="match-meta">
+                            <CompanyLink name={match.company} opportunityId={match.id} />
+                            <span className="match-dot">•</span>
+                            <span className={statusClass(match.status)}>{match.status}</span>
+                        </div>
+                        <div className="app-extra-left">
+                            <Steps status={match.status} />
+                            {match.status === "Draft" && (
+                                <div className="assessment-pill">
+                                    <Clock size={14} />
+                                    Assessment Available
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="app-right">
+                    {match.canWithdraw && (
+                        <button
+                            type="button"
+                            className="withdraw-btn"
+                            onClick={() => onWithdrawApplication?.(match)}
+                            disabled={match.isWithdrawing}
+                        >
+                            {match.isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        className="arrow-btn"
+                        onClick={() => navigate(`/apply/${match.id}/review`)}
+                        aria-label="Open application"
+                    >
+                        →
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function ApplicationsTab({ matches = [], onWithdrawApplication }) {
     const applications = matches.filter((m) => m.type === "application");
-    const navigate = useNavigate();
 
     if (!applications.length) {
         return <div className="matches-empty">No active applications.</div>;
@@ -252,69 +333,9 @@ export function ApplicationsTab({ matches = [], onWithdrawApplication }) {
         <>
             <div className="matches-content">
                 {applications.map((match) => (
-                    <div key={match.id} className="match-card app-card">
-                        <div className="app-card-row">
-                            <div className="app-left">
-                                <div className={`match-logo ${match.logoColor || "blue"}`}>
-                                    {getInitials(match.company)}
-                                </div>
-
-                                <div className="match-main">
-                                    <h3 className="match-job-title">{match.jobTitle}</h3>
-
-                                    <div className="match-meta">
-                                        <CompanyLink name={match.company} opportunityId={match.id} />
-
-                                        <span className="match-dot">•</span>
-
-                                        <span className={statusClass(match.status)}>
-                                            {match.status}
-                                        </span>
-                                    </div>
-
-                                    <div className="app-extra-left">
-                                        <Steps status={match.status} />
-
-                                        {match.status === "Draft" && (
-                                            <div className="assessment-pill">
-                                                <Clock size={14} />
-                                                Assessment Available
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="app-right">
-                                {match.canWithdraw && (
-                                    <button
-                                        type="button"
-                                        className="withdraw-btn"
-                                        onClick={() => onWithdrawApplication?.(match)}
-                                        disabled={match.isWithdrawing}
-                                        title={
-                                            match.isDraftStage
-                                                ? "Withdraw and reapply later"
-                                                : "Withdraw permanently from this opportunity"
-                                        }
-                                    >
-                                        {match.isWithdrawing ? "Withdrawing..." : "Withdraw"}
-                                    </button>
-                                )}
-
-                                <button
-                                    type="button"
-                                    className="arrow-btn"
-                                    onClick={() => navigate(`/apply/${match.id}/review`)}
-                                    aria-label="Open application"
-                                    title="Open application"
-                                >
-                                    →
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <AppCard key={match.id} match={match} onWithdrawApplication={onWithdrawApplication} />
                 ))}
+
             </div>
         </>
     );

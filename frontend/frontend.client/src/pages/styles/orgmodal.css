@@ -1,244 +1,112 @@
-/* ── Overlay ─────────────────────────────────── */
 .orgmodal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0,0,0,0.55);
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    backdrop-filter: blur(2px);
-    animation: orgmodal-fadein 0.15s ease;
 }
 
-@keyframes orgmodal-fadein {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-
-/* ── Box ─────────────────────────────────────── */
-.orgmodal-box {
-    background: var(--surface, var(--card));
-    border: 1px solid var(--border);
-    border-radius: 20px;
+.orgmodal {
+    background: var(--card, #1e2433);
+    border-radius: 16px;
     padding: 28px;
-    max-width: 480px;
     width: 100%;
+    max-width: 460px;
     position: relative;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
-    animation: orgmodal-slidein 0.18s ease;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
 }
 
-@keyframes orgmodal-slidein {
-    from { transform: translateY(12px); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
-}
-
-/* ── Close button ────────────────────────────── */
 .orgmodal-close {
     position: absolute;
     top: 14px;
     right: 14px;
-    background: var(--surface-2, rgba(0,0,0,0.06));
+    background: none;
     border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    color: var(--muted, #9ca3af);
     cursor: pointer;
-    font-size: 15px;
-    color: var(--muted);
+    padding: 4px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s;
 }
 
-.orgmodal-close:hover {
-    background: var(--surface-2, rgba(0,0,0,0.12));
-    color: var(--text);
-}
+.orgmodal-close:hover { color: var(--text, #fff); }
 
-/* ── Header ──────────────────────────────────── */
 .orgmodal-header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 22px;
-    padding-right: 32px;
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
-.orgmodal-initials {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    background: var(--primary, #2563eb);
-    color: white;
-    font-size: 24px;
-    font-weight: 800;
+.orgmodal-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--primary, #3b82f6);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    letter-spacing: -1px;
+    overflow: hidden;
+}
+
+.orgmodal-initial {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
 }
 
 .orgmodal-name {
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--text);
+    font-size: 18px;
+    font-weight: 700;
     margin: 0 0 2px;
-    line-height: 1.2;
+    color: var(--text, #fff);
 }
 
 .orgmodal-subtitle {
     font-size: 13px;
-    color: var(--muted);
-}
-
-/* ── Loading / error states ──────────────────── */
-.orgmodal-state {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--muted);
-    font-size: 14px;
-    padding: 8px 0;
-}
-
-.orgmodal-error-state {
-    color: #ef4444;
-}
-
-.orgmodal-error-icon {
-    font-size: 18px;
-}
-
-.orgmodal-spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid var(--border);
-    border-top-color: var(--primary, #2563eb);
-    border-radius: 50%;
-    animation: orgmodal-spin 0.7s linear infinite;
-    flex-shrink: 0;
-}
-
-@keyframes orgmodal-spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ── Body ────────────────────────────────────── */
-.orgmodal-body {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-/* ── Badge ───────────────────────────────────── */
-.orgmodal-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    width: fit-content;
-}
-
-.orgmodal-badge-verified {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16a34a;
-    border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
-/* ── About section ───────────────────────────── */
-.orgmodal-section {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.orgmodal-text {
-    color: var(--text);
-    font-size: 14px;
+    color: var(--muted, #9ca3af);
     margin: 0;
-    line-height: 1.65;
 }
 
-/* ── Links / rows ────────────────────────────── */
+.orgmodal-empty {
+    color: var(--muted, #9ca3af);
+    font-size: 14px;
+    text-align: center;
+    padding: 12px 0;
+}
+
+.orgmodal-body { display: flex; flex-direction: column; gap: 14px; }
+
+.orgmodal-notes {
+    font-size: 14px;
+    color: var(--text, #e5e7eb);
+    line-height: 1.6;
+    margin: 0;
+}
+
 .orgmodal-links {
     display: flex;
-    flex-direction: column;
-    gap: 0;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.orgmodal-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 14px;
-    font-size: 14px;
-    color: var(--text);
-    border-bottom: 1px solid var(--border);
-}
-
-.orgmodal-row:last-child {
-    border-bottom: none;
-}
-
-.orgmodal-label {
-    font-weight: 600;
-    color: var(--muted);
-    font-size: 13px;
-    flex-shrink: 0;
-}
-
-.orgmodal-value {
-    color: var(--text);
-    font-size: 13px;
-    text-align: right;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .orgmodal-link {
-    color: var(--primary, #2563eb);
-    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
-    font-weight: 600;
-    text-align: right;
+    color: var(--primary, #3b82f6);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(59,130,246,0.1);
+    transition: background 0.15s;
 }
 
-.orgmodal-link:hover {
-    text-decoration: underline;
-}
-
-/* ── Empty state ─────────────────────────────── */
-.orgmodal-empty {
-    color: var(--muted);
-    font-size: 14px;
-    text-align: center;
-    padding: 16px 0 4px;
-}
-
-/* ── Responsive ──────────────────────────────── */
-@media (max-width: 520px) {
-    .orgmodal-box {
-        padding: 20px;
-        border-radius: 16px;
-    }
-
-    .orgmodal-name {
-        font-size: 18px;
-    }
-
-    .orgmodal-initials {
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
-    }
-}
+.orgmodal-link:hover { background: rgba(59,130,246,0.2); }

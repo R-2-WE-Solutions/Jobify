@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { getCandidateDashboard } from "../services/dashboardService";
 import { api } from "../api/api";
 import { useApp } from "../app/context/AppContext";
-// import "../pages/styles/dashboard.css";
 import "./styles/dashboard.css";
 
 export default function Dashboard() {
-    const [role, setRole] = useState(null);
+    const outletContext = useOutletContext() || {};
+    const { role: outletRole, loadingProfile } = outletContext;
+
+    const [role, setRole] = useState(outletRole || null);
 
     useEffect(() => {
+        if (!loadingProfile && outletRole) {
+            setRole(outletRole);
+            return;
+        }
+
         try {
             const raw = localStorage.getItem("jobify_user");
             const user = raw ? JSON.parse(raw) : null;
@@ -23,9 +30,9 @@ export default function Dashboard() {
         } catch {
             setRole("Student");
         }
-    }, []);
+    }, [outletRole, loadingProfile]);
 
-    if (role === null) {
+    if (loadingProfile || role === null) {
         return (
             <div style={{ padding: "24px", fontSize: "18px" }}>
                 Loading dashboard...
@@ -37,7 +44,7 @@ export default function Dashboard() {
         return <RecruiterDashboard />;
     }
 
-    return <CandidateDashboard />;
+    return <CandidateDashboard role={role} loadingProfile={loadingProfile} />;
 }
 
 function RecruiterDashboard() {
@@ -360,7 +367,7 @@ function RecruiterDashboard() {
     );
 }
 
-function CandidateDashboard() {
+function CandidateDashboard({ role, loadingProfile }) {
     const navigate = useNavigate();
 
     const [data, setData] = useState(null);
@@ -372,21 +379,68 @@ function CandidateDashboard() {
     const [savedError, setSavedError] = useState("");
 
     useEffect(() => {
+        if (loadingProfile) return;
+        if (role !== "Student") return;
+
+        let cancelled = false;
+
         async function loadDashboard() {
             try {
+                setLoading(true);
+                setError("");
+
                 const result = await getCandidateDashboard();
-                setData(result);
+
+                if (!cancelled) {
+                    setData(result);
+                }
             } catch (err) {
-                setError(err.message || "Failed to load dashboard");
+                const message =
+                    err?.response?.data?.message ||
+                    err?.response?.data ||
+                    err?.message ||
+                    "Failed to load dashboard";
+
+                if (
+                    err?.response?.status === 404 &&
+                    String(message).toLowerCase().includes("candidate profile not found")
+                ) {
+                    if (!cancelled) {
+                        setData({
+                            fullName: "Student",
+                            profileCompletionPercentage: 0,
+                            skillsCount: 0,
+                            applicationsCount: 0,
+                            matchesCount: 0,
+                            recommendedOpportunities: [],
+                        });
+                        setError("");
+                    }
+                } else {
+                    if (!cancelled) {
+                        setError(message);
+                    }
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         }
 
         loadDashboard();
-    }, []);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [loadingProfile, role]);
 
     useEffect(() => {
+        if (loadingProfile) return;
+        if (role !== "Student") return;
+
+        let cancelled = false;
+
         async function loadSavedOpportunities() {
             try {
                 setSavedLoading(true);
@@ -395,20 +449,31 @@ function CandidateDashboard() {
                 const res = await api.get("/opportunities/saved");
                 const saved = Array.isArray(res.data) ? res.data : [];
 
-                setSavedOpportunities(saved);
+                if (!cancelled) {
+                    setSavedOpportunities(saved);
+                }
             } catch (err) {
                 console.error(err);
-                setSavedError(err.message || "Failed to load saved opportunities");
-                setSavedOpportunities([]);
+
+                if (!cancelled) {
+                    setSavedError(err?.message || "Failed to load saved opportunities");
+                    setSavedOpportunities([]);
+                }
             } finally {
-                setSavedLoading(false);
+                if (!cancelled) {
+                    setSavedLoading(false);
+                }
             }
         }
 
         loadSavedOpportunities();
-    }, []);
 
-    if (loading) {
+        return () => {
+            cancelled = true;
+        };
+    }, [loadingProfile, role]);
+
+    if (loadingProfile || loading) {
         return (
             <div style={{ padding: "24px", fontSize: "18px" }}>
                 Loading dashboard...
@@ -427,7 +492,7 @@ function CandidateDashboard() {
     const MATCH_THRESHOLD = 50;
 
     const recommendedOpportunities = (data?.recommendedOpportunities || []).filter(
-        (job) => (job.matchScore ?? 0) >= MATCH_THRESHOLD
+        (job) => (job.matchScore ?? job.matchPercentage ?? 0) >= MATCH_THRESHOLD
     );
 
     const now = new Date();
@@ -530,12 +595,8 @@ function StatCard({ title, value, icon }) {
             <div className="stat-card-icon">{icon}</div>
 
             <div>
-                <div className="stat-card-label">
-                    {title}
-                </div>
-                <div className="stat-card-value">
-                    {value}
-                </div>
+                <div className="stat-card-label">{title}</div>
+                <div className="stat-card-value">{value}</div>
             </div>
         </div>
     );
@@ -543,7 +604,6 @@ function StatCard({ title, value, icon }) {
 
 function OpportunityCard({ job, showScore }) {
     const rawScore = job?.matchScore ?? job?.matchPercentage ?? null;
-    const { openOrgModal } = useApp();
 
     const badgeClass =
         rawScore >= 80
@@ -556,9 +616,7 @@ function OpportunityCard({ job, showScore }) {
         <div className="opportunity-card">
             <div className="opportunity-card-top">
                 <div className="opportunity-card-main">
-                    <h3 className="opportunity-title">
-                        {job.title}
-                    </h3>
+                    <h3 className="opportunity-title">{job.title}</h3>
                     <button
                         type="button"
                         className="dashboard-company-link"
@@ -586,12 +644,8 @@ function DeadlineCard({ job }) {
 
     return (
         <div className="deadline-card">
-            <h3 className="opportunity-title">
-                {job.title}
-            </h3>
-            <p className="opportunity-company">
-                {job.companyName}
-            </p>
+            <h3 className="opportunity-title">{job.title}</h3>
+            <p className="opportunity-company">{job.companyName}</p>
             <p className="opportunity-meta">
                 Closes on {formattedDeadline}
             </p>

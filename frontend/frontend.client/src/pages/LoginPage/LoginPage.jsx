@@ -17,7 +17,7 @@
  */
 
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../layout/useTheme";
@@ -140,58 +140,29 @@ export default function LoginPage() {
         }
     };
 
+    const [liveStats, setLiveStats] = useState({ candidates: null, opportunities: null, organizations: null });
+
+    useEffect(() => {
+        api.get("/Dashboard/public-stats").then(r => setLiveStats(r.data)).catch(() => {});
+    }, []);
+
+    const fmt = (n) => n == null ? "..." : n >= 1000 ? `${(n / 1000).toFixed(1)}K+` : `${n}+`;
+
     const stats =
         userRole === "candidate"
             ? [
-                  { icon: Users, value: "10K+", label: "Candidates" },
-                  { icon: Briefcase, value: "2K+", label: "Opportunities" },
-                  { icon: Target, value: "85%", label: "Match Accuracy" },
-                  { icon: Building2, value: "500+", label: "Partner Organizations" },
+                  { icon: Users, value: fmt(liveStats.candidates), label: "Candidates" },
+                  { icon: Briefcase, value: fmt(liveStats.opportunities), label: "Opportunities" },
+                  { icon: Building2, value: fmt(liveStats.organizations), label: "Partner Organizations" },
+                  { icon: Target, value: "AI", label: "Powered Matching" },
               ]
             : [
-                  { icon: Building2, value: "500+", label: "Organizations" },
-                  { icon: Users, value: "10K+", label: "Active Candidates" },
-                  { icon: Briefcase, value: "2K+", label: "Posted Jobs" },
-                  { icon: Target, value: "85%", label: "Success Rate" },
+                  { icon: Building2, value: fmt(liveStats.organizations), label: "Organizations" },
+                  { icon: Users, value: fmt(liveStats.candidates), label: "Active Candidates" },
+                  { icon: Briefcase, value: fmt(liveStats.opportunities), label: "Posted Jobs" },
+                  { icon: Target, value: "AI", label: "Powered Matching" },
               ];
 
-    const topMatches = useMemo(
-        () => [
-            { percent: "85%", role: "Research Assistant", org: "University Lab" },
-            { percent: "92%", role: "Frontend Intern", org: "Acme Labs" },
-            { percent: "88%", role: "Data Analyst Intern", org: "Cedars Tech" },
-        ],
-        []
-    );
-
-    const [matchIndex, setMatchIndex] = useState(0);
-    const prevIndexRef = useRef(0);
-
-    useEffect(() => {
-        prevIndexRef.current = matchIndex;
-    }, [matchIndex]);
-
-    useEffect(() => {
-        if (userRole !== "candidate") return;
-
-        const id = setInterval(() => {
-            setMatchIndex((i) => (i + 1) % topMatches.length);
-        }, 4000);
-
-        return () => clearInterval(id);
-    }, [userRole, topMatches.length]);
-
-    useEffect(() => {
-        setMatchIndex(0);
-    }, [userRole]);
-
-    const direction = matchIndex >= prevIndexRef.current ? 1 : -1;
-
-    const slideVariants = {
-        enter: (dir) => ({ opacity: 0, x: dir > 0 ? 26 : -26 }),
-        center: { opacity: 1, x: 0 },
-        exit: (dir) => ({ opacity: 0, x: dir > 0 ? -26 : 26 }),
-    };
 
     return (
         <div className={`lp-root ${darkMode ? "lp-dark" : ""}`}>
@@ -243,35 +214,7 @@ export default function LoginPage() {
                                 })}
                             </div>
 
-                            {userRole === "candidate" && (
-                                <motion.div
-                                    className="lp-match"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.25, duration: 0.6 }}
-                                >
-                                    <div className="lp-match-title">Suggested for you</div>
 
-                                    <AnimatePresence mode="wait" custom={direction}>
-                                        <motion.div
-                                            key={matchIndex}
-                                            className="lp-match-row"
-                                            variants={slideVariants}
-                                            custom={direction}
-                                            initial="enter"
-                                            animate="center"
-                                            exit="exit"
-                                            transition={{ duration: 0.35, ease: "easeInOut" }}
-                                        >
-                                            <div className="lp-match-badge">{topMatches[matchIndex].percent}</div>
-                                            <div>
-                                                <div className="lp-match-role">{topMatches[matchIndex].role}</div>
-                                                <div className="lp-match-org">{topMatches[matchIndex].org}</div>
-                                            </div>
-                                        </motion.div>
-                                    </AnimatePresence>
-                                </motion.div>
-                            )}
                         </div>
                     </div>
 
@@ -409,4 +352,4 @@ export default function LoginPage() {
         </div>
     );
 }
-// keep dark mode option as it is on login page 
+// keep dark mode option as it is on login page
