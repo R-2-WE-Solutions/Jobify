@@ -6,7 +6,7 @@ public class StudentSkill
     public string StudentUserId { get; set; } = string.Empty;
     public int SkillId { get; set; }
 
-    public int score { get; set; } = 1;
+    public double score { get; set; } = 1;
 
     public string Source { get; set; } = "Manual";
     public bool IsVerified { get; set; } = false;

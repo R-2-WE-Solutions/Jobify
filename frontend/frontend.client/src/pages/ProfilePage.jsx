@@ -28,6 +28,7 @@ import { extractSkillsFromCv } from "../api/CvExtract";
 ───────────────────────────────────────────── */
 const ProfilePage = () => {
     const [profile, setProfile] = useState(null);
+    const [logoUrl, setLogoUrl] = useState(null);
     const [userRole, setUserRole] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -37,10 +38,26 @@ const ProfilePage = () => {
     const [bannerDismissed, setBannerDismissed] = useState(false);
 
     const [skillsRefreshKey, setSkillsRefreshKey] = useState(0);
-    
+    const [counts, setCounts] = useState({ skills: 0, education: 0, experience: 0, projects: 0, interests: 0 });
 
     useEffect(() => {
         fetchProfileData();
+        // Load counts for insights card
+        Promise.all([
+            import('../api/StudentData').then(m => m.getSkills()),
+            import('../api/StudentData').then(m => m.getEducation()),
+            import('../api/StudentData').then(m => m.getExperience()),
+            import('../api/StudentData').then(m => m.getProjects()),
+            import('../api/StudentData').then(m => m.getInterests()),
+        ]).then(([skills, education, experience, projects, interests]) => {
+            setCounts({
+                skills: skills?.length ?? 0,
+                education: education?.length ?? 0,
+                experience: experience?.length ?? 0,
+                projects: projects?.length ?? 0,
+                interests: interests?.length ?? 0,
+            });
+        }).catch(() => {});
     }, []);
 
     const fetchProfileData = async () => {
@@ -50,6 +67,11 @@ const ProfilePage = () => {
             const data = await getProfile();
             setProfile(data.profile);
             setFormData(data.profile);
+            if (data.role === 'Recruiter' && data.profile?.userId && data.profile?.logoFileName) {
+                api.get(`/Profile/recruiter/logo?userId=${data.profile.userId}&t=${Date.now()}`, { responseType: 'blob' })
+                    .then(r => setLogoUrl(URL.createObjectURL(r.data)))
+                    .catch(() => setLogoUrl(null));
+            }
             setUserRole(data.role);
         } catch (err) {
             setError(err.message || 'Failed to load profile');
@@ -116,12 +138,12 @@ const ProfilePage = () => {
     <div className="pf-header__inner">
         <div className="pf-header__body">
                         <div className="pf-avatar-wrap">
-                            <div className="pf-avatar">
-                                <span>{(profile.fullName || profile.companyName || '?').charAt(0).toUpperCase()}</span>
+                            <div className="pf-avatar" style={!isStudent && logoUrl ? { padding: 0, overflow: 'hidden' } : {}}>
+                                {!isStudent && logoUrl
+                                    ? <img src={logoUrl} alt="Company logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    : <span>{(profile.fullName || profile.companyName || '?').charAt(0).toUpperCase()}</span>
+                                }
                             </div>
-                            <button className="pf-avatar__cam" aria-label="Change photo" type="button">
-                                <Camera size={16} />
-                            </button>
                         </div>
 
                         <div className="pf-header__info">
@@ -138,17 +160,28 @@ const ProfilePage = () => {
                                 )}
                             </div>
 
-                            {isStudent && (
-                                <div className="pf-strength">
-                                    <div className="pf-strength__label">
-                                        <span>Profile Strength</span>
-                                        <span className="pf-strength__pct">72%</span>
+                            {isStudent && (() => {
+                                const pts = [
+                                    formData?.fullName, formData?.bio, formData?.location,
+                                    formData?.phoneNumber, formData?.portfolioUrl,
+                                    profile?.hasResume, profile?.hasUniversityProof,
+                                    counts.skills >= 3, counts.education >= 1,
+                                    counts.experience >= 1, counts.interests >= 2,
+                                    counts.projects >= 1,
+                                ].filter(Boolean).length;
+                                const strength = Math.round((pts / 12) * 100);
+                                return (
+                                    <div className="pf-strength">
+                                        <div className="pf-strength__label">
+                                            <span>Profile Strength</span>
+                                            <span className="pf-strength__pct">{strength}%</span>
+                                        </div>
+                                        <div className="pf-strength__bar">
+                                            <div className="pf-strength__fill" style={{ width: `${strength}%` }} />
+                                        </div>
                                     </div>
-                                    <div className="pf-strength__bar">
-                                        <div className="pf-strength__fill" style={{ width: '72%' }} />
-                                    </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -182,9 +215,10 @@ const ProfilePage = () => {
                         onProfileUpdate={setProfile}
                         skillsRefreshKey={skillsRefreshKey}
                         refreshSkills={() => setSkillsRefreshKey(k => k + 1)}
+                        counts={counts}
                     />
                 ) : (
-                    <RecruiterSections profile={profile} formData={formData} onChange={handleInputChange} onProfileUpdate={setProfile} />
+                    <RecruiterSections profile={profile} formData={formData} onChange={handleInputChange} onProfileUpdate={setProfile} logoUrl={logoUrl} setLogoUrl={setLogoUrl} />
                 )}
 
                 <div className="pf-save-row">
@@ -201,7 +235,7 @@ const ProfilePage = () => {
 /* ─────────────────────────────────────────────
    Student sections
 ───────────────────────────────────────────── */
-const StudentSections = ({ profile, formData, onChange, onProfileUpdate, skillsRefreshKey, refreshSkills }) => (
+const StudentSections = ({ profile, formData, onChange, onProfileUpdate, skillsRefreshKey, refreshSkills, counts }) => (
     <div className="pf-sections">
         <PersonalInfoCard profile={profile} formData={formData} onChange={onChange} />
         <EducationCard profile={profile} />
@@ -215,16 +249,16 @@ const StudentSections = ({ profile, formData, onChange, onProfileUpdate, skillsR
             <ResumeCard profile={profile} onProfileUpdate={onProfileUpdate} onSkillsUpdated={refreshSkills} />
             <UniversityProofCard profile={profile} onProfileUpdate={onProfileUpdate} />
         </div>
-        <MatchingInsightsCard />
+        <MatchingInsightsCard counts={counts} profile={profile} formData={formData} />
     </div>
 );
 
 /* ─────────────────────────────────────────────
    Recruiter sections
 ───────────────────────────────────────────── */
-const RecruiterSections = ({ profile, formData, onChange, onProfileUpdate }) => (
+const RecruiterSections = ({ profile, formData, onChange, onProfileUpdate, logoUrl, setLogoUrl }) => (
     <div className="pf-sections">
-        <OrgInfoCard profile={profile} formData={formData} onChange={onChange} onProfileUpdate={onProfileUpdate} />
+        <OrgInfoCard profile={profile} formData={formData} onChange={onChange} onProfileUpdate={onProfileUpdate} logoUrl={logoUrl} setLogoUrl={setLogoUrl} />
         <HiringPrefsCard formData={formData} onChange={onChange} />
         <div className="pf-grid-2">
             <VerificationCard profile={profile} />
@@ -415,12 +449,9 @@ const EducationCard = ({ profile }) => {
 /* ─────────────────────────────────────────────
    Skills
 ───────────────────────────────────────────── */
-const PROFICIENCY = ['Beginner', 'Intermediate', 'Advanced'];
-
 const SkillsCard = ({ refreshKey }) => {
     const [skills, setSkills] = useState([]);
     const [name, setName] = useState('');
-    const [proficiency, setProficiency] = useState('Beginner');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -463,9 +494,6 @@ const SkillsCard = ({ refreshKey }) => {
                 <input className="pf-input pf-input--flex" value={name} onChange={e => setName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
                     placeholder="e.g. React, Python…" />
-                <select className="pf-select" value={proficiency} onChange={e => setProficiency(e.target.value)}>
-                    {PROFICIENCY.map(p => <option key={p}>{p}</option>)}
-                </select>
                 <button className="pf-btn pf-btn--primary" onClick={add}><Plus size={14} /> Add</button>
             </div>
 
@@ -476,7 +504,6 @@ const SkillsCard = ({ refreshKey }) => {
                             <span key={s.id} className="pf-tag pf-tag--skill">
                                 {s.verified && <CheckCircle size={11} className="pf-tag__verified" />}
                                 {s.name}
-                                <span className="pf-tag__level">({s.proficiency || proficiency})</span>
                                 <button className="pf-tag__remove" onClick={() => remove(s.id)}><X size={11} /></button>
                             </span>
                         ))}
@@ -1063,13 +1090,31 @@ const UniversityProofCard = ({ profile, onProfileUpdate }) => {
 /* ─────────────────────────────────────────────
    Matching Insights
 ───────────────────────────────────────────── */
-const MatchingInsightsCard = () => {
+const MatchingInsightsCard = ({ counts = { skills: 0, experience: 0, interests: 0, education: 0 }, profile, formData }) => {
+    const skillPct = Math.min(100, Math.round((counts.skills / 5) * 100));
+    const expPct = Math.min(100, Math.round((counts.experience / 3) * 100));
+    const interestPct = Math.min(100, Math.round((counts.interests / 4) * 100));
+    const completePct = Math.min(100, Math.round([
+        formData?.fullName, formData?.bio, formData?.location,
+        formData?.phoneNumber, formData?.portfolioUrl,
+        profile?.hasResume, profile?.hasUniversityProof,
+        counts.skills >= 3, counts.education >= 1, counts.experience >= 1,
+    ].filter(Boolean).length * 10));
+
     const metrics = [
-        { label: 'Skill Coverage', value: 60, icon: Target },
-        { label: 'Experience Alignment', value: 20, icon: Briefcase },
-        { label: 'Interest Match Strength', value: 67, icon: Heart },
-        { label: 'Profile Completeness', value: 60, icon: TrendingUp },
+        { label: 'Skill Coverage', value: skillPct, icon: Target },
+        { label: 'Experience Alignment', value: expPct, icon: Briefcase },
+        { label: 'Interest Match Strength', value: interestPct, icon: Heart },
+        { label: 'Profile Completeness', value: completePct, icon: TrendingUp },
     ];
+
+    const suggestions = [
+        counts.skills < 5 && 'Add more skills to improve match quality',
+        !profile?.hasResume && 'Upload your CV to increase visibility',
+        counts.experience === 0 && 'Add work experience to improve alignment',
+        counts.interests < 3 && 'Add interests to boost your match strength',
+        !formData?.bio && 'Write a short bio to complete your profile',
+    ].filter(Boolean).slice(0, 3);
 
     return (
         <Card icon={TrendingUp} title="How Jobify Sees Your Profile" subtitle="Insights on your matching potential" highlight>
@@ -1087,15 +1132,17 @@ const MatchingInsightsCard = () => {
                     );
                 })}
             </div>
-            <div className="pf-suggestions">
-                <div className="pf-suggestions__title"><Lightbulb size={14} /> Suggestions to Improve</div>
-                {['Add 3 more skills to improve match quality', 'Upload CV to increase visibility by 40%', 'Add a project to showcase practical experience'].map((s, i) => (
-                    <div key={i} className="pf-suggestion">
-                        <span className="pf-suggestion__num">{i + 1}</span>
-                        <span>{s}</span>
-                    </div>
-                ))}
-            </div>
+            {suggestions.length > 0 && (
+                <div className="pf-suggestions">
+                    <div className="pf-suggestions__title"><Lightbulb size={14} /> Suggestions to Improve</div>
+                    {suggestions.map((s, i) => (
+                        <div key={i} className="pf-suggestion">
+                            <span className="pf-suggestion__num">{i + 1}</span>
+                            <span>{s}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </Card>
     );
 };
@@ -1103,21 +1150,17 @@ const MatchingInsightsCard = () => {
 /* ─────────────────────────────────────────────
    Recruiter — Org Info
 ───────────────────────────────────────────── */
-const OrgInfoCard = ({ profile, formData, onChange, onProfileUpdate }) => {
+const OrgInfoCard = ({ profile, formData, onChange, onProfileUpdate, logoUrl, setLogoUrl }) => {
     const logoRef = useRef();
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [logoError, setLogoError] = useState(null);
-    const [logoUrl, setLogoUrl] = useState(null);
 
     useEffect(() => {
-        if (profile?.userId && profile?.logoFileName) {
-            api.get(`/Profile/recruiter/logo?userId=${profile.userId}&t=${Date.now()}`, { 
-                responseType: 'blob',
-                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-            })
+        if (profile?.userId && profile?.logoFileName && !logoUrl) {
+            api.get(`/Profile/recruiter/logo?userId=${profile.userId}&t=${Date.now()}`, { responseType: 'blob' })
                 .then(r => setLogoUrl(URL.createObjectURL(r.data)))
                 .catch(() => setLogoUrl(null));
-        } else {
+        } else if (!profile?.logoFileName) {
             setLogoUrl(null);
         }
     }, [profile?.userId, profile?.logoFileName]);

@@ -141,10 +141,36 @@ export default function LoginPage() {
     };
 
     const [liveStats, setLiveStats] = useState({ candidates: null, opportunities: null, organizations: null });
+    const [liveOpps, setLiveOpps] = useState([]);
+    const [matchIndex, setMatchIndex] = useState(0);
+    const prevIndexRef = useRef(0);
 
     useEffect(() => {
         api.get("/Dashboard/public-stats").then(r => setLiveStats(r.data)).catch(() => {});
+        api.get("/Dashboard/public-opportunities").then(r => {
+            const items = Array.isArray(r.data) ? r.data : [];
+            setLiveOpps(items);
+        }).catch(() => {});
     }, []);
+
+    useEffect(() => {
+        prevIndexRef.current = matchIndex;
+    }, [matchIndex]);
+
+    useEffect(() => {
+        if (liveOpps.length === 0) return;
+        const id = setInterval(() => {
+            setMatchIndex(i => (i + 1) % liveOpps.length);
+        }, 4000);
+        return () => clearInterval(id);
+    }, [liveOpps.length]);
+
+    const direction = matchIndex > prevIndexRef.current ? 1 : -1;
+    const slideVariants = {
+        enter: (d) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
+        center: { x: 0, opacity: 1 },
+        exit: (d) => ({ x: d > 0 ? -60 : 60, opacity: 0 }),
+    };
 
     const fmt = (n) => n == null ? "..." : n >= 1000 ? `${(n / 1000).toFixed(1)}K+` : `${n}+`;
 
@@ -214,6 +240,48 @@ export default function LoginPage() {
                                 })}
                             </div>
 
+
+                            {userRole === "candidate" && (
+                                <motion.div
+                                    className="lp-match"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.25, duration: 0.6 }}
+                                >
+                                    <div className="lp-match-title">Suggested</div>
+
+                                    {liveOpps.length === 0 ? (
+                                        <div className="lp-match-row">
+                                            <div className="lp-match-badge">Job</div>
+                                            <div>
+                                                <div className="lp-match-role">Loading opportunities...</div>
+                                                <div className="lp-match-org">Jobify</div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <AnimatePresence mode="wait" custom={direction}>
+                                            <motion.div
+                                                key={matchIndex}
+                                                className="lp-match-row"
+                                                variants={slideVariants}
+                                                custom={direction}
+                                                initial="enter"
+                                                animate="center"
+                                                exit="exit"
+                                                transition={{ duration: 0.35, ease: "easeInOut" }}
+                                            >
+                                                <div className="lp-match-badge">
+                                                    {liveOpps[matchIndex]?.type || liveOpps[matchIndex]?.Type || "Job"}
+                                                </div>
+                                                <div>
+                                                    <div className="lp-match-role">{liveOpps[matchIndex]?.title || liveOpps[matchIndex]?.Title}</div>
+                                                    <div className="lp-match-org">{liveOpps[matchIndex]?.companyName || liveOpps[matchIndex]?.CompanyName}</div>
+                                                </div>
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    )}
+                                </motion.div>
+                            )}
 
                         </div>
                     </div>

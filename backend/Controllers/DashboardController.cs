@@ -53,5 +53,19 @@ namespace Jobify.Api.Controllers
 
             return Ok(new { candidates, opportunities, organizations });
         }
+
+        [AllowAnonymous]
+        [HttpGet("public-opportunities")]
+        public async Task<IActionResult> GetPublicOpportunities()
+        {
+            var opps = await _context.Opportunities
+                .Where(o => !o.IsClosed)
+                .OrderByDescending(o => o.CreatedAtUtc)
+                .Take(5)
+                .Select(o => new { o.Title, o.CompanyName, o.Type })
+                .ToListAsync();
+
+            return Ok(opps);
+        }
     }
 }

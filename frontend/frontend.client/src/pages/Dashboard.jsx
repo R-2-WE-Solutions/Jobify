@@ -603,6 +603,7 @@ function StatCard({ title, value, icon }) {
 }
 
 function OpportunityCard({ job, showScore }) {
+    const { openOrgModal } = useApp();
     const rawScore = job?.matchScore ?? job?.matchPercentage ?? null;
 
     const badgeClass =

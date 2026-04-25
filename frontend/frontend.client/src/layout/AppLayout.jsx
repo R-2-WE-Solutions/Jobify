@@ -165,6 +165,7 @@ function AppLayoutInner() {
     const [role, setRole] = useState(null);
     const [displayName, setDisplayName] = useState("Loading...");
     const [avatarLetter, setAvatarLetter] = useState("?");
+    const [sidebarLogoUrl, setSidebarLogoUrl] = useState(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [profileError, setProfileError] = useState("");
 
@@ -227,6 +228,11 @@ function AppLayoutInner() {
                     const company = data?.profile?.companyName || "Recruiter";
                     setDisplayName(company);
                     setAvatarLetter(company.charAt(0)?.toUpperCase() || "R");
+                    if (data?.profile?.userId && data?.profile?.logoFileName) {
+                        api.get(`/Profile/recruiter/logo?userId=${data.profile.userId}&t=${Date.now()}`, { responseType: "blob" })
+                            .then(r => setSidebarLogoUrl(URL.createObjectURL(r.data)))
+                            .catch(() => setSidebarLogoUrl(null));
+                    }
                 } else if (userRole === "Student") {
                     const fullName = data?.profile?.fullName || "Student";
                     setDisplayName(fullName);
@@ -526,7 +532,12 @@ function AppLayoutInner() {
 
                     <div className="al-sidebarBottom">
                         <div className="al-userCard">
-                            <div className="al-userAvatar">{avatarLetter}</div>
+                            <div className="al-userAvatar" style={sidebarLogoUrl ? { padding: 0, overflow: "hidden" } : {}}>
+                                {sidebarLogoUrl
+                                    ? <img src={sidebarLogoUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    : avatarLetter
+                                }
+                            </div>
 
                             <div className="al-userMeta">
                                 <div className="al-userName">{displayName}</div>

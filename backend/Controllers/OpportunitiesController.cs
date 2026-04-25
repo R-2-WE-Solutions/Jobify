@@ -218,17 +218,15 @@ public class OpportunitiesController : ControllerBase
                     AssessmentChallengeCount = o.AssessmentChallengeCount,
                     MatchPercentage = matchPercentage,
                     MatchedSkills = matchedSkills,
-
                     IsClosed = o.IsClosed,
+                    RecruiterUserId = o.RecruiterUserId,
                     Description = o.Description,
                     Benefits = string.IsNullOrWhiteSpace(o.BenefitsJson)
                         ? new List<string>()
                         : (JsonSerializer.Deserialize<List<string>>(o.BenefitsJson) ?? new List<string>()),
-
                     Responsibilities = string.IsNullOrWhiteSpace(o.ResponsibilitiesJson)
                         ? new List<string>()
                         : (JsonSerializer.Deserialize<List<string>>(o.ResponsibilitiesJson) ?? new List<string>()),
-
                     PreferredSkills = string.IsNullOrWhiteSpace(o.PreferredSkillsJson)
                         ? new List<string>()
                         : (JsonSerializer.Deserialize<List<string>>(o.PreferredSkillsJson) ?? new List<string>()),
@@ -376,8 +374,7 @@ public class OpportunitiesController : ControllerBase
             if (o.WorkMode == baseOpp.WorkMode)
                 score += 0.10;
 
-            if (!string.IsNullOrWhiteSpace(o.Location) &&
-                o.Location == baseOpp.Location)
+            if (!string.IsNullOrWhiteSpace(o.Location) && o.Location == baseOpp.Location)
                 score += 0.10;
 
             return score;
@@ -576,6 +573,22 @@ public class OpportunitiesController : ControllerBase
         if (!Enum.TryParse<WorkMode>(dto.WorkMode, true, out var parsedMode))
             return BadRequest("Invalid WorkMode. Use OnSite, Remote, or Hybrid.");
 
+        int assessmentTimeLimitSeconds = 0;
+        int assessmentMcqCount = 0;
+        int assessmentChallengeCount = 0;
+
+        if (dto.Assessment != null)
+        {
+            var assessmentJson = JsonSerializer.Serialize(dto.Assessment);
+            var parsedAssessment = ReadAssessmentForBuilder(assessmentJson);
+
+            assessmentTimeLimitSeconds =
+                Math.Max(60, (parsedAssessment?.TimeLimitMinutes ?? 30) * 60);
+
+            assessmentMcqCount = parsedAssessment?.Mcqs?.Count ?? 0;
+            assessmentChallengeCount = parsedAssessment?.CodingChallenges?.Count ?? 0;
+        }
+
         var opportunity = new Opportunity
         {
             Title = dto.Title.Trim(),
@@ -592,6 +605,9 @@ public class OpportunitiesController : ControllerBase
             PreferredSkillsJson = WriteList(dto.PreferredSkills),
             BenefitsJson = WriteList(dto.Benefits),
             AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment),
+            AssessmentTimeLimitSeconds = assessmentTimeLimitSeconds,
+            AssessmentMcqCount = assessmentMcqCount,
+            AssessmentChallengeCount = assessmentChallengeCount,
             Type = parsedType,
             Level = parsedLevel,
             MinPay = dto.MinPay,
@@ -707,7 +723,7 @@ public class OpportunitiesController : ControllerBase
         opportunity.Latitude = dto.Latitude;
         opportunity.Longitude = dto.Longitude;
         opportunity.ResponsibilitiesJson = WriteList(dto.Responsibilities);
-        opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);   
+        opportunity.PreferredSkillsJson = WriteList(dto.PreferredSkills);
         opportunity.BenefitsJson = WriteList(dto.Benefits);
         opportunity.AssessmentJson = dto.Assessment == null ? null : JsonSerializer.Serialize(dto.Assessment);
 
@@ -731,6 +747,7 @@ public class OpportunitiesController : ControllerBase
             opportunity.AssessmentChallengeCount =
                 parsedAssessment?.CodingChallenges?.Count ?? 0;
         }
+
         opportunity.Type = parsedType;
         opportunity.Level = parsedLevel;
         opportunity.MinPay = dto.MinPay;
@@ -843,10 +860,6 @@ public class OpportunitiesController : ControllerBase
             withdrawnApp.UpdatedAtUtc = DateTime.UtcNow;
             withdrawnApp.CanReapplyAfterWithdraw = true;
 
-            // optional reset fields if you have them
-            // withdrawnApp.Note = null;
-            // withdrawnApp.WithdrawnAtUtc = null;
-
             await _db.SaveChangesAsync();
 
             return Ok(new
@@ -885,7 +898,10 @@ public class OpportunitiesController : ControllerBase
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var existingJoins = await _db.OpportunitySkills.Where(os => os.OpportunityId == opportunityId).ToListAsync();
+        var existingJoins = await _db.OpportunitySkills
+            .Where(os => os.OpportunityId == opportunityId)
+            .ToListAsync();
+
         _db.OpportunitySkills.RemoveRange(existingJoins);
         await _db.SaveChangesAsync();
 
@@ -895,7 +911,9 @@ public class OpportunitiesController : ControllerBase
             .Where(s => skillNames.Contains(s.Name))
             .ToListAsync();
 
-        var existingNames = existingSkills.Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var existingNames = existingSkills
+            .Select(s => s.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var missing = skillNames
             .Where(n => !existingNames.Contains(n))
@@ -1058,7 +1076,9 @@ public class OpportunitiesController : ControllerBase
                 AssessmentMcqCount = o.AssessmentMcqCount,
                 AssessmentChallengeCount = o.AssessmentChallengeCount,
                 MatchPercentage = 0,
-                ApplicantCount = _db.Applications.Count(a => a.OpportunityId == o.Id && a.Status != ApplicationStatus.Withdrawn),
+                ApplicantCount = _db.Applications.Count(a =>
+                    a.OpportunityId == o.Id &&
+                    a.Status != ApplicationStatus.Withdrawn),
             })
             .ToListAsync();
 
@@ -1123,28 +1143,23 @@ public class OpportunitiesController : ControllerBase
                 CreatedAtUtc = o.CreatedAtUtc,
                 DeadlineUtc = o.DeadlineUtc,
                 IsClosed = o.IsClosed,
-
+                RecruiterUserId = o.RecruiterUserId,
                 Description = o.Description,
                 Benefits = string.IsNullOrWhiteSpace(o.BenefitsJson)
                     ? new List<string>()
                     : (JsonSerializer.Deserialize<List<string>>(o.BenefitsJson) ?? new List<string>()),
-
                 Responsibilities = string.IsNullOrWhiteSpace(o.ResponsibilitiesJson)
                     ? new List<string>()
                     : (JsonSerializer.Deserialize<List<string>>(o.ResponsibilitiesJson) ?? new List<string>()),
-
                 PreferredSkills = string.IsNullOrWhiteSpace(o.PreferredSkillsJson)
                     ? new List<string>()
                     : (JsonSerializer.Deserialize<List<string>>(o.PreferredSkillsJson) ?? new List<string>()),
-
                 Latitude = o.Latitude,
                 Longitude = o.Longitude,
-
                 Skills = o.OpportunitySkills
                     .Where(os => os.Skill != null && !string.IsNullOrWhiteSpace(os.Skill.Name))
                     .Select(os => os.Skill!.Name)
                     .ToList(),
-
                 AssessmentTimeLimitSeconds = o.AssessmentTimeLimitSeconds,
                 AssessmentMcqCount = o.AssessmentMcqCount,
                 AssessmentChallengeCount = o.AssessmentChallengeCount,
@@ -1303,43 +1318,10 @@ public class OpportunitiesController : ControllerBase
                                 ? starterEl.GetString() ?? ""
                                 : "",
 
-                            PublicTests = new List<TestCaseDto>(),
-                            HiddenTests = new List<TestCaseDto>()
+                            ExpectedOutput= q.TryGetProperty("expectedOutput", out var outputEl) && outputEl.ValueKind == JsonValueKind.String
+                                ? outputEl.GetString() ?? ""
+                                : ""
                         };
-
-                        if (q.TryGetProperty("publicTests", out var publicTestsEl) &&
-                            publicTestsEl.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var t in publicTestsEl.EnumerateArray())
-                            {
-                                code.PublicTests.Add(new TestCaseDto
-                                {
-                                    Stdin = t.TryGetProperty("stdin", out var stdinEl) && stdinEl.ValueKind == JsonValueKind.String
-                                        ? stdinEl.GetString() ?? ""
-                                        : "",
-                                    Expected = t.TryGetProperty("expected", out var expectedEl) && expectedEl.ValueKind == JsonValueKind.String
-                                        ? expectedEl.GetString() ?? ""
-                                        : ""
-                                });
-                            }
-                        }
-
-                        if (q.TryGetProperty("hiddenTests", out var hiddenTestsEl) &&
-                            hiddenTestsEl.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var t in hiddenTestsEl.EnumerateArray())
-                            {
-                                code.HiddenTests.Add(new TestCaseDto
-                                {
-                                    Stdin = t.TryGetProperty("stdin", out var stdinEl) && stdinEl.ValueKind == JsonValueKind.String
-                                        ? stdinEl.GetString() ?? ""
-                                        : "",
-                                    Expected = t.TryGetProperty("expected", out var expectedEl) && expectedEl.ValueKind == JsonValueKind.String
-                                        ? expectedEl.GetString() ?? ""
-                                        : ""
-                                });
-                            }
-                        }
 
                         dto.CodingChallenges.Add(code);
                     }
