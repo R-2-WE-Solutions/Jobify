@@ -532,9 +532,9 @@ function AppLayoutInner() {
 
                     <div className="al-sidebarBottom">
                         <div className="al-userCard">
-                            <div className="al-userAvatar" style={sidebarLogoUrl ? { padding: 0, overflow: "hidden" } : {}}>
+                            <div className="al-userAvatar">
                                 {sidebarLogoUrl
-                                    ? <img src={sidebarLogoUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    ? <img src={sidebarLogoUrl} alt={displayName} />
                                     : avatarLetter
                                 }
                             </div>
