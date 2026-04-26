@@ -236,7 +236,11 @@ export default function AdminLayout() {
                                         whiteSpace: "nowrap",
                                     })}
                                 >
-                                    <Icon size={18} />
+                                    {item.to === "/admin/reported-opportunities" ? (
+                                        <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                                    ) : (
+                                        <Icon size={18} />
+                                    )}
                                     <span>{item.label}</span>
                                 </NavLink>
                             );
