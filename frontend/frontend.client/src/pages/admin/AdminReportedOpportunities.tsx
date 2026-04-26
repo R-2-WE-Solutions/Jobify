@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle, Search } from "lucide-react";
 import { api } from "../../api/api";
-
+import { useTheme } from "../../layout/useTheme";
 
 interface Opportunity {
+    id?: number;
     opportunityId: number;
     opportunityTitle: string;
     company: string;
-    reportCount: number;
+    reportsCount?: number;
+    reportCount?: number;
 }
 
 interface Report {
@@ -20,61 +22,57 @@ interface Report {
 }
 
 export default function AdminReportedOpportunities() {
+    const theme: any = useTheme();
+    const darkMode = theme && theme.darkMode ? true : false;
+
+    const pageBg = darkMode ? "#0f172a" : "#f9fafb";
+    const cardBg = darkMode ? "#111827" : "#ffffff";
+    const mainText = darkMode ? "#f8fafc" : "#111827";
+    const mutedText = darkMode ? "#94a3b8" : "#6b7280";
+    const border = darkMode ? "#334155" : "#e5e7eb";
+    const softBg = darkMode ? "#1f2937" : "#f9fafb";
+    const selectedBg = darkMode ? "#1e3a8a" : "#eff6ff";
+
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
-    const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+    const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
-    // Opportunities
-    const [opportunitiesState, setOpportunitiesState] = useState<any[]>([]);
+    const [opportunitiesState, setOpportunitiesState] = useState<Opportunity[]>([]);
     const [loadingOpportunities, setLoadingOpportunities] = useState(false);
 
-    // Reports
     const [reports, setReports] = useState<Report[]>([]);
     const [loadingReports, setLoadingReports] = useState(false);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
-
-    // Reported Opportunities Fetching
     async function fetchReportedOpportunities() {
         try {
             setLoadingOpportunities(true);
-
             const res = await api.get("/opportunities/admin/reported-opportunities");
-
-            setOpportunitiesState(res.data);
-        }
-        catch (error) {
-            console.error("Error in Fetching Reported Opportunities.")
-        }
-        finally {
+            setOpportunitiesState(Array.isArray(res.data) ? res.data : []);
+        } catch (error) {
+            console.error("Error in Fetching Reported Opportunities.", error);
+        } finally {
             setLoadingOpportunities(false);
         }
     }
 
-    // Opportunity Reports Fetching
     async function fetchOpportunityReports(opportunityId: number) {
         try {
             setLoadingReports(true);
-
             const res = await api.get(`/opportunities/admin/get-reports/${opportunityId}`);
-
-            setReports(res.data);
-        }
-        catch (error) {
-            console.error("Error in Fetching Opportunity Reports.")
-        }
-        finally {
+            setReports(Array.isArray(res.data) ? res.data : []);
+        } catch (error) {
+            console.error("Error in Fetching Opportunity Reports.", error);
+        } finally {
             setLoadingReports(false);
         }
     }
 
-    // Resolve Report
     async function resolveReport(reportId: number) {
         try {
             await api.patch(`/opportunities/admin/resolve-report/${reportId}`);
-        }
-        catch (error) {
-            console.error("Error in Resolving Report.")
+        } catch (error) {
+            console.error("Error in Resolving Report.", error);
         }
     }
 
@@ -90,45 +88,62 @@ export default function AdminReportedOpportunities() {
         fetchReportedOpportunities();
     }, []);
 
-    const filteredOpportunities = opportunitiesState.filter(
-        (opp) =>
-            opp.opportunityTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            opp.company.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredOpportunities = opportunitiesState.filter((opp) => {
+        const title = opp.opportunityTitle ?? "";
+        const company = opp.company ?? "";
+
+        return (
+            title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            company.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    });
 
     return (
-        <div style={{ padding: "24px", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
-            {/* Blue Gradient Header */}
-            <div
-                style={{
-                    background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
-                    borderRadius: "12px",
-                    padding: "32px",
-                    marginBottom: "24px",
-                    color: "white",
-                }}
-            >
-                <h1 style={{ fontSize: "32px", fontWeight: "700", marginBottom: "8px" }}>Reported Opportunities</h1>
-                <p style={{ fontSize: "16px", opacity: 0.9 }}>View and manage opportunities reported by students</p>
+        <div
+            className="admin-page"
+            style={{
+                padding: "24px",
+                backgroundColor: pageBg,
+                minHeight: "100vh",
+                color: mainText,
+            }}
+        >
+            <div className="admin-header">
+                <h1>Reported Opportunities</h1>
+                <p>View and manage opportunities reported by students</p>
             </div>
 
-            {/* Main Content */}
-            <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
-                {/* Opportunities List */}
-                <div style={{ flex: selectedOpportunity ? "0 0 400px" : "1" }}>
+            <div
+                style={{
+                    display: "flex",
+                    gap: "24px",
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                }}
+            >
+                <div style={{ flex: selectedOpportunity ? "0 0 400px" : "1", minWidth: "320px" }}>
                     <div
                         style={{
-                            backgroundColor: "white",
+                            backgroundColor: cardBg,
                             borderRadius: "12px",
                             padding: "24px",
-                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                            border: `1px solid ${border}`,
+                            boxShadow: darkMode
+                                ? "0 12px 30px rgba(0,0,0,0.35)"
+                                : "0 2px 8px rgba(0,0,0,0.08)",
                         }}
                     >
-                        <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px" }}>
+                        <h2
+                            style={{
+                                fontSize: "20px",
+                                fontWeight: "700",
+                                marginBottom: "20px",
+                                color: mainText,
+                            }}
+                        >
                             Reported Opportunities
                         </h2>
 
-                        {/* Search Bar */}
                         <div style={{ position: "relative", marginBottom: "24px" }}>
                             <Search
                                 style={{
@@ -138,7 +153,7 @@ export default function AdminReportedOpportunities() {
                                     transform: "translateY(-50%)",
                                     width: "16px",
                                     height: "16px",
-                                    color: "#9ca3af",
+                                    color: mutedText,
                                 }}
                             />
                             <input
@@ -149,24 +164,34 @@ export default function AdminReportedOpportunities() {
                                 style={{
                                     width: "100%",
                                     padding: "10px 12px 10px 40px",
-                                    border: "1px solid #d1d5db",
+                                    border: `1px solid ${border}`,
                                     borderRadius: "8px",
                                     fontSize: "14px",
                                     outline: "none",
+                                    background: darkMode ? "#0f172a" : "#ffffff",
+                                    color: mainText,
                                 }}
-                                onFocus={(e) => (e.currentTarget.style.borderColor = "#3b82f6")}
-                                onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                             />
                         </div>
 
-                        {/* Opportunities List */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                            {filteredOpportunities.length === 0 ? (
+                            {loadingOpportunities ? (
                                 <div
                                     style={{
                                         padding: "48px 24px",
                                         textAlign: "center",
-                                        color: "#9ca3af",
+                                        color: mutedText,
+                                        fontSize: "14px",
+                                    }}
+                                >
+                                    Loading reported opportunities...
+                                </div>
+                            ) : filteredOpportunities.length === 0 ? (
+                                <div
+                                    style={{
+                                        padding: "48px 24px",
+                                        textAlign: "center",
+                                        color: mutedText,
                                         fontSize: "14px",
                                     }}
                                 >
@@ -174,36 +199,61 @@ export default function AdminReportedOpportunities() {
                                 </div>
                             ) : (
                                 filteredOpportunities.map((opportunity) => {
-                                    const isSelected = selectedOpportunity?.opportunityId === opportunity.id;
-                                    const isHovered = hoveredRow === opportunity.id;
+                                    const key = opportunity.opportunityId ?? opportunity.id ?? 0;
+                                    const isSelected =
+                                        selectedOpportunity?.opportunityId === opportunity.opportunityId;
+                                    const isHovered = hoveredRow === key;
+                                    const count =
+                                        opportunity.reportsCount ?? opportunity.reportCount ?? 0;
+
                                     return (
                                         <div
-                                            key={opportunity.id}
+                                            key={key}
                                             onClick={async () => {
                                                 setSelectedOpportunity(opportunity);
                                                 setSelectedReport(null);
                                                 await fetchOpportunityReports(opportunity.opportunityId);
                                             }}
-                                            onMouseEnter={() => setHoveredRow(opportunity.id)}
+                                            onMouseEnter={() => setHoveredRow(key)}
                                             onMouseLeave={() => setHoveredRow(null)}
                                             style={{
                                                 padding: "16px",
-                                                border: `1px solid ${isSelected ? "#3b82f6" : "#e5e7eb"}`,
+                                                border: `1px solid ${isSelected ? "#3b82f6" : border}`,
                                                 borderRadius: "8px",
                                                 cursor: "pointer",
-                                                backgroundColor: isSelected ? "#eff6ff" : isHovered ? "#f9fafb" : "white",
+                                                backgroundColor: isSelected
+                                                    ? selectedBg
+                                                    : isHovered
+                                                    ? softBg
+                                                    : cardBg,
                                                 transition: "all 0.2s",
                                             }}
                                         >
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                                                <h3 style={{ fontSize: "16px", fontWeight: "600" }}>{opportunity.opportunityTitle}</h3>
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "flex-start",
+                                                    marginBottom: "8px",
+                                                }}
+                                            >
+                                                <h3
+                                                    style={{
+                                                        fontSize: "16px",
+                                                        fontWeight: "600",
+                                                        color: mainText,
+                                                    }}
+                                                >
+                                                    {opportunity.opportunityTitle}
+                                                </h3>
+
                                                 <span
                                                     style={{
                                                         display: "inline-flex",
                                                         alignItems: "center",
                                                         gap: "4px",
-                                                        backgroundColor: "#fee2e2",
-                                                        color: "#991b1b",
+                                                        backgroundColor: darkMode ? "#7f1d1d" : "#fee2e2",
+                                                        color: darkMode ? "#fecaca" : "#991b1b",
                                                         padding: "4px 8px",
                                                         borderRadius: "6px",
                                                         fontSize: "12px",
@@ -213,10 +263,13 @@ export default function AdminReportedOpportunities() {
                                                     }}
                                                 >
                                                     <AlertCircle style={{ width: "12px", height: "12px" }} />
-                                                    {opportunity.reportsCount}
+                                                    {count}
                                                 </span>
                                             </div>
-                                            <p style={{ fontSize: "14px", color: "#6b7280" }}>{opportunity.company}</p>
+
+                                            <p style={{ fontSize: "14px", color: mutedText }}>
+                                                {opportunity.company}
+                                            </p>
                                         </div>
                                     );
                                 })
@@ -225,36 +278,57 @@ export default function AdminReportedOpportunities() {
                     </div>
                 </div>
 
-                {/* Reports Section */}
                 {selectedOpportunity && (
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: "320px" }}>
                         <div
                             style={{
-                                backgroundColor: "white",
+                                backgroundColor: cardBg,
                                 borderRadius: "12px",
                                 padding: "24px",
-                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                                border: `1px solid ${border}`,
+                                boxShadow: darkMode
+                                    ? "0 12px 30px rgba(0,0,0,0.35)"
+                                    : "0 2px 8px rgba(0,0,0,0.08)",
                             }}
                         >
                             <div style={{ marginBottom: "24px" }}>
-                                <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "8px" }}>
+                                <h2
+                                    style={{
+                                        fontSize: "20px",
+                                        fontWeight: "700",
+                                        marginBottom: "8px",
+                                        color: mainText,
+                                    }}
+                                >
                                     {selectedOpportunity.opportunityTitle}
                                 </h2>
-                                <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                                <p style={{ fontSize: "14px", color: mutedText }}>
                                     {selectedOpportunity.company}
                                 </p>
                             </div>
 
-                            {/* Reports List */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                                {reports.length === 0 ? (
+                                {loadingReports ? (
                                     <div
                                         style={{
                                             padding: "48px 24px",
                                             textAlign: "center",
-                                            color: "#9ca3af",
+                                            color: mutedText,
                                             fontSize: "14px",
-                                            backgroundColor: "#f9fafb",
+                                            backgroundColor: softBg,
+                                            borderRadius: "8px",
+                                        }}
+                                    >
+                                        Loading reports...
+                                    </div>
+                                ) : reports.length === 0 ? (
+                                    <div
+                                        style={{
+                                            padding: "48px 24px",
+                                            textAlign: "center",
+                                            color: mutedText,
+                                            fontSize: "14px",
+                                            backgroundColor: softBg,
                                             borderRadius: "8px",
                                         }}
                                     >
@@ -270,105 +344,138 @@ export default function AdminReportedOpportunities() {
                                                 )
                                             }
                                             style={{
-                                                border: "1px solid #e5e7eb",
+                                                border: `1px solid ${border}`,
                                                 borderRadius: "8px",
                                                 padding: "20px",
-                                                opacity: report.isResolved ? 0.5 : 1,
+                                                opacity: report.isResolved ? 0.6 : 1,
                                                 transition: "opacity 0.3s",
                                                 cursor: "pointer",
+                                                backgroundColor: cardBg,
                                             }}
                                         >
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "flex-start",
+                                                    gap: "16px",
+                                                }}
+                                            >
                                                 <div style={{ flex: 1 }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                                                        <h3 style={{ fontSize: "16px", fontWeight: "600" }}>
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "8px",
+                                                            marginBottom: "8px",
+                                                            flexWrap: "wrap",
+                                                        }}
+                                                    >
+                                                        <h3
+                                                            style={{
+                                                                fontSize: "16px",
+                                                                fontWeight: "600",
+                                                                color: mainText,
+                                                            }}
+                                                        >
                                                             {report.reason}
                                                         </h3>
+
                                                         <code
                                                             style={{
-                                                                backgroundColor: "#f3f4f6",
+                                                                backgroundColor: softBg,
                                                                 padding: "2px 6px",
                                                                 borderRadius: "4px",
                                                                 fontSize: "12px",
                                                                 fontFamily: "monospace",
-                                                                color: "#6b7280",
+                                                                color: mutedText,
                                                             }}
                                                         >
                                                             {report.studentId}
                                                         </code>
                                                     </div>
+
                                                     <p
                                                         style={{
                                                             fontSize: "14px",
-                                                            color: "#374151",
+                                                            color: darkMode ? "#cbd5e1" : "#374151",
                                                             lineHeight: "1.6",
                                                             marginBottom: "8px",
                                                         }}
                                                     >
                                                         {report.details || "No details provided."}
                                                     </p>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                                        <p style={{ fontSize: "12px", color: "#9ca3af" }}>
-                                                            Reported on {new Date(report.createdAt).toLocaleString()}
+
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "12px",
+                                                            flexWrap: "wrap",
+                                                        }}
+                                                    >
+                                                        <p style={{ fontSize: "12px", color: mutedText }}>
+                                                            Reported on{" "}
+                                                            {new Date(report.createdAt).toLocaleString()}
                                                         </p>
+
                                                         {report.isResolved && (
                                                             <span
                                                                 style={{
                                                                     display: "inline-flex",
                                                                     alignItems: "center",
                                                                     gap: "4px",
-                                                                    backgroundColor: "#dcfce7",
-                                                                    color: "#166534",
+                                                                    backgroundColor: darkMode
+                                                                        ? "#14532d"
+                                                                        : "#dcfce7",
+                                                                    color: darkMode ? "#bbf7d0" : "#166534",
                                                                     padding: "2px 8px",
                                                                     borderRadius: "4px",
                                                                     fontSize: "12px",
                                                                     fontWeight: "600",
                                                                 }}
                                                             >
-                                                                <CheckCircle style={{ width: "12px", height: "12px" }} />
+                                                                <CheckCircle
+                                                                    style={{ width: "12px", height: "12px" }}
+                                                                />
                                                                 Resolved
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
+
                                                 <button
-                                                    onClick={() => handleResolveReport(report.reportId)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleResolveReport(report.reportId);
+                                                    }}
                                                     disabled={report.isResolved}
                                                     style={{
                                                         padding: "8px 16px",
-                                                        backgroundColor: report.isResolved ? "#f3f4f6" : "#3b82f6",
-                                                        color: report.isResolved ? "#9ca3af" : "white",
+                                                        backgroundColor: report.isResolved
+                                                            ? softBg
+                                                            : "#3b82f6",
+                                                        color: report.isResolved ? mutedText : "white",
                                                         border: "none",
                                                         borderRadius: "6px",
                                                         fontSize: "14px",
                                                         fontWeight: "600",
                                                         cursor: report.isResolved ? "not-allowed" : "pointer",
-                                                        transition: "all 0.2s",
                                                         flexShrink: 0,
-                                                        marginLeft: "16px",
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        if (!report.isResolved) {
-                                                            e.currentTarget.style.backgroundColor = "#2563eb";
-                                                        }
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        if (!report.isResolved) {
-                                                            e.currentTarget.style.backgroundColor = "#3b82f6";
-                                                        }
                                                     }}
                                                 >
                                                     {report.isResolved ? "Resolved" : "Resolve"}
                                                 </button>
                                             </div>
+
                                             {selectedReport?.reportId === report.reportId && (
                                                 <div
                                                     style={{
                                                         marginTop: "12px",
-                                                        border: "1px solid #e5e7eb",
+                                                        border: `1px solid ${border}`,
                                                         borderRadius: "10px",
                                                         padding: "12px",
-                                                        backgroundColor: "#f9fafb",
+                                                        backgroundColor: softBg,
                                                     }}
                                                 >
                                                     <p style={{ fontSize: "14px", marginBottom: "6px" }}>
@@ -378,10 +485,12 @@ export default function AdminReportedOpportunities() {
                                                         <strong>Student ID:</strong> {report.studentId}
                                                     </p>
                                                     <p style={{ fontSize: "14px", marginBottom: "6px" }}>
-                                                        <strong>Details:</strong> {report.details || "No details provided."}
+                                                        <strong>Details:</strong>{" "}
+                                                        {report.details || "No details provided."}
                                                     </p>
-                                                    <p style={{ fontSize: "12px", color: "#6b7280" }}>
-                                                        Reported on {new Date(report.createdAt).toLocaleString()}
+                                                    <p style={{ fontSize: "12px", color: mutedText }}>
+                                                        Reported on{" "}
+                                                        {new Date(report.createdAt).toLocaleString()}
                                                     </p>
                                                 </div>
                                             )}
