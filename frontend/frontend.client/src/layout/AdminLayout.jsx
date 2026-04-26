@@ -10,9 +10,12 @@ import {
     LogOut,
     Menu,
     X,
+    Sun,
+    Moon,
 } from "lucide-react";
+import { useTheme } from "../layout/useTheme";
 
-const colors = {
+const lightColors = {
     pageBg: "#f6f7fb",
     sidebarBg: "#ffffff",
     sidebarBorder: "#e5e7eb",
@@ -21,12 +24,31 @@ const colors = {
     navText: "#0f172a",
     navActiveText: "#ffffff",
     navActiveBg: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-    navActiveBorder: "transparent",
     profileCardBg: "linear-gradient(180deg, #ffffff, #f8fafc)",
     profileCardBorder: "#e5e7eb",
     logoutBg: "#fee2e2",
     logoutBorder: "#fecaca",
     logoutText: "#b91c1c",
+    toggleBg: "#ffffff",
+    toggleBorder: "#e5e7eb",
+};
+
+const darkColors = {
+    pageBg: "#0f172a",
+    sidebarBg: "#111827",
+    sidebarBorder: "#1f2937",
+    logoBadgeBg: "#1e3a8a",
+    logoSubtext: "#94a3b8",
+    navText: "#e5e7eb",
+    navActiveText: "#ffffff",
+    navActiveBg: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+    profileCardBg: "linear-gradient(180deg, #1f2937, #111827)",
+    profileCardBorder: "#334155",
+    logoutBg: "#451a1a",
+    logoutBorder: "#7f1d1d",
+    logoutText: "#fecaca",
+    toggleBg: "#111827",
+    toggleBorder: "#334155",
 };
 
 const navItems = [
@@ -39,6 +61,8 @@ const navItems = [
 
 export default function AdminLayout() {
     const navigate = useNavigate();
+    const { darkMode, toggleTheme } = useTheme();
+    const colors = darkMode ? darkColors : lightColors;
 
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,13 +92,41 @@ export default function AdminLayout() {
 
     return (
         <div
+            className={darkMode ? "admin-shell admin-dark" : "admin-shell"}
             style={{
                 display: "flex",
                 minHeight: "100vh",
                 backgroundColor: colors.pageBg,
+                color: colors.navText,
                 flexDirection: isMobile ? "column" : "row",
             }}
         >
+            <button
+                onClick={toggleTheme}
+                title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                style={{
+                    position: "fixed",
+                    top: "18px",
+                    right: "22px",
+                    zIndex: 1300,
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "999px",
+                    border: `1px solid ${colors.toggleBorder}`,
+                    background: colors.toggleBg,
+                    color: colors.navText,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: darkMode
+                        ? "0 12px 28px rgba(0, 0, 0, 0.35)"
+                        : "0 12px 28px rgba(15, 23, 42, 0.12)",
+                }}
+            >
+                {darkMode ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
+
             {isMobile && (
                 <header
                     style={{
@@ -97,7 +149,7 @@ export default function AdminLayout() {
                                 height: "38px",
                                 borderRadius: "10px",
                                 backgroundColor: colors.logoBadgeBg,
-                                color: "#2563eb",
+                                color: "#60a5fa",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -121,6 +173,7 @@ export default function AdminLayout() {
                             background: "transparent",
                             cursor: "pointer",
                             color: colors.navText,
+                            marginRight: "52px",
                         }}
                     >
                         <Menu size={24} />
@@ -134,7 +187,7 @@ export default function AdminLayout() {
                     style={{
                         position: "fixed",
                         inset: 0,
-                        background: "rgba(0,0,0,0.35)",
+                        background: "rgba(0,0,0,0.45)",
                         zIndex: 1001,
                     }}
                 />
@@ -156,7 +209,7 @@ export default function AdminLayout() {
                     borderRight: `1px solid ${colors.sidebarBorder}`,
                     zIndex: 1002,
                     transition: "left 0.25s ease",
-                    boxShadow: isMobile && sidebarOpen ? "0 10px 30px rgba(0,0,0,0.18)" : "none",
+                    boxShadow: isMobile && sidebarOpen ? "0 10px 30px rgba(0,0,0,0.35)" : "none",
                 }}
             >
                 <div>
@@ -176,7 +229,7 @@ export default function AdminLayout() {
                                     height: "42px",
                                     borderRadius: "10px",
                                     backgroundColor: colors.logoBadgeBg,
-                                    color: "#2563eb",
+                                    color: "#60a5fa",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
@@ -228,19 +281,13 @@ export default function AdminLayout() {
                                         padding: "12px 14px",
                                         borderRadius: "10px",
                                         background: isActive ? colors.navActiveBg : "transparent",
-                                        border: isActive
-                                            ? `1px solid ${colors.navActiveBorder}`
-                                            : "1px solid transparent",
+                                        border: "1px solid transparent",
                                         fontWeight: 600,
                                         transition: "all 0.2s ease",
                                         whiteSpace: "nowrap",
                                     })}
                                 >
-                                    {item.to === "/admin/reported-opportunities" ? (
-                                        <AlertTriangle size={18} style={{ flexShrink: 0 }} />
-                                    ) : (
-                                        <Icon size={18} />
-                                    )}
+                                    <Icon size={18} style={{ flexShrink: 0 }} />
                                     <span>{item.label}</span>
                                 </NavLink>
                             );
@@ -297,10 +344,12 @@ export default function AdminLayout() {
             </aside>
 
             <main
+                className="admin-main"
                 style={{
                     flex: 1,
                     width: "100%",
                     minWidth: 0,
+                    backgroundColor: colors.pageBg,
                 }}
             >
                 <Outlet />
