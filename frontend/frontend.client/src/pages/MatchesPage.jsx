@@ -368,6 +368,7 @@ export default function MatchesPage() {
                 step: getApplicationStep(normalizedStatus),
                 finalDecision: getFinalDecisionLabel(normalizedStatus),
                 logoColor: getLogoColor(application.companyName),
+                recruiterUserId: application.recruiterUserId,
                 deadline: application.hasAssessment
                     ? "Assessment Available"
                     : formatAppliedDate(application.createdAtUtc),
@@ -443,6 +444,7 @@ export default function MatchesPage() {
                 status: "Saved",
                 matchPercentage: Math.round(opportunity.matchPercentage ?? 0),
                 logoColor: getLogoColor(opportunity.companyName),
+                recruiterUserId: opportunity.recruiterUserId,
                 deadline: formatDeadline(opportunity.deadlineUtc),
                 skills,
 

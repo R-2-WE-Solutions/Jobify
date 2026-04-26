@@ -20,7 +20,7 @@ import {
 import { api } from "../api/api";
 import "./styles/organizationdashboard.css";
 
-type Tab = "post" | "listings";
+type Tab = "post" | "listings" | "profile";
 type JobStatus = "active" | "draft" | "closed";
 
 type Listing = {
@@ -120,6 +120,18 @@ export default function OrganizationDashboard() {
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [profileError, setProfileError] = useState("");
 
+    const [profileForm, setProfileForm] = useState({
+        companyName: "",
+        emailDomain: "",
+        websiteUrl: "",
+        linkedinUrl: "",
+        instagramUrl: "",
+        notes: "",
+    });
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+    const [profileSaveError, setProfileSaveError] = useState("");
+
     const [listings, setListings] = useState<Listing[]>([]);
     const [loadingListings, setLoadingListings] = useState(false);
     const [listingsError, setListingsError] = useState("");
@@ -166,6 +178,14 @@ export default function OrganizationDashboard() {
             }
 
             setCompanyName(data.profile?.companyName || "");
+            setProfileForm({
+                companyName: data.profile?.companyName || "",
+                emailDomain: data.profile?.emailDomain || "",
+                websiteUrl: data.profile?.websiteUrl || "",
+                linkedinUrl: data.profile?.linkedinUrl || "",
+                instagramUrl: data.profile?.instagramUrl || "",
+                notes: data.profile?.notes || "",
+            });
         } catch (err: any) {
             console.error("Profile fetch failed", err);
             setProfileError(err?.response?.data || err?.message || "Failed to load profile.");
@@ -232,6 +252,22 @@ export default function OrganizationDashboard() {
     useEffect(() => {
         if (companyName) fetchListings();
     }, [companyName]);
+
+    async function saveProfile() {
+        try {
+            setSavingProfile(true);
+            setProfileSaveError("");
+            setProfileSaveSuccess(false);
+            await api.put("/profile", profileForm);
+            setCompanyName(profileForm.companyName || companyName);
+            setProfileSaveSuccess(true);
+            setTimeout(() => setProfileSaveSuccess(false), 3000);
+        } catch (err: any) {
+            setProfileSaveError(err?.response?.data || err?.message || "Failed to save profile.");
+        } finally {
+            setSavingProfile(false);
+        }
+    }
 
     function setField<K extends keyof typeof formData>(k: K, v: string) {
         setFormData((p) => ({ ...p, [k]: v }));
@@ -488,6 +524,13 @@ export default function OrganizationDashboard() {
                         onClick={() => setActiveTab("listings")}
                     >
                         My Listings ({count})
+                    </button>
+
+                    <button
+                        className={`orgdash-tab ${activeTab === "profile" ? "active" : ""}`}
+                        onClick={() => setActiveTab("profile")}
+                    >
+                        Organization Profile
                     </button>
                 </div>
             </div>
@@ -936,6 +979,96 @@ Learning budget`}
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </motion.div>
+            )}
+
+            {activeTab === "profile" && (
+                <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+                    <div className="orgdash-card">
+                        <h2 className="orgdash-section-title">Organization Profile</h2>
+                        <p style={{ color: "var(--muted)", fontSize: 14, marginBottom: 20 }}>
+                            This information is shown to students when they click your organization name.
+                        </p>
+
+                        <div className="orgdash-form-field">
+                            <label className="orgdash-label">Company Name</label>
+                            <input
+                                className="orgdash-input"
+                                value={profileForm.companyName}
+                                onChange={e => setProfileForm(p => ({ ...p, companyName: e.target.value }))}
+                                placeholder="Your company name"
+                            />
+                        </div>
+
+                        <div className="orgdash-form-field">
+                            <label className="orgdash-label">About / Notes</label>
+                            <textarea
+                                className="orgdash-input"
+                                rows={4}
+                                value={profileForm.notes}
+                                onChange={e => setProfileForm(p => ({ ...p, notes: e.target.value }))}
+                                placeholder="Tell students about your organization..."
+                                style={{ resize: "vertical" }}
+                            />
+                        </div>
+
+                        <div className="orgdash-grid-2">
+                            <div className="orgdash-form-field">
+                                <label className="orgdash-label">Email Domain</label>
+                                <input
+                                    className="orgdash-input"
+                                    value={profileForm.emailDomain}
+                                    onChange={e => setProfileForm(p => ({ ...p, emailDomain: e.target.value }))}
+                                    placeholder="e.g. yourcompany.com"
+                                />
+                            </div>
+
+                            <div className="orgdash-form-field">
+                                <label className="orgdash-label">Website URL</label>
+                                <input
+                                    className="orgdash-input"
+                                    value={profileForm.websiteUrl}
+                                    onChange={e => setProfileForm(p => ({ ...p, websiteUrl: e.target.value }))}
+                                    placeholder="https://yourcompany.com"
+                                />
+                            </div>
+
+                            <div className="orgdash-form-field">
+                                <label className="orgdash-label">LinkedIn URL</label>
+                                <input
+                                    className="orgdash-input"
+                                    value={profileForm.linkedinUrl}
+                                    onChange={e => setProfileForm(p => ({ ...p, linkedinUrl: e.target.value }))}
+                                    placeholder="https://linkedin.com/company/..."
+                                />
+                            </div>
+
+                            <div className="orgdash-form-field">
+                                <label className="orgdash-label">Instagram URL</label>
+                                <input
+                                    className="orgdash-input"
+                                    value={profileForm.instagramUrl}
+                                    onChange={e => setProfileForm(p => ({ ...p, instagramUrl: e.target.value }))}
+                                    placeholder="https://instagram.com/..."
+                                />
+                            </div>
+                        </div>
+
+                        {profileSaveError && (
+                            <p style={{ color: "#ef4444", fontSize: 14, marginBottom: 12 }}>{profileSaveError}</p>
+                        )}
+                        {profileSaveSuccess && (
+                            <p style={{ color: "#16a34a", fontSize: 14, marginBottom: 12 }}>Profile saved successfully.</p>
+                        )}
+
+                        <button
+                            className="orgdash-btn orgdash-btn-primary"
+                            onClick={saveProfile}
+                            disabled={savingProfile}
+                        >
+                            {savingProfile ? "Saving..." : "Save Profile"}
+                        </button>
                     </div>
                 </motion.div>
             )}

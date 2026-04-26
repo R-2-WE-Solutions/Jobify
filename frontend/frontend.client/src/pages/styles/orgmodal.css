@@ -1,0 +1,112 @@
+.orgmodal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.orgmodal {
+    background: var(--card, #1e2433);
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 460px;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+.orgmodal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--muted, #9ca3af);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.orgmodal-close:hover { color: var(--text, #fff); }
+
+.orgmodal-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.orgmodal-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--primary, #3b82f6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.orgmodal-initial {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.orgmodal-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 2px;
+    color: var(--text, #fff);
+}
+
+.orgmodal-subtitle {
+    font-size: 13px;
+    color: var(--muted, #9ca3af);
+    margin: 0;
+}
+
+.orgmodal-empty {
+    color: var(--muted, #9ca3af);
+    font-size: 14px;
+    text-align: center;
+    padding: 12px 0;
+}
+
+.orgmodal-body { display: flex; flex-direction: column; gap: 14px; }
+
+.orgmodal-notes {
+    font-size: 14px;
+    color: var(--text, #e5e7eb);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.orgmodal-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.orgmodal-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--primary, #3b82f6);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(59,130,246,0.1);
+    transition: background 0.15s;
+}
+
+.orgmodal-link:hover { background: rgba(59,130,246,0.2); }

@@ -337,6 +337,7 @@ public class ApplicationController : ControllerBase
         public DateTime UpdatedAtUtc { get; set; }
         public string? Note { get; set; }
         public bool HasAssessment { get; set; }
+        public string? RecruiterUserId { get; set; }
     }
 
     public class StartAssessmentDto
@@ -451,7 +452,8 @@ public class ApplicationController : ControllerBase
                 CreatedAtUtc = a.CreatedAtUtc,
                 UpdatedAtUtc = a.UpdatedAtUtc,
                 Note = a.Note,
-                HasAssessment = a.Opportunity.AssessmentJson != null && a.Opportunity.AssessmentJson != ""
+                HasAssessment = a.Opportunity.AssessmentJson != null && a.Opportunity.AssessmentJson != "",
+                RecruiterUserId = a.Opportunity.RecruiterUserId
             })
             .ToListAsync();
 

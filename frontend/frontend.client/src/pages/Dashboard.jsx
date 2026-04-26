@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { getCandidateDashboard } from "../services/dashboardService";
 import { api } from "../api/api";
+import { useApp } from "../app/context/AppContext";
 import "./styles/dashboard.css";
 
 export default function Dashboard() {
@@ -602,6 +603,7 @@ function StatCard({ title, value, icon }) {
 }
 
 function OpportunityCard({ job, showScore }) {
+    const { openOrgModal } = useApp();
     const rawScore = job?.matchScore ?? job?.matchPercentage ?? null;
 
     const badgeClass =
@@ -616,7 +618,13 @@ function OpportunityCard({ job, showScore }) {
             <div className="opportunity-card-top">
                 <div className="opportunity-card-main">
                     <h3 className="opportunity-title">{job.title}</h3>
-                    <p className="opportunity-company">{job.companyName}</p>
+                    <button
+                        type="button"
+                        className="dashboard-company-link"
+                        onClick={() => openOrgModal(job.companyName, job.id)}
+                    >
+                        {job.companyName}
+                    </button>
                     <p className="opportunity-meta">
                         {job.location} {job.workMode ? `• ${job.workMode}` : ""}
                     </p>

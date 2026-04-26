@@ -22,7 +22,7 @@ import {
     ArrowRight,
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5159").replace(/\/+$/, "").replace(/\/api$/, "") + "/api";
 
 function Badge({ children, variant = "neutral" }) {
     return <span className={`badge badge--${variant}`}>{children}</span>;
@@ -60,6 +60,24 @@ function formatDeadline(utcString) {
         month: "short",
         day: "2-digit",
     });
+}
+
+function SimilarCardLogo({ companyName, recruiterUserId }) {
+    const [url, setUrl] = React.useState(null);
+    React.useEffect(() => {
+        if (!recruiterUserId) return;
+        const token = localStorage.getItem("jobify_token");
+        fetch(`${API_URL}/Profile/recruiter/logo?userId=${recruiterUserId}`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.blob() : null)
+            .then(b => b ? setUrl(URL.createObjectURL(b)) : null)
+            .catch(() => {});
+    }, [recruiterUserId]);
+    const letter = (companyName?.trim()?.[0] || "J").toUpperCase();
+    return (
+        <div className="similarLogo" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {url ? <img src={url} alt={companyName} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : letter}
+        </div>
+    );
 }
 
 function CompanyLogo({ name, size = 64, logoUrl }) {
@@ -168,6 +186,7 @@ export default function JobDetailsPage() {
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
+    const [logoUrl, setLogoUrl] = useState(null);
 
     const [similar, setSimilar] = useState([]);
     const [similarLoading, setSimilarLoading] = useState(true);
@@ -263,6 +282,16 @@ export default function JobDetailsPage() {
                         ? data.preferredSkills
                         : [],
                 });
+
+                const rid = data.recruiterUserId || data.RecruiterUserId;
+                if (rid) {
+                    fetch(`${API_URL}/Profile/recruiter/logo?userId=${rid}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    })
+                        .then(r => r.ok ? r.blob() : null)
+                        .then(b => b ? setLogoUrl(URL.createObjectURL(b)) : null)
+                        .catch(() => {});
+                }
             } catch (e) {
                 if (e?.name !== "AbortError") {
                     console.error(e);
@@ -287,9 +316,13 @@ export default function JobDetailsPage() {
                 setSimilarLoading(true);
                 setSimilarErr("");
 
+                const token = localStorage.getItem("jobify_token");
                 const res = await fetch(`${API_URL}/opportunities/${id}/similar?take=4`, {
                     signal: controller.signal,
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                    },
                 });
 
                 if (!res.ok) throw new Error(`Failed to load similar (${res.status})`);
@@ -360,6 +393,14 @@ export default function JobDetailsPage() {
             if (refreshed.ok) {
                 const data = await refreshed.json();
                 setJob(data);
+                if (data.recruiterUserId || data.RecruiterUserId) {
+                    const rid = data.recruiterUserId || data.RecruiterUserId;
+                    const token = localStorage.getItem("jobify_token");
+                    fetch(`${API_URL}/Profile/recruiter/logo?userId=${rid}`, { headers: { Authorization: `Bearer ${token}` } })
+                        .then(r => r.ok ? r.blob() : null)
+                        .then(b => b ? setLogoUrl(URL.createObjectURL(b)) : null)
+                        .catch(() => {});
+                }
             }
         } catch (e) {
             console.error(e);
@@ -537,9 +578,7 @@ export default function JobDetailsPage() {
                     <div className="heroTop">
                         <div className="heroLeft">
                             <div className="logoWrap">
-                                <div className="companyLogo">
-                                    <Building2 size={30} strokeWidth={1.8} />
-                                </div>
+                                <CompanyLogo name={job.companyName} size={64} logoUrl={logoUrl} />
                             </div>
 
 
@@ -943,9 +982,7 @@ export default function JobDetailsPage() {
                                     onKeyDown={(e) => e.key === "Enter" && navigate(`/opportunities/${s.id}`)}
                                 >
                                     <div className="similarTop">
-                                        <div className="similarLogo">
-                                            <Building2 size={22} strokeWidth={1.8} />
-                                        </div>
+                                        <SimilarCardLogo companyName={s.companyName} recruiterUserId={s.recruiterUserId} />
                                         <button
                                             className={`bookmarkBtn ${savedItems.includes(s.id) ? "isSaved" : ""}`}
                                             title={savedItems.includes(s.id) ? "Unsave" : "Save"}

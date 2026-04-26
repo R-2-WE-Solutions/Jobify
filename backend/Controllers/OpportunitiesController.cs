@@ -219,6 +219,7 @@ public class OpportunitiesController : ControllerBase
                     MatchPercentage = matchPercentage,
                     MatchedSkills = matchedSkills,
                     IsClosed = o.IsClosed,
+                    RecruiterUserId = o.RecruiterUserId,
                     Description = o.Description,
                     Benefits = string.IsNullOrWhiteSpace(o.BenefitsJson)
                         ? new List<string>()
@@ -324,7 +325,8 @@ public class OpportunitiesController : ControllerBase
             AssessmentChallengeCount = o.AssessmentChallengeCount,
             MatchPercentage = matchPercentage,
             Skills = opportunitySkills,
-            Qa = qa
+            Qa = qa,
+            RecruiterUserId = o.RecruiterUserId
         });
     }
 
@@ -406,7 +408,8 @@ public class OpportunitiesController : ControllerBase
                 MatchedSkills = new List<string>(),
                 AssessmentTimeLimitSeconds = x.Opportunity.AssessmentTimeLimitSeconds,
                 AssessmentMcqCount = x.Opportunity.AssessmentMcqCount,
-                AssessmentChallengeCount = x.Opportunity.AssessmentChallengeCount
+                AssessmentChallengeCount = x.Opportunity.AssessmentChallengeCount,
+                RecruiterUserId = x.Opportunity.RecruiterUserId
             })
             .ToList();
 
@@ -1142,6 +1145,7 @@ public class OpportunitiesController : ControllerBase
                 CreatedAtUtc = o.CreatedAtUtc,
                 DeadlineUtc = o.DeadlineUtc,
                 IsClosed = o.IsClosed,
+                RecruiterUserId = o.RecruiterUserId,
                 Description = o.Description,
                 Benefits = string.IsNullOrWhiteSpace(o.BenefitsJson)
                     ? new List<string>()

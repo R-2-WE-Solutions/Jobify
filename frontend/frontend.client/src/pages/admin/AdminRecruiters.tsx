@@ -21,6 +21,27 @@ function mapStatus(status: string) {
     return "pending_verification";
 }
 
+const API_URL_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5159").replace(/\/+$/, "").replace(/\/api$/, "") + "/api";
+
+function RecruiterAvatar({ userId, name }: { userId: string; name: string }) {
+    const [url, setUrl] = React.useState<string | null>(null);
+    React.useEffect(() => {
+        if (!userId) return;
+        const token = localStorage.getItem("jobify_token");
+        fetch(`${API_URL_BASE}/Profile/recruiter/logo?userId=${userId}`, { headers: { Authorization: `Bearer ${token || ""}` } })
+            .then(r => r.ok ? r.blob() : null)
+            .then(b => b ? setUrl(URL.createObjectURL(b)) : null)
+            .catch(() => {});
+    }, [userId]);
+    const initials = name?.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("") || "?";
+    return (
+        <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: "#16a34a", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, overflow: "hidden", flexShrink: 0 }}>
+            {url ? <img src={url} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initials}
+        </div>
+    );
+}
+
+
 export default function AdminRecruiters() {
     const API_URL = import.meta.env.VITE_API_URL;
 
@@ -62,6 +83,7 @@ export default function AdminRecruiters() {
 
             const mapped = data.map((r: any) => ({
                 id: r.id,
+                userId: r.id,
                 name: r.fullName ?? r.email,
                 email: r.email,
                 company: r.companyName ?? "Unknown",
@@ -402,8 +424,8 @@ export default function AdminRecruiters() {
                                                         fontWeight: "600",
                                                         fontSize: "14px",
                                                     }}
-                                                >
-                                                    {getInitials(recruiter.name)}
+>
+                                                    <RecruiterAvatar userId={recruiter.id} name={recruiter.name} />
                                                 </div>
                                                 <span style={{ fontWeight: "600", fontSize: "14px", color: mainText }}>
                                                     {recruiter.name}

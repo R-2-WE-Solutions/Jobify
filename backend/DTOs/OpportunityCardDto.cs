@@ -39,4 +39,5 @@ public class OpportunityCardDto
     public string? FullAddress { get; set; }
 
     public bool IsClosed { get; set; }
+    public string? RecruiterUserId { get; set; }
 }

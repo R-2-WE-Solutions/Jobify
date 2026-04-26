@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../../../app/context/AppContext";
 import {
     MapPin,
     Building2,
@@ -17,6 +18,26 @@ import "../../styles/matches.css";
 
 function getInitials(company = "") {
     return company.slice(0, 2).toUpperCase();
+}
+
+function CompanyLogo({ company, logoColor, recruiterUserId }) {
+    const [logoUrl, setLogoUrl] = useState(null);
+
+    useEffect(() => {
+        if (!recruiterUserId) return;
+        api.get(`/Profile/recruiter/logo?userId=${recruiterUserId}&t=${Date.now()}`, { responseType: "blob" })
+            .then(r => setLogoUrl(URL.createObjectURL(r.data)))
+            .catch(() => setLogoUrl(null));
+    }, [recruiterUserId]);
+
+    return (
+        <div className={`match-logo ${logoColor || "blue"}`} style={{ overflow: "hidden", padding: 0 }}>
+            {logoUrl
+                ? <img src={logoUrl} alt={company} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : getInitials(company)
+            }
+        </div>
+    );
 }
 
 function scoreColor(score) {
@@ -88,23 +109,22 @@ function Steps({ status }) {
 export function OpportunityCard({ match }) {
     const [expanded, setExpanded] = useState(false);
     const navigate = useNavigate();
+    const { openOrgModal } = useApp();
 
     return (
         <div className={`match-card opportunity-card ${expanded ? "expanded" : ""}`}>
             <div className="match-card-row">
                 <div className="match-card-left">
-                    <div className={`match-logo ${match.logoColor || "blue"}`}>
-                        {getInitials(match.company)}
-                    </div>
+                    <CompanyLogo company={match.company} logoColor={match.logoColor} recruiterUserId={match.recruiterUserId} />
 
                     <div className="match-main">
                         <h3 className="match-job-title">{match.jobTitle}</h3>
 
                         <div className="match-meta">
-                            <span className="match-company">
+                            <button type="button" className="match-company-link" onClick={() => openOrgModal(match.company, match.id)}>
                                 <Building2 size={15} />
                                 {match.company}
-                            </span>
+                            </button>
 
                             <span className="match-dot">•</span>
 
@@ -225,6 +245,7 @@ export function OpportunitiesTab({ matches = [], onToggleSave }) {
 export function ApplicationsTab({ matches = [], onWithdrawApplication }) {
     const applications = matches.filter((m) => m.type === "application");
     const navigate = useNavigate();
+    const { openOrgModal } = useApp();
 
     if (!applications.length) {
         return <div className="matches-empty">No active applications.</div>;
@@ -236,18 +257,16 @@ export function ApplicationsTab({ matches = [], onWithdrawApplication }) {
                 <div key={match.id} className="match-card app-card">
                     <div className="app-card-row">
                         <div className="app-left">
-                            <div className={`match-logo ${match.logoColor || "blue"}`}>
-                                {getInitials(match.company)}
-                            </div>
+                            <CompanyLogo company={match.company} logoColor={match.logoColor} recruiterUserId={match.recruiterUserId} />
 
                             <div className="match-main">
                                 <h3 className="match-job-title">{match.jobTitle}</h3>
 
                                 <div className="match-meta">
-                                    <span className="match-company">
+                                    <button type="button" className="match-company-link" onClick={() => openOrgModal(match.company, match.opportunityId)}>
                                         <Building2 size={15} />
                                         {match.company}
-                                    </span>
+                                    </button>
 
                                     <span className="match-dot">•</span>
 
@@ -417,9 +436,7 @@ export function InterviewsTab() {
                                 </div>
                             </div>
 
-                            <div className="match-logo indigo">
-                                {getInitials(item.companyName)}
-                            </div>
+                            <CompanyLogo company={item.companyName} logoColor="indigo" recruiterUserId={item.recruiterUserId} />
                         </div>
 
                         <div className="interview-info-grid">

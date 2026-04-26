@@ -140,6 +140,7 @@ public class InterviewsController : ControllerBase
                     "Candidate",
                 opportunityTitle = app.Opportunity.Title,
                 companyName = app.Opportunity.CompanyName,
+                recruiterUserId = app.Opportunity.RecruiterUserId,
                 scheduledAtUtc = i.ScheduledAtUtc,
                 meetingLink = i.MeetingLink,
                 location = i.Location,

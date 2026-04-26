@@ -356,3 +356,27 @@
         width: 100%;
     }
 }
+
+.dashboard-company-link {
+    display: block;
+    margin: 2px 0 6px;
+    background: none !important;
+    background-color: transparent !important;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: var(--primary, #2563eb);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s;
+}
+.dashboard-company-link:hover {
+    opacity: 0.75;
+    text-decoration-style: solid;
+}

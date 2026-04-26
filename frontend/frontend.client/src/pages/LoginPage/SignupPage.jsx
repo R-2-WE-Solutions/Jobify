@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { api } from "../../api/api";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../layout/useTheme";
@@ -104,19 +105,25 @@ export default function SignupPage() {
     return "";
   };
 
+    const [liveStats, setLiveStats] = React.useState({ candidates: null, opportunities: null, organizations: null });
+    React.useEffect(() => {
+        api.get("/Dashboard/public-stats").then(r => setLiveStats(r.data)).catch(() => {});
+    }, []);
+    const fmt = (n) => n == null ? "..." : n >= 1000 ? `${(n / 1000).toFixed(1)}K+` : `${n}+`;
+
   const stats =
     userRole === "candidate"
       ? [
-          { icon: Users, value: "10K+", label: "Candidates" },
-          { icon: Briefcase, value: "2K+", label: "Opportunities" },
-          { icon: Target, value: "85%", label: "Match Accuracy" },
-          { icon: Building2, value: "500+", label: "Partner Organizations" },
+          { icon: Users, value: fmt(liveStats.candidates), label: "Candidates" },
+          { icon: Briefcase, value: fmt(liveStats.opportunities), label: "Opportunities" },
+          { icon: Target, value: "AI", label: "Powered Matching" },
+          { icon: Building2, value: fmt(liveStats.organizations), label: "Partner Organizations" },
         ]
       : [
-          { icon: Building2, value: "500+", label: "Organizations" },
-          { icon: Users, value: "10K+", label: "Active Candidates" },
-          { icon: Briefcase, value: "2K+", label: "Posted Jobs" },
-          { icon: Target, value: "85%", label: "Success Rate" },
+          { icon: Building2, value: fmt(liveStats.organizations), label: "Organizations" },
+          { icon: Users, value: fmt(liveStats.candidates), label: "Active Candidates" },
+          { icon: Briefcase, value: fmt(liveStats.opportunities), label: "Posted Jobs" },
+          { icon: Target, value: "AI", label: "Powered Matching" },
         ];
 
   const passwordHint = useMemo(

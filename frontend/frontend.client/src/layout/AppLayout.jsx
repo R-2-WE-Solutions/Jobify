@@ -19,6 +19,8 @@ import { api } from "../api/api";
 import { useTheme } from "./useTheme";
 import "../pages/styles/layout.css";
 import "../pages/styles/footer.css";
+import { AppProvider } from "../app/context/AppContext";
+import OrganizationProfileModal from "../pages/components/OrganizationProfileModal";
 
 const RECRUITER_SEARCH_OPTIONS = [
     {
@@ -155,7 +157,7 @@ function getSearchMatches(query) {
     );
 }
 
-export default function AppLayout() {
+function AppLayoutInner() {
     const navigate = useNavigate();
     const { darkMode, toggleTheme } = useTheme();
 
@@ -163,6 +165,7 @@ export default function AppLayout() {
     const [role, setRole] = useState(null);
     const [displayName, setDisplayName] = useState("Loading...");
     const [avatarLetter, setAvatarLetter] = useState("?");
+    const [sidebarLogoUrl, setSidebarLogoUrl] = useState(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [profileError, setProfileError] = useState("");
 
@@ -225,6 +228,11 @@ export default function AppLayout() {
                     const company = data?.profile?.companyName || "Recruiter";
                     setDisplayName(company);
                     setAvatarLetter(company.charAt(0)?.toUpperCase() || "R");
+                    if (data?.profile?.userId && data?.profile?.logoFileName) {
+                        api.get(`/Profile/recruiter/logo?userId=${data.profile.userId}&t=${Date.now()}`, { responseType: "blob" })
+                            .then(r => setSidebarLogoUrl(URL.createObjectURL(r.data)))
+                            .catch(() => setSidebarLogoUrl(null));
+                    }
                 } else if (userRole === "Student") {
                     const fullName = data?.profile?.fullName || "Student";
                     setDisplayName(fullName);
@@ -524,7 +532,12 @@ export default function AppLayout() {
 
                     <div className="al-sidebarBottom">
                         <div className="al-userCard">
-                            <div className="al-userAvatar">{avatarLetter}</div>
+                            <div className="al-userAvatar">
+                                {sidebarLogoUrl
+                                    ? <img src={sidebarLogoUrl} alt={displayName} />
+                                    : avatarLetter
+                                }
+                            </div>
 
                             <div className="al-userMeta">
                                 <div className="al-userName">{displayName}</div>
@@ -687,6 +700,15 @@ export default function AppLayout() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function AppLayout() {
+    return (
+        <AppProvider>
+            <AppLayoutInner />
+            <OrganizationProfileModal />
+        </AppProvider>
     );
 }
 

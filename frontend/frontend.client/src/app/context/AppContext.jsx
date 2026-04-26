@@ -9,7 +9,15 @@ export function AppProvider({ children }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
 
+    const [orgModal, setOrgModal] = useState({ open: false, companyName: null, opportunityId: null });
+
     const toggleDarkMode = () => setDarkMode((d) => !d);
+
+    const openOrgModal = (companyName, opportunityId) =>
+        setOrgModal({ open: true, companyName, opportunityId });
+
+    const closeOrgModal = () =>
+        setOrgModal({ open: false, companyName: null, opportunityId: null });
 
     return (
         <AppContext.Provider
@@ -24,6 +32,9 @@ export function AppProvider({ children }) {
                 setSidebarCollapsed,
                 darkMode,
                 toggleDarkMode,
+                orgModal,
+                openOrgModal,
+                closeOrgModal,
             }}
         >
             {children}

@@ -17,7 +17,7 @@
  */
 
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../layout/useTheme";
@@ -140,58 +140,55 @@ export default function LoginPage() {
         }
     };
 
-    const stats =
-        userRole === "candidate"
-            ? [
-                  { icon: Users, value: "10K+", label: "Candidates" },
-                  { icon: Briefcase, value: "2K+", label: "Opportunities" },
-                  { icon: Target, value: "85%", label: "Match Accuracy" },
-                  { icon: Building2, value: "500+", label: "Partner Organizations" },
-              ]
-            : [
-                  { icon: Building2, value: "500+", label: "Organizations" },
-                  { icon: Users, value: "10K+", label: "Active Candidates" },
-                  { icon: Briefcase, value: "2K+", label: "Posted Jobs" },
-                  { icon: Target, value: "85%", label: "Success Rate" },
-              ];
-
-    const topMatches = useMemo(
-        () => [
-            { percent: "85%", role: "Research Assistant", org: "University Lab" },
-            { percent: "92%", role: "Frontend Intern", org: "Acme Labs" },
-            { percent: "88%", role: "Data Analyst Intern", org: "Cedars Tech" },
-        ],
-        []
-    );
-
+    const [liveStats, setLiveStats] = useState({ candidates: null, opportunities: null, organizations: null });
+    const [liveOpps, setLiveOpps] = useState([]);
     const [matchIndex, setMatchIndex] = useState(0);
     const prevIndexRef = useRef(0);
+
+    useEffect(() => {
+        api.get("/Dashboard/public-stats").then(r => setLiveStats(r.data)).catch(() => {});
+        api.get("/Dashboard/public-opportunities").then(r => {
+            const items = Array.isArray(r.data) ? r.data : [];
+            setLiveOpps(items);
+        }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         prevIndexRef.current = matchIndex;
     }, [matchIndex]);
 
     useEffect(() => {
-        if (userRole !== "candidate") return;
-
+        if (liveOpps.length === 0) return;
         const id = setInterval(() => {
-            setMatchIndex((i) => (i + 1) % topMatches.length);
+            setMatchIndex(i => (i + 1) % liveOpps.length);
         }, 4000);
-
         return () => clearInterval(id);
-    }, [userRole, topMatches.length]);
+    }, [liveOpps.length]);
 
-    useEffect(() => {
-        setMatchIndex(0);
-    }, [userRole]);
-
-    const direction = matchIndex >= prevIndexRef.current ? 1 : -1;
-
+    const direction = matchIndex > prevIndexRef.current ? 1 : -1;
     const slideVariants = {
-        enter: (dir) => ({ opacity: 0, x: dir > 0 ? 26 : -26 }),
-        center: { opacity: 1, x: 0 },
-        exit: (dir) => ({ opacity: 0, x: dir > 0 ? -26 : 26 }),
+        enter: (d) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
+        center: { x: 0, opacity: 1 },
+        exit: (d) => ({ x: d > 0 ? -60 : 60, opacity: 0 }),
     };
+
+    const fmt = (n) => n == null ? "..." : n >= 1000 ? `${(n / 1000).toFixed(1)}K+` : `${n}+`;
+
+    const stats =
+        userRole === "candidate"
+            ? [
+                  { icon: Users, value: fmt(liveStats.candidates), label: "Candidates" },
+                  { icon: Briefcase, value: fmt(liveStats.opportunities), label: "Opportunities" },
+                  { icon: Building2, value: fmt(liveStats.organizations), label: "Partner Organizations" },
+                  { icon: Target, value: "AI", label: "Powered Matching" },
+              ]
+            : [
+                  { icon: Building2, value: fmt(liveStats.organizations), label: "Organizations" },
+                  { icon: Users, value: fmt(liveStats.candidates), label: "Active Candidates" },
+                  { icon: Briefcase, value: fmt(liveStats.opportunities), label: "Posted Jobs" },
+                  { icon: Target, value: "AI", label: "Powered Matching" },
+              ];
+
 
     return (
         <div className={`lp-root ${darkMode ? "lp-dark" : ""}`}>
@@ -243,6 +240,7 @@ export default function LoginPage() {
                                 })}
                             </div>
 
+
                             {userRole === "candidate" && (
                                 <motion.div
                                     className="lp-match"
@@ -250,28 +248,37 @@ export default function LoginPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.25, duration: 0.6 }}
                                 >
-                                    <div className="lp-match-title">Suggested for you</div>
+                                    <div className="lp-match-title">Suggested</div>
 
-                                    <AnimatePresence mode="wait" custom={direction}>
-                                        <motion.div
-                                            key={matchIndex}
-                                            className="lp-match-row"
-                                            variants={slideVariants}
-                                            custom={direction}
-                                            initial="enter"
-                                            animate="center"
-                                            exit="exit"
-                                            transition={{ duration: 0.35, ease: "easeInOut" }}
-                                        >
-                                            <div className="lp-match-badge">{topMatches[matchIndex].percent}</div>
+                                    {liveOpps.length === 0 ? (
+                                        <div className="lp-match-row">
                                             <div>
-                                                <div className="lp-match-role">{topMatches[matchIndex].role}</div>
-                                                <div className="lp-match-org">{topMatches[matchIndex].org}</div>
+                                                <div className="lp-match-role">Loading opportunities...</div>
+                                                <div className="lp-match-org">Jobify</div>
                                             </div>
-                                        </motion.div>
-                                    </AnimatePresence>
+                                        </div>
+                                    ) : (
+                                        <AnimatePresence mode="wait" custom={direction}>
+                                            <motion.div
+                                                key={matchIndex}
+                                                className="lp-match-row"
+                                                variants={slideVariants}
+                                                custom={direction}
+                                                initial="enter"
+                                                animate="center"
+                                                exit="exit"
+                                                transition={{ duration: 0.35, ease: "easeInOut" }}
+                                            >
+                                                <div>
+                                                    <div className="lp-match-role">{liveOpps[matchIndex]?.title || liveOpps[matchIndex]?.Title}</div>
+                                                    <div className="lp-match-org">{liveOpps[matchIndex]?.companyName || liveOpps[matchIndex]?.CompanyName}</div>
+                                                </div>
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    )}
                                 </motion.div>
                             )}
+
                         </div>
                     </div>
 
