@@ -145,22 +145,6 @@ export default function ApplicantProfilePage() {
                             </a>
                         ) : null}
                     </div>
-
-                    <div className="applicant-hero-stats-row">
-                        <div className="applicant-hero-stat">
-                            <span>Assessment</span>
-                            <strong>
-                                {assessmentScore != null
-                                    ? `${assessmentScore}/100`
-                                    : "—"}
-                            </strong>
-                        </div>
-
-                        <div className="applicant-hero-stat">
-                            <span>University</span>
-                            <strong>{data?.university || "—"}</strong>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="applicant-sections">
@@ -361,28 +345,6 @@ export default function ApplicantProfilePage() {
                         </div>
 
                         <div className="applicant-entry-list">
-                            <div className="applicant-entry-card">
-                                <div className="applicant-entry-card-title">Major</div>
-                                <div className="applicant-entry-card-text">
-                                    {data?.major || "—"}
-                                </div>
-                            </div>
-
-                            <div className="applicant-entry-card">
-                                <div className="applicant-entry-card-title">
-                                    Certifications
-                                </div>
-                                <div className="applicant-entry-card-text">
-                                    {data?.certificationsText || "—"}
-                                </div>
-                            </div>
-
-                            <div className="applicant-entry-card">
-                                <div className="applicant-entry-card-title">Awards</div>
-                                <div className="applicant-entry-card-text">
-                                    {data?.awardsText || "—"}
-                                </div>
-                            </div>
 
                             <div className="applicant-entry-card">
                                 <div className="applicant-entry-card-title">Resume</div>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Building2, Users, Eye, Search } from "lucide-react";
+import { useTheme } from "../../layout/useTheme";
+import "../styles/admin.css";
 
 type Company = {
     id: string;
@@ -20,6 +22,16 @@ type Company = {
 
 export default function AdminCompanies() {
     const API_URL = import.meta.env.VITE_API_URL;
+
+    const theme: any = useTheme();
+    const darkMode = theme && theme.darkMode ? true : false;
+
+    const pageBg = darkMode ? "#0f172a" : "#f9fafb";
+    const cardBg = darkMode ? "#111827" : "#ffffff";
+    const mainText = darkMode ? "#f8fafc" : "#111827";
+    const mutedText = darkMode ? "#94a3b8" : "#6b7280";
+    const border = darkMode ? "#334155" : "#e5e7eb";
+    const inputBg = darkMode ? "#0f172a" : "#ffffff";
 
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -42,7 +54,7 @@ export default function AdminCompanies() {
             });
 
             const data = await res.json();
-            setCompanies(data);
+            setCompanies(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error("Error in Fetching Companies: ", err);
         } finally {
@@ -55,41 +67,57 @@ export default function AdminCompanies() {
     }, []);
 
     const filteredCompanies = companies.filter((company) =>
-        company.name.toLowerCase().includes(searchQuery.toLowerCase())
+        company.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const getLogo = (name: string) => {
         return name
             .split(" ")
             .map((n) => n[0])
-            .join("");
+            .join("")
+            .toUpperCase();
+    };
+
+    const getStatusStyle = (status: string) => {
+        if (status === "Verified") {
+            return {
+                backgroundColor: darkMode ? "#14532d" : "#dcfce7",
+                color: darkMode ? "#bbf7d0" : "#166534",
+            };
+        }
+
+        if (status === "Pending") {
+            return {
+                backgroundColor: darkMode ? "#78350f" : "#fef3c7",
+                color: darkMode ? "#fde68a" : "#92400e",
+            };
+        }
+
+        return {
+            backgroundColor: darkMode ? "#7f1d1d" : "#fee2e2",
+            color: darkMode ? "#fecaca" : "#991b1b",
+        };
     };
 
     if (loadingCompanies) {
         return (
-            <div style={{ padding: "24px" }}>
-                <p>Loading companies...</p>
+            <div
+                className="admin-page"
+                style={{ background: pageBg, color: mainText }}
+            >
+                <p style={{ padding: "24px" }}>Loading companies...</p>
             </div>
         );
     }
 
     return (
-        <div className="admin-page">
-            <div
-                style={{
-                    background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
-                    borderRadius: "12px",
-                    padding: "32px",
-                    marginBottom: "24px",
-                    color: "white",
-                }}
-            >
-                <h1 style={{ fontSize: "32px", fontWeight: "700", marginBottom: "8px" }}>
-                    Companies
-                </h1>
-                <p style={{ fontSize: "16px", opacity: 0.9 }}>
-                    Manage companies and their recruiters
-                </p>
+        <div
+            className="admin-page"
+            style={{ background: pageBg, color: mainText }}
+        >
+            <div className="admin-header">
+                <h1>Companies</h1>
+                <p>Manage companies and their recruiters</p>
             </div>
 
             <div style={{ position: "relative", marginBottom: "24px" }}>
@@ -101,9 +129,10 @@ export default function AdminCompanies() {
                         transform: "translateY(-50%)",
                         width: "16px",
                         height: "16px",
-                        color: "#9ca3af",
+                        color: mutedText,
                     }}
                 />
+
                 <input
                     type="text"
                     placeholder="Search companies..."
@@ -112,24 +141,26 @@ export default function AdminCompanies() {
                     style={{
                         width: "100%",
                         padding: "10px 12px 10px 40px",
-                        border: "1px solid #d1d5db",
+                        border: `1px solid ${border}`,
                         borderRadius: "8px",
                         fontSize: "14px",
                         outline: "none",
-                        backgroundColor: "white",
+                        backgroundColor: inputBg,
+                        color: mainText,
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "#3b82f6")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                 />
             </div>
 
             {filteredCompanies.length === 0 ? (
                 <div
                     style={{
-                        backgroundColor: "white",
+                        backgroundColor: cardBg,
                         borderRadius: "12px",
                         padding: "48px",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                        border: `1px solid ${border}`,
+                        boxShadow: darkMode
+                            ? "0 12px 30px rgba(0,0,0,0.35)"
+                            : "0 2px 8px rgba(0,0,0,0.08)",
                         textAlign: "center",
                     }}
                 >
@@ -137,11 +168,13 @@ export default function AdminCompanies() {
                         style={{
                             width: "48px",
                             height: "48px",
-                            color: "#d1d5db",
+                            color: mutedText,
                             margin: "0 auto 16px",
                         }}
                     />
-                    <p style={{ color: "#9ca3af", fontSize: "14px" }}>No companies found</p>
+                    <p style={{ color: mutedText, fontSize: "14px" }}>
+                        No companies found
+                    </p>
                 </div>
             ) : (
                 <div className="admin-companies-grid">
@@ -155,47 +188,58 @@ export default function AdminCompanies() {
                                 onMouseLeave={() => setHoveredCard(null)}
                                 className="admin-company-card"
                                 style={{
+                                    backgroundColor: cardBg,
+                                    color: mainText,
+                                    border: `1px solid ${border}`,
                                     boxShadow: isHovered
-                                        ? "0 10px 25px rgba(0, 0, 0, 0.15)"
-                                        : "0 2px 8px rgba(0, 0, 0, 0.08)",
+                                        ? darkMode
+                                            ? "0 18px 36px rgba(0,0,0,0.45)"
+                                            : "0 10px 25px rgba(0,0,0,0.15)"
+                                        : darkMode
+                                            ? "0 12px 30px rgba(0,0,0,0.35)"
+                                            : "0 2px 8px rgba(0,0,0,0.08)",
                                     transform: isHovered ? "translateY(-4px)" : "translateY(0)",
                                 }}
                             >
                                 <div className="admin-company-top">
-                                    <div className="admin-company-logo">{getLogo(company.name)}</div>
+                                    <div className="admin-company-logo">
+                                        {getLogo(company.name)}
+                                    </div>
 
                                     <div className="admin-company-main">
-                                        <h3 className="admin-company-name">{company.name}</h3>
+                                        <h3
+                                            className="admin-company-name"
+                                            style={{ color: mainText }}
+                                        >
+                                            {company.name}
+                                        </h3>
 
-                                        <span className="admin-company-count">
+                                        <span
+                                            className="admin-company-count"
+                                            style={{ color: mutedText }}
+                                        >
                                             <Users style={{ width: "12px", height: "12px" }} />
                                             {company.recruiterCount}{" "}
-                                            {company.recruiterCount === 1 ? "Recruiter" : "Recruiters"}
+                                            {company.recruiterCount === 1
+                                                ? "Recruiter"
+                                                : "Recruiters"}
                                         </span>
 
                                         <span
                                             className="admin-company-status"
-                                            style={{
-                                                backgroundColor:
-                                                    company.status === "Verified"
-                                                        ? "#dcfce7"
-                                                        : company.status === "Pending"
-                                                            ? "#fef3c7"
-                                                            : "#fee2e2",
-                                                color:
-                                                    company.status === "Verified"
-                                                        ? "#166534"
-                                                        : company.status === "Pending"
-                                                            ? "#92400e"
-                                                            : "#991b1b",
-                                            }}
+                                            style={getStatusStyle(company.status)}
                                         >
                                             {company.status}
                                         </span>
                                     </div>
                                 </div>
 
-                                <p className="admin-company-email">{company.email}</p>
+                                <p
+                                    className="admin-company-email"
+                                    style={{ color: mutedText }}
+                                >
+                                    {company.email}
+                                </p>
 
                                 <div className="admin-company-links">
                                     {company.website && (
@@ -215,12 +259,11 @@ export default function AdminCompanies() {
                                     )}
                                 </div>
 
-                                <button
+                                <button className="admin-company-btn"
                                     onClick={() => {
                                         setSelectedCompany(company);
                                         setShowRecruiters(true);
                                     }}
-                                    className="admin-company-btn"
                                 >
                                     <Eye style={{ width: "16px", height: "16px" }} />
                                     View Recruiters
@@ -239,6 +282,11 @@ export default function AdminCompanies() {
                     <div
                         className="admin-company-modal"
                         onClick={(e) => e.stopPropagation()}
+                        style={{
+                            backgroundColor: cardBg,
+                            color: mainText,
+                            border: `1px solid ${border}`,
+                        }}
                     >
                         <div className="admin-company-modal-header">
                             <div className="admin-company-modal-brand">
@@ -247,10 +295,16 @@ export default function AdminCompanies() {
                                 </div>
 
                                 <div style={{ minWidth: 0 }}>
-                                    <h2 className="admin-company-modal-title">
+                                    <h2
+                                        className="admin-company-modal-title"
+                                        style={{ color: mainText }}
+                                    >
                                         {selectedCompany.name}
                                     </h2>
-                                    <p className="admin-company-modal-subtitle">
+                                    <p
+                                        className="admin-company-modal-subtitle"
+                                        style={{ color: mutedText }}
+                                    >
                                         {selectedCompany.recruiterCount}{" "}
                                         {selectedCompany.recruiterCount === 1
                                             ? "Recruiter"
@@ -268,7 +322,16 @@ export default function AdminCompanies() {
                         </div>
 
                         {selectedCompany.recruiters.length === 0 ? (
-                            <div className="admin-company-empty">No recruiters found</div>
+                            <div
+                                className="admin-company-empty"
+                                style={{
+                                    backgroundColor: cardBg,
+                                    color: mutedText,
+                                    border: `1px solid ${border}`,
+                                }}
+                            >
+                                No recruiters found
+                            </div>
                         ) : (
                             <div className="admin-company-table-wrap">
                                 <table className="admin-company-table">
@@ -279,6 +342,7 @@ export default function AdminCompanies() {
                                             <th>Status</th>
                                         </tr>
                                     </thead>
+
                                     <tbody>
                                         {selectedCompany.recruiters.map((recruiter, index) => {
                                             const initials =
@@ -290,7 +354,7 @@ export default function AdminCompanies() {
                                                         style={{
                                                             borderTop:
                                                                 index > 0
-                                                                    ? "1px solid #f3f4f6"
+                                                                    ? `1px solid ${border}`
                                                                     : "none",
                                                         }}
                                                     >
@@ -300,10 +364,16 @@ export default function AdminCompanies() {
                                                             </div>
 
                                                             <div className="admin-company-recruiter-info">
-                                                                <span className="admin-company-recruiter-name">
+                                                                <span
+                                                                    className="admin-company-recruiter-name"
+                                                                    style={{ color: mainText }}
+                                                                >
                                                                     {recruiter.email.split("@")[0]}
                                                                 </span>
-                                                                <span className="admin-company-recruiter-email">
+                                                                <span
+                                                                    className="admin-company-recruiter-email"
+                                                                    style={{ color: mutedText }}
+                                                                >
                                                                     {recruiter.email}
                                                                 </span>
                                                             </div>
@@ -314,42 +384,25 @@ export default function AdminCompanies() {
                                                         style={{
                                                             borderTop:
                                                                 index > 0
-                                                                    ? "1px solid #f3f4f6"
+                                                                    ? `1px solid ${border}`
                                                                     : "none",
                                                         }}
                                                         className="admin-company-joined"
                                                     >
-                                                        {new Date(
-                                                            recruiter.joinedAt
-                                                        ).toLocaleDateString()}
+                                                        {new Date(recruiter.joinedAt).toLocaleDateString()}
                                                     </td>
 
                                                     <td
                                                         style={{
                                                             borderTop:
                                                                 index > 0
-                                                                    ? "1px solid #f3f4f6"
+                                                                    ? `1px solid ${border}`
                                                                     : "none",
                                                         }}
                                                     >
                                                         <span
                                                             className="admin-company-recruiter-status"
-                                                            style={{
-                                                                backgroundColor:
-                                                                    recruiter.status === "Verified"
-                                                                        ? "#dcfce7"
-                                                                        : recruiter.status ===
-                                                                            "Pending"
-                                                                            ? "#fef3c7"
-                                                                            : "#fee2e2",
-                                                                color:
-                                                                    recruiter.status === "Verified"
-                                                                        ? "#166534"
-                                                                        : recruiter.status ===
-                                                                            "Pending"
-                                                                            ? "#92400e"
-                                                                            : "#991b1b",
-                                                            }}
+                                                            style={getStatusStyle(recruiter.status)}
                                                         >
                                                             {recruiter.status}
                                                         </span>
