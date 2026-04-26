@@ -39,6 +39,7 @@ const ProfilePage = () => {
 
     const [skillsRefreshKey, setSkillsRefreshKey] = useState(0);
     const [counts, setCounts] = useState({ skills: 0, education: 0, experience: 0, projects: 0, interests: 0 });
+    const [countsLoaded, setCountsLoaded] = useState(false);
 
     useEffect(() => {
         fetchProfileData();
@@ -57,7 +58,8 @@ const ProfilePage = () => {
                 projects: projects?.length ?? 0,
                 interests: interests?.length ?? 0,
             });
-        }).catch(() => {});
+            setCountsLoaded(true);
+        }).catch(() => { setCountsLoaded(true); });
     }, []);
 
     const fetchProfileData = async () => {
@@ -188,15 +190,34 @@ const ProfilePage = () => {
             </header>
 
             <main className="pf-main">
-                {!bannerDismissed && (
+                {!bannerDismissed && isStudent && countsLoaded && [
+                    formData?.fullName, formData?.bio, formData?.location,
+                    formData?.phoneNumber, formData?.portfolioUrl,
+                    profile?.hasResume, profile?.hasUniversityProof,
+                    counts.skills >= 3, counts.education >= 1,
+                    counts.experience >= 1, counts.interests >= 2, counts.projects >= 1,
+                ].filter(Boolean).length < 12 && (
                     <div className="pf-banner">
                         <Info size={16} className="pf-banner__icon" />
                         <div className="pf-banner__text">
-                            <strong>{isStudent ? 'Complete Your Profile for Better Matches' : 'Set Up Your Recruiter Profile'}</strong>
-                            <p>{isStudent
-                                ? 'Your profile directly impacts how Jobify matches you with opportunities. Add your skills, experience, and interests.'
-                                : 'Complete your organization details and hiring preferences to attract the right candidates.'
-                            }</p>
+                            <strong>Complete Your Profile for Better Matches</strong>
+                            <p>Your profile directly impacts how Jobify matches you with opportunities. Add your skills, experience, and interests.</p>
+                        </div>
+                        <button className="pf-banner__close" onClick={() => setBannerDismissed(true)} type="button">
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+
+                {!bannerDismissed && !isStudent && [
+                    formData?.companyName, formData?.websiteUrl || formData?.linkedinUrl,
+                    formData?.location, formData?.roleTitle,
+                ].filter(Boolean).length < 4 && (
+                    <div className="pf-banner">
+                        <Info size={16} className="pf-banner__icon" />
+                        <div className="pf-banner__text">
+                            <strong>Set Up Your Recruiter Profile</strong>
+                            <p>Complete your organization details and hiring preferences to attract the right candidates.</p>
                         </div>
                         <button className="pf-banner__close" onClick={() => setBannerDismissed(true)} type="button">
                             <X size={16} />
@@ -512,9 +533,7 @@ const SkillsCard = ({ refreshKey }) => {
                     <div className="pf-empty"><Target size={36} className="pf-empty__icon" /><p>No skills yet</p></div>
                 )}
 
-            <div className="pf-tip">
-                <strong>Tip:</strong> Verified skills (✓) come from completed assessments.
-            </div>
+
         </Card>
     );
 };

@@ -252,7 +252,6 @@ export default function LoginPage() {
 
                                     {liveOpps.length === 0 ? (
                                         <div className="lp-match-row">
-                                            <div className="lp-match-badge">Job</div>
                                             <div>
                                                 <div className="lp-match-role">Loading opportunities...</div>
                                                 <div className="lp-match-org">Jobify</div>
@@ -270,9 +269,6 @@ export default function LoginPage() {
                                                 exit="exit"
                                                 transition={{ duration: 0.35, ease: "easeInOut" }}
                                             >
-                                                <div className="lp-match-badge">
-                                                    {liveOpps[matchIndex]?.type || liveOpps[matchIndex]?.Type || "Job"}
-                                                </div>
                                                 <div>
                                                     <div className="lp-match-role">{liveOpps[matchIndex]?.title || liveOpps[matchIndex]?.Title}</div>
                                                     <div className="lp-match-org">{liveOpps[matchIndex]?.companyName || liveOpps[matchIndex]?.CompanyName}</div>
@@ -420,4 +416,4 @@ export default function LoginPage() {
         </div>
     );
 }
-// keep dark mode option as it is on login page
+// keep dark mode option as it is on login page 

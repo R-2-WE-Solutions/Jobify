@@ -206,19 +206,11 @@ body {
     gap: 6px;
     color: var(--blue);
     font-weight: 700;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-underline-offset: 3px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    font-size: inherit;
+    text-decoration: none;
 }
 
 .orgLink:hover {
-    text-decoration-style: solid;
-    opacity: 0.75;
+    text-decoration: underline;
 }
 
 .remotePill {
@@ -922,6 +914,14 @@ body {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+}
+
+.similarLogo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
 }
 
 .bookmarkBtn {
@@ -981,6 +981,14 @@ body {
     color: white;
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
     transition: transform 150ms ease, box-shadow 150ms ease;
+    overflow: hidden;
+}
+
+.companyLogo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 22px;
 }
 
 .companyLogo:hover {
@@ -1188,6 +1196,14 @@ body {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+}
+
+.similarLogo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
 }
 .jobMatchBadge {
   margin-top: 10px;

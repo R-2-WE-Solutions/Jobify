@@ -40,4 +40,5 @@ public class OpportunityDetailsDto
     public List<QaDto> Qa { get; set; } = new();
 
     public double MatchPercentage { get; set; }
+    public string? RecruiterUserId { get; set; }
 }
