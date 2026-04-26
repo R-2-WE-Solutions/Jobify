@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Clock, Mail, Search } from "lucide-react";
-import { useTheme } from "../../layout/useTheme";
-import "../styles/admin.css";
 
 interface Recruiter {
     id: string;
@@ -13,12 +11,20 @@ interface Recruiter {
     status: "pending_verification" | "pending_approval" | "verified" | "rejected";
 }
 
+// Recruiter Status Mapper
 function mapStatus(status: string) {
-    if (status === "EmailPending") return "pending_verification";
-    if (status === "Pending") return "pending_approval";
-    if (status === "Verified") return "verified";
-    if (status === "Rejected") return "rejected";
-    return "pending_verification";
+    switch (status) {
+        case "EmailPending":
+            return "pending_verification";
+        case "Pending":
+            return "pending_approval";
+        case "Verified":
+            return "verified";
+        case "Rejected":
+            return "rejected";
+        default:
+            return "pending_verification";
+    }
 }
 
 const API_URL_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5159").replace(/\/+$/, "").replace(/\/api$/, "") + "/api";
@@ -31,7 +37,7 @@ function RecruiterAvatar({ userId, name }: { userId: string; name: string }) {
         fetch(`${API_URL_BASE}/Profile/recruiter/logo?userId=${userId}`, { headers: { Authorization: `Bearer ${token || ""}` } })
             .then(r => r.ok ? r.blob() : null)
             .then(b => b ? setUrl(URL.createObjectURL(b)) : null)
-            .catch(() => {});
+            .catch(() => { });
     }, [userId]);
     const initials = name?.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("") || "?";
     return (
@@ -45,19 +51,9 @@ function RecruiterAvatar({ userId, name }: { userId: string; name: string }) {
 export default function AdminRecruiters() {
     const API_URL = import.meta.env.VITE_API_URL;
 
-    const theme: any = useTheme();
-    const darkMode = theme && theme.darkMode ? true : false;
-
-    const cardBg = darkMode ? "#111827" : "white";
-    const pageBg = darkMode ? "#0f172a" : "#f9fafb";
-    const mainText = darkMode ? "#f8fafc" : "#111827";
-    const mutedText = darkMode ? "#94a3b8" : "#6b7280";
-    const border = darkMode ? "#334155" : "#e5e7eb";
-    const rowHover = darkMode ? "#1f2937" : "#f9fafb";
-    const softBg = darkMode ? "#1f2937" : "#f3f4f6";
-
     const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
     const [loadingRecruiters, setLoadingRecruiters] = useState(false);
+
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState<
         "pending_verification" | "pending_approval" | "verified" | "rejected"
@@ -73,10 +69,13 @@ export default function AdminRecruiters() {
     async function fetchRecruiters() {
         try {
             setLoadingRecruiters(true);
+
             const token = localStorage.getItem("jobify_token");
 
             const res = await fetch(`${API_URL}/users/by-role/recruiter`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             const data = await res.json();
@@ -86,13 +85,11 @@ export default function AdminRecruiters() {
                 userId: r.id,
                 name: r.fullName ?? r.email,
                 email: r.email,
-                company: r.companyName ?? "Unknown",
-                createdAt: r.createdAt ? r.createdAt.split("T")[0] : "-",
+                company: r.companyName,
+                createdAt: r.createdAt.split("T")[0],
                 lastUpdated: r.updatedAtUtc
                     ? r.updatedAtUtc.split("T")[0]
-                    : r.createdAt
-                    ? r.createdAt.split("T")[0]
-                    : "-",
+                    : r.createdAt.split("T")[0],
                 status: mapStatus(r.verificationStatus),
             }));
 
@@ -114,7 +111,9 @@ export default function AdminRecruiters() {
 
             await fetch(`${API_URL}/auth/admin/approve-recruiter/${recruiterId}`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             fetchRecruiters();
@@ -130,7 +129,9 @@ export default function AdminRecruiters() {
 
             await fetch(`${API_URL}/auth/admin/reject-recruiter/${recruiterId}`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             fetchRecruiters();
@@ -146,13 +147,15 @@ export default function AdminRecruiters() {
 
             await fetch(`${API_URL}/auth/admin/recruiters/${recruiterId}/revoke`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             fetchRecruiters();
-            alert("Recruiter Revoked Successfully.");
+            alert("Recruiter Rejected Successfully.");
         } catch (err) {
-            console.error("Error in Revoking Recruiter: ", err);
+            console.error("Error in Rejecting Recruiter: ", err);
         }
     };
 
@@ -185,6 +188,7 @@ export default function AdminRecruiters() {
             if (!res.ok) throw new Error("Failed");
 
             alert("Notification sent ✅");
+
             setShowNotifyModal(false);
             setNotifyTitle("");
             setNotifyMessage("");
@@ -201,11 +205,17 @@ export default function AdminRecruiters() {
             recruiter.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
             recruiter.company.toLowerCase().includes(searchQuery.toLowerCase());
 
-        return matchesSearch && recruiter.status === activeTab;
+        const matchesTab = recruiter.status === activeTab;
+
+        return matchesSearch && matchesTab;
     });
 
-    const pendingVerificationCount = recruiters.filter((r) => r.status === "pending_verification").length;
-    const pendingApprovalCount = recruiters.filter((r) => r.status === "pending_approval").length;
+    const pendingVerificationCount = recruiters.filter(
+        (r) => r.status === "pending_verification"
+    ).length;
+    const pendingApprovalCount = recruiters.filter(
+        (r) => r.status === "pending_approval"
+    ).length;
     const verifiedCount = recruiters.filter((r) => r.status === "verified").length;
     const rejectedCount = recruiters.filter((r) => r.status === "rejected").length;
 
@@ -213,30 +223,61 @@ export default function AdminRecruiters() {
         return name
             .split(" ")
             .map((n) => n[0])
-            .join("")
-            .toUpperCase();
+            .join("");
     };
 
     const tabs = [
-        { value: "pending_verification", label: "Waiting for Email", icon: Mail, count: pendingVerificationCount },
-        { value: "pending_approval", label: "Waiting for Approval", icon: Clock, count: pendingApprovalCount },
-        { value: "verified", label: "Verified", icon: CheckCircle, count: verifiedCount },
-        { value: "rejected", label: "Rejected", icon: XCircle, count: rejectedCount },
+        {
+            value: "pending_verification",
+            label: "Waiting for Email",
+            icon: Mail,
+            count: pendingVerificationCount,
+            color: "#ea580c",
+        },
+        {
+            value: "pending_approval",
+            label: "Waiting for Approval",
+            icon: Clock,
+            count: pendingApprovalCount,
+            color: "#3b82f6",
+        },
+        {
+            value: "verified",
+            label: "Verified",
+            icon: CheckCircle,
+            count: verifiedCount,
+            color: "#16a34a",
+        },
+        {
+            value: "rejected",
+            label: "Rejected",
+            icon: XCircle,
+            count: rejectedCount,
+            color: "#dc2626",
+        },
     ];
 
     if (loadingRecruiters) {
-        return (
-            <div className="admin-page" style={{ background: pageBg, color: mainText }}>
-                <p style={{ padding: "24px" }}>Loading recruiters...</p>
-            </div>
-        );
+        return <p style={{ padding: "24px" }}>Loading recruiters...</p>;
     }
 
     return (
-        <div className="admin-page" style={{ background: pageBg, color: mainText }}>
-            <div className="admin-header">
-                <h1>Recruiters</h1>
-                <p>Manage recruiter accounts and approvals</p>
+        <div className="admin-page">
+            <div
+                style={{
+                    background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+                    borderRadius: "12px",
+                    padding: "32px",
+                    marginBottom: "24px",
+                    color: "white",
+                }}
+            >
+                <h1 style={{ fontSize: "32px", fontWeight: "700", marginBottom: "8px" }}>
+                    Recruiters
+                </h1>
+                <p style={{ fontSize: "16px", opacity: 0.9 }}>
+                    Manage recruiter accounts and approvals
+                </p>
             </div>
 
             <div
@@ -247,64 +288,155 @@ export default function AdminRecruiters() {
                     marginBottom: "24px",
                 }}
             >
-                {[
-                    { label: "Pending Verification", value: pendingVerificationCount, icon: Mail, bg: darkMode ? "#7c2d12" : "#ffedd5", color: "#ea580c" },
-                    { label: "Pending Approval", value: pendingApprovalCount, icon: Clock, bg: darkMode ? "#1e3a8a" : "#dbeafe", color: "#3b82f6" },
-                    { label: "Verified", value: verifiedCount, icon: CheckCircle, bg: darkMode ? "#14532d" : "#dcfce7", color: "#16a34a" },
-                    { label: "Rejected", value: rejectedCount, icon: XCircle, bg: darkMode ? "#7f1d1d" : "#fee2e2", color: "#dc2626" },
-                ].map((item) => {
-                    const Icon = item.icon;
-
-                    return (
+                <div
+                    style={{
+                        backgroundColor: "white",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                         <div
-                            key={item.label}
                             style={{
-                                backgroundColor: cardBg,
-                                borderRadius: "12px",
-                                padding: "20px",
-                                border: `1px solid ${border}`,
-                                boxShadow: darkMode
-                                    ? "0 12px 30px rgba(0,0,0,0.35)"
-                                    : "0 2px 8px rgba(0,0,0,0.08)",
+                                backgroundColor: "#ffedd5",
+                                padding: "12px",
+                                borderRadius: "8px",
                             }}
                         >
-                            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                                <div
-                                    style={{
-                                        backgroundColor: item.bg,
-                                        padding: "12px",
-                                        borderRadius: "8px",
-                                    }}
-                                >
-                                    <Icon style={{ width: "24px", height: "24px", color: item.color }} />
-                                </div>
-                                <div>
-                                    <p style={{ fontSize: "13px", color: mutedText, marginBottom: "4px" }}>
-                                        {item.label}
-                                    </p>
-                                    <p style={{ fontSize: "28px", fontWeight: "700", color: mainText }}>
-                                        {item.value}
-                                    </p>
-                                </div>
-                            </div>
+                            <Mail style={{ width: "24px", height: "24px", color: "#ea580c" }} />
                         </div>
-                    );
-                })}
+                        <div>
+                            <p
+                                style={{
+                                    fontSize: "13px",
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                }}
+                            >
+                                Pending Verification
+                            </p>
+                            <p style={{ fontSize: "28px", fontWeight: "700" }}>
+                                {pendingVerificationCount}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        backgroundColor: "white",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div
+                            style={{
+                                backgroundColor: "#dbeafe",
+                                padding: "12px",
+                                borderRadius: "8px",
+                            }}
+                        >
+                            <Clock style={{ width: "24px", height: "24px", color: "#3b82f6" }} />
+                        </div>
+                        <div>
+                            <p
+                                style={{
+                                    fontSize: "13px",
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                }}
+                            >
+                                Pending Approval
+                            </p>
+                            <p style={{ fontSize: "28px", fontWeight: "700" }}>
+                                {pendingApprovalCount}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        backgroundColor: "white",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div
+                            style={{
+                                backgroundColor: "#dcfce7",
+                                padding: "12px",
+                                borderRadius: "8px",
+                            }}
+                        >
+                            <CheckCircle
+                                style={{ width: "24px", height: "24px", color: "#16a34a" }}
+                            />
+                        </div>
+                        <div>
+                            <p
+                                style={{
+                                    fontSize: "13px",
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                }}
+                            >
+                                Verified
+                            </p>
+                            <p style={{ fontSize: "28px", fontWeight: "700" }}>{verifiedCount}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        backgroundColor: "white",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div
+                            style={{
+                                backgroundColor: "#fee2e2",
+                                padding: "12px",
+                                borderRadius: "8px",
+                            }}
+                        >
+                            <XCircle style={{ width: "24px", height: "24px", color: "#dc2626" }} />
+                        </div>
+                        <div>
+                            <p
+                                style={{
+                                    fontSize: "13px",
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                }}
+                            >
+                                Rejected
+                            </p>
+                            <p style={{ fontSize: "28px", fontWeight: "700" }}>{rejectedCount}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div
                 style={{
                     marginTop: "20px",
-                    backgroundColor: cardBg,
+                    backgroundColor: "white",
                     borderRadius: "12px",
                     padding: "24px",
-                    border: `1px solid ${border}`,
-                    boxShadow: darkMode
-                        ? "0 12px 30px rgba(0,0,0,0.35)"
-                        : "0 2px 8px rgba(0,0,0,0.08)",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
                 }}
             >
-                <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px", color: mainText }}>
+                <h2 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "20px" }}>
                     Recruiter Management
                 </h2>
 
@@ -317,7 +449,7 @@ export default function AdminRecruiters() {
                             transform: "translateY(-50%)",
                             width: "16px",
                             height: "16px",
-                            color: mutedText,
+                            color: "#9ca3af",
                         }}
                     />
                     <input
@@ -328,13 +460,13 @@ export default function AdminRecruiters() {
                         style={{
                             width: "100%",
                             padding: "10px 12px 10px 40px",
-                            border: `1px solid ${border}`,
+                            border: "1px solid #d1d5db",
                             borderRadius: "8px",
                             fontSize: "14px",
                             outline: "none",
-                            background: darkMode ? "#0f172a" : "white",
-                            color: mainText,
                         }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "#3b82f6")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "#d1d5db")}
                     />
                 </div>
 
@@ -350,10 +482,13 @@ export default function AdminRecruiters() {
                                 className={`admin-recruiter-tab ${isActive ? "active" : ""}`}
                             >
                                 <Icon className="admin-recruiter-tab-icon" />
-                                <span>{tab.label}</span>
+                                <span className="admin-recruiter-tab-label">{tab.label}</span>
 
                                 {tab.count > 0 && (
-                                    <span className={`admin-recruiter-tab-badge ${isActive ? "active" : ""}`}>
+                                    <span
+                                        className={`admin-recruiter-tab-badge ${isActive ? "active" : ""
+                                            }`}
+                                    >
                                         {tab.count}
                                     </span>
                                 )}
@@ -365,21 +500,73 @@ export default function AdminRecruiters() {
                 <div className="admin-recruiters-table-wrap">
                     <table className="admin-recruiters-table">
                         <thead>
-                            <tr style={{ backgroundColor: darkMode ? "#1f2937" : "#f9fafb" }}>
-                                {["Recruiter", "Email", "Company", "Created At", "Last Updated", "Actions"].map((h) => (
-                                    <th
-                                        key={h}
-                                        style={{
-                                            padding: "12px 16px",
-                                            textAlign: h === "Actions" ? "right" : "left",
-                                            fontSize: "13px",
-                                            fontWeight: "600",
-                                            color: mutedText,
-                                        }}
-                                    >
-                                        {h}
-                                    </th>
-                                ))}
+                            <tr style={{ backgroundColor: "#f9fafb" }}>
+                                <th
+                                    style={{
+                                        padding: "12px 16px",
+                                        textAlign: "left",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: "#6b7280",
+                                    }}
+                                >
+                                    Recruiter
+                                </th>
+                                <th
+                                    style={{
+                                        padding: "12px 16px",
+                                        textAlign: "left",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: "#6b7280",
+                                    }}
+                                >
+                                    Email
+                                </th>
+                                <th
+                                    style={{
+                                        padding: "12px 16px",
+                                        textAlign: "left",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: "#6b7280",
+                                    }}
+                                >
+                                    Company
+                                </th>
+                                <th
+                                    style={{
+                                        padding: "12px 16px",
+                                        textAlign: "left",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: "#6b7280",
+                                    }}
+                                >
+                                    Created At
+                                </th>
+                                <th
+                                    style={{
+                                        padding: "12px 16px",
+                                        textAlign: "left",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: "#6b7280",
+                                    }}
+                                >
+                                    Last Updated
+                                </th>
+                                <th
+                                    style={{
+                                        padding: "12px 16px",
+                                        textAlign: "right",
+                                        fontSize: "13px",
+                                        fontWeight: "600",
+                                        color: "#6b7280",
+                                    }}
+                                >
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
 
@@ -391,7 +578,7 @@ export default function AdminRecruiters() {
                                         style={{
                                             padding: "48px",
                                             textAlign: "center",
-                                            color: mutedText,
+                                            color: "#9ca3af",
                                             fontSize: "14px",
                                         }}
                                     >
@@ -405,12 +592,24 @@ export default function AdminRecruiters() {
                                         onMouseEnter={() => setHoveredRow(recruiter.id)}
                                         onMouseLeave={() => setHoveredRow(null)}
                                         style={{
-                                            backgroundColor: hoveredRow === recruiter.id ? rowHover : cardBg,
+                                            backgroundColor:
+                                                hoveredRow === recruiter.id ? "#f9fafb" : "white",
                                             transition: "background-color 0.2s",
                                         }}
                                     >
-                                        <td style={{ padding: "16px", borderTop: `1px solid ${border}` }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                        <td
+                                            style={{
+                                                padding: "16px",
+                                                borderTop: "1px solid #f3f4f6",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "12px",
+                                                }}
+                                            >
                                                 <div
                                                     style={{
                                                         width: "40px",
@@ -424,89 +623,279 @@ export default function AdminRecruiters() {
                                                         fontWeight: "600",
                                                         fontSize: "14px",
                                                     }}
->
+                                                >
                                                     <RecruiterAvatar userId={recruiter.id} name={recruiter.name} />
                                                 </div>
-                                                <span style={{ fontWeight: "600", fontSize: "14px", color: mainText }}>
+                                                <span
+                                                    style={{
+                                                        fontWeight: "600",
+                                                        fontSize: "14px",
+                                                    }}
+                                                >
                                                     {recruiter.name}
                                                 </span>
                                             </div>
                                         </td>
 
-                                        <td style={{ padding: "16px", borderTop: `1px solid ${border}`, color: mutedText, fontSize: "14px" }}>
+                                        <td
+                                            style={{
+                                                padding: "16px",
+                                                borderTop: "1px solid #f3f4f6",
+                                                color: "#6b7280",
+                                                fontSize: "14px",
+                                            }}
+                                        >
                                             {recruiter.email}
                                         </td>
 
-                                        <td style={{ padding: "16px", borderTop: `1px solid ${border}` }}>
+                                        <td
+                                            style={{
+                                                padding: "16px",
+                                                borderTop: "1px solid #f3f4f6",
+                                            }}
+                                        >
                                             <span
                                                 style={{
                                                     display: "inline-block",
-                                                    backgroundColor: softBg,
+                                                    backgroundColor: "#f3f4f6",
                                                     padding: "4px 10px",
                                                     borderRadius: "6px",
                                                     fontSize: "12px",
                                                     fontWeight: "500",
-                                                    color: mainText,
+                                                    color: "#374151",
                                                 }}
                                             >
                                                 {recruiter.company}
                                             </span>
                                         </td>
 
-                                        <td style={{ padding: "16px", borderTop: `1px solid ${border}`, color: mutedText, fontSize: "14px" }}>
+                                        <td
+                                            style={{
+                                                padding: "16px",
+                                                borderTop: "1px solid #f3f4f6",
+                                                color: "#6b7280",
+                                                fontSize: "14px",
+                                            }}
+                                        >
                                             {recruiter.createdAt}
                                         </td>
 
-                                        <td style={{ padding: "16px", borderTop: `1px solid ${border}`, color: mutedText, fontSize: "14px" }}>
+                                        <td
+                                            style={{
+                                                padding: "16px",
+                                                borderTop: "1px solid #f3f4f6",
+                                                color: "#6b7280",
+                                                fontSize: "14px",
+                                            }}
+                                        >
                                             {recruiter.lastUpdated}
                                         </td>
 
-                                        <td style={{ padding: "16px", borderTop: `1px solid ${border}`, textAlign: "right" }}>
-                                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+                                        <td
+                                            style={{
+                                                padding: "16px",
+                                                borderTop: "1px solid #f3f4f6",
+                                                textAlign: "right",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "flex-end",
+                                                    gap: "8px",
+                                                }}
+                                            >
                                                 {activeTab === "pending_verification" && (
-                                                    <button className="admin-btn admin-btn-secondary" disabled>
-                                                        <Mail size={14} />
+                                                    <button
+                                                        disabled
+                                                        style={{
+                                                            padding: "6px 12px",
+                                                            backgroundColor: "#f3f4f6",
+                                                            color: "#9ca3af",
+                                                            border: "1px solid #e5e7eb",
+                                                            borderRadius: "6px",
+                                                            fontSize: "13px",
+                                                            fontWeight: "600",
+                                                            cursor: "not-allowed",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "4px",
+                                                            opacity: 0.6,
+                                                        }}
+                                                    >
+                                                        <Mail style={{ width: "14px", height: "14px" }} />
                                                         Waiting
                                                     </button>
                                                 )}
 
                                                 {activeTab === "pending_approval" && (
                                                     <>
-                                                        <button className="admin-btn admin-btn-secondary" onClick={() => handleReject(recruiter.id)}>
-                                                            <XCircle size={14} />
+                                                        <button
+                                                            onClick={() => handleReject(recruiter.id)}
+                                                            style={{
+                                                                padding: "6px 12px",
+                                                                backgroundColor: "white",
+                                                                color: "#dc2626",
+                                                                border: "1px solid #d1d5db",
+                                                                borderRadius: "6px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                cursor: "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "4px",
+                                                                transition: "all 0.2s",
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "#fee2e2";
+                                                                e.currentTarget.style.borderColor =
+                                                                    "#dc2626";
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "white";
+                                                                e.currentTarget.style.borderColor =
+                                                                    "#d1d5db";
+                                                            }}
+                                                        >
+                                                            <XCircle
+                                                                style={{
+                                                                    width: "14px",
+                                                                    height: "14px",
+                                                                }}
+                                                            />
                                                             Reject
                                                         </button>
 
-                                                        <button className="admin-btn admin-btn-primary" onClick={() => handleApprove(recruiter.id)}>
-                                                            <CheckCircle size={14} />
+                                                        <button
+                                                            onClick={() => handleApprove(recruiter.id)}
+                                                            style={{
+                                                                padding: "6px 12px",
+                                                                backgroundColor: "#16a34a",
+                                                                color: "white",
+                                                                border: "none",
+                                                                borderRadius: "6px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                cursor: "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "4px",
+                                                                transition: "all 0.2s",
+                                                            }}
+                                                            onMouseEnter={(e) =>
+                                                            (e.currentTarget.style.backgroundColor =
+                                                                "#15803d")
+                                                            }
+                                                            onMouseLeave={(e) =>
+                                                            (e.currentTarget.style.backgroundColor =
+                                                                "#16a34a")
+                                                            }
+                                                        >
+                                                            <CheckCircle
+                                                                style={{
+                                                                    width: "14px",
+                                                                    height: "14px",
+                                                                }}
+                                                            />
                                                             Approve
                                                         </button>
                                                     </>
                                                 )}
 
                                                 {activeTab === "verified" && (
-                                                    <>
+                                                    <div className="admin-recruiter-actions-stack">
                                                         <button
-                                                            className="admin-btn admin-btn-primary"
                                                             onClick={() => {
                                                                 setSelectedRecruiterId(recruiter.id);
                                                                 setShowNotifyModal(true);
                                                             }}
+                                                            style={{
+                                                                padding: "6px 15px",
+                                                                backgroundColor: "#3b82f6",
+                                                                color: "white",
+                                                                border: "none",
+                                                                borderRadius: "6px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                cursor: "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "4px",
+                                                                transition: "all 0.2s",
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "#2563eb";
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "#3b82f6";
+                                                            }}
                                                         >
-                                                            <Mail size={14} />
+                                                            <Mail style={{ width: "16px", height: "14px" }} />
                                                             Notify
                                                         </button>
 
-                                                        <button className="admin-btn admin-btn-secondary" onClick={() => handleRevoke(recruiter.id)}>
-                                                            <XCircle size={14} />
+                                                        <button
+                                                            onClick={() => handleRevoke(recruiter.id)}
+                                                            style={{
+                                                                padding: "6px 12px",
+                                                                backgroundColor: "white",
+                                                                color: "#dc2626",
+                                                                border: "1px solid #d1d5db",
+                                                                borderRadius: "6px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                cursor: "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "4px",
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "#fee2e2";
+                                                                e.currentTarget.style.borderColor =
+                                                                    "#dc2626";
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "white";
+                                                                e.currentTarget.style.borderColor =
+                                                                    "#d1d5db";
+                                                            }}
+                                                        >
+                                                            <XCircle
+                                                                style={{
+                                                                    width: "14px",
+                                                                    height: "14px",
+                                                                }}
+                                                            />
                                                             Revoke
                                                         </button>
-                                                    </>
+                                                    </div>
                                                 )}
 
                                                 {activeTab === "rejected" && (
-                                                    <button className="admin-btn admin-btn-primary" onClick={() => handleApprove(recruiter.id)}>
-                                                        <CheckCircle size={14} />
+                                                    <button
+                                                        onClick={() => handleApprove(recruiter.id)}
+                                                        style={{
+                                                            padding: "6px 12px",
+                                                            backgroundColor: "#16a34a",
+                                                            color: "white",
+                                                            border: "none",
+                                                            borderRadius: "6px",
+                                                            fontSize: "13px",
+                                                            fontWeight: "600",
+                                                            cursor: "pointer",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "4px",
+                                                        }}
+                                                    >
+                                                        <CheckCircle style={{ width: "14px", height: "14px" }} />
                                                         Re-Approve
                                                     </button>
                                                 )}
@@ -521,21 +910,41 @@ export default function AdminRecruiters() {
             </div>
 
             {showNotifyModal && (
-                <div className="admin-modal-overlay">
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor: "rgba(0,0,0,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1000,
+                    }}
+                >
                     <div
-                        className="admin-notify-modal"
                         style={{
-                            backgroundColor: cardBg,
-                            color: mainText,
-                            border: `1px solid ${border}`,
+                            backgroundColor: "white",
+                            padding: "24px",
+                            borderRadius: "12px",
+                            width: "400px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                         }}
                     >
-                        <h3 className="admin-notify-title">Send Notification</h3>
+                        <h3 style={{ marginBottom: "16px" }}>Send Notification</h3>
 
                         <select
                             value={notifyType}
                             onChange={(e) => setNotifyType(e.target.value)}
-                            className="admin-notify-input"
+                            style={{
+                                width: "100%",
+                                marginBottom: "12px",
+                                padding: "10px",
+                                borderRadius: "6px",
+                                border: "1px solid #d1d5db",
+                            }}
                         >
                             <option value="info">Info</option>
                             <option value="success">Success</option>
@@ -547,22 +956,60 @@ export default function AdminRecruiters() {
                             placeholder="Title"
                             value={notifyTitle}
                             onChange={(e) => setNotifyTitle(e.target.value)}
-                            className="admin-notify-input"
+                            style={{
+                                width: "100%",
+                                marginBottom: "12px",
+                                padding: "10px",
+                                borderRadius: "6px",
+                                border: "1px solid #d1d5db",
+                            }}
                         />
 
                         <textarea
                             placeholder="Message"
                             value={notifyMessage}
                             onChange={(e) => setNotifyMessage(e.target.value)}
-                            className="admin-notify-textarea"
+                            style={{
+                                width: "100%",
+                                marginBottom: "16px",
+                                padding: "10px",
+                                borderRadius: "6px",
+                                border: "1px solid #d1d5db",
+                                minHeight: "80px",
+                            }}
                         />
 
-                        <div className="admin-notify-actions">
-                            <button className="admin-btn admin-btn-secondary" onClick={() => setShowNotifyModal(false)}>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                gap: "8px",
+                            }}
+                        >
+                            <button
+                                onClick={() => setShowNotifyModal(false)}
+                                style={{
+                                    padding: "8px 12px",
+                                    backgroundColor: "#e5e7eb",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                }}
+                            >
                                 Cancel
                             </button>
 
-                            <button className="admin-btn admin-btn-primary" onClick={handleSendNotification}>
+                            <button
+                                onClick={handleSendNotification}
+                                style={{
+                                    padding: "8px 12px",
+                                    backgroundColor: "#3b82f6",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    cursor: "pointer",
+                                }}
+                            >
                                 Send
                             </button>
                         </div>
