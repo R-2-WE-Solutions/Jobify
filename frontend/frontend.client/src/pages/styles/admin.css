@@ -1361,3 +1361,173 @@
         padding: 18px;
     }
 }
+/* =========================
+   GLOBAL ADMIN DARK MODE
+   ========================= */
+
+.admin-dark,
+.admin-dark .admin-page,
+.admin-dark .admin-main {
+    background: #0f172a !important;
+    color: #e5e7eb !important;
+}
+
+.admin-dark .admin-header {
+    background: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%) !important;
+    color: white !important;
+    border: 1px solid #334155;
+}
+
+.admin-dark .admin-card,
+.admin-dark .admin-students-card,
+.admin-dark .admin-recruiters-table-wrap,
+.admin-dark .admin-students-table-wrap,
+.admin-dark .admin-company-card,
+.admin-dark .admin-company-table-wrap,
+.admin-dark .admin-company-empty,
+.admin-dark .admin-modal,
+.admin-dark .admin-students-modal,
+.admin-dark .admin-notify-modal,
+.admin-dark .admin-company-modal {
+    background: #111827 !important;
+    color: #e5e7eb !important;
+    border-color: #334155 !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+.admin-dark .admin-table-wrap {
+    background: #111827 !important;
+    border-color: #334155 !important;
+}
+
+.admin-dark table,
+.admin-dark .admin-table,
+.admin-dark .admin-students-table,
+.admin-dark .admin-recruiters-table,
+.admin-dark .admin-company-table {
+    background: #111827 !important;
+    color: #e5e7eb !important;
+}
+
+.admin-dark thead tr,
+.admin-dark .admin-students-table thead tr,
+.admin-dark .admin-company-table th {
+    background: #1f2937 !important;
+}
+
+.admin-dark th {
+    color: #cbd5e1 !important;
+}
+
+.admin-dark td {
+    color: #e5e7eb !important;
+    border-color: #334155 !important;
+}
+
+.admin-dark tr:hover,
+.admin-dark .admin-students-row:hover {
+    background: #1e293b !important;
+}
+
+.admin-dark .admin-search-input,
+.admin-dark input,
+.admin-dark textarea,
+.admin-dark select,
+.admin-dark .admin-notify-input,
+.admin-dark .admin-notify-textarea {
+    background: #0f172a !important;
+    color: #e5e7eb !important;
+    border-color: #334155 !important;
+}
+
+.admin-dark .admin-search-input::placeholder,
+.admin-dark input::placeholder,
+.admin-dark textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+.admin-dark .admin-tabs,
+.admin-dark .admin-recruiter-tabs {
+    border-bottom-color: #334155 !important;
+}
+
+.admin-dark .admin-recruiter-tab {
+    color: #94a3b8 !important;
+}
+
+.admin-dark .admin-recruiter-tab:hover,
+.admin-dark .admin-recruiter-tab.active {
+    color: #60a5fa !important;
+}
+
+.admin-dark .admin-recruiter-tab.active {
+    border-bottom-color: #60a5fa !important;
+}
+
+.admin-dark .admin-recruiter-tab-badge {
+    background: #1f2937 !important;
+    color: #cbd5e1 !important;
+}
+
+.admin-dark .admin-recruiter-tab-badge.active {
+    background: #1e3a8a !important;
+    color: #bfdbfe !important;
+}
+
+.admin-dark .admin-student-name,
+.admin-dark .admin-company-name,
+.admin-dark .admin-company-recruiter-name,
+.admin-dark .admin-company-modal-title,
+.admin-dark .admin-students-modal-title,
+.admin-dark .admin-notify-title,
+.admin-dark .admin-students-app-job {
+    color: #f8fafc !important;
+}
+
+.admin-dark .admin-student-email,
+.admin-dark .admin-student-date,
+.admin-dark .admin-company-count,
+.admin-dark .admin-company-email,
+.admin-dark .admin-company-recruiter-email,
+.admin-dark .admin-company-joined,
+.admin-dark .admin-company-modal-subtitle,
+.admin-dark .admin-students-modal-subtitle,
+.admin-dark .admin-students-app-company,
+.admin-dark .admin-students-app-date {
+    color: #94a3b8 !important;
+}
+
+.admin-dark .admin-student-id {
+    background: #1f2937 !important;
+    color: #e5e7eb !important;
+}
+
+.admin-dark .admin-btn-secondary,
+.admin-dark .admin-company-btn,
+.admin-dark .admin-company-modal-close {
+    background: #1f2937 !important;
+    color: #e5e7eb !important;
+    border-color: #334155 !important;
+}
+
+.admin-dark .admin-btn-secondary:hover,
+.admin-dark .admin-company-btn:hover,
+.admin-dark .admin-company-modal-close:hover {
+    background: #334155 !important;
+    color: #60a5fa !important;
+    border-color: #60a5fa !important;
+}
+
+.admin-dark .admin-students-app-card {
+    background: #1f2937 !important;
+    border-color: #334155 !important;
+}
+
+.admin-dark .admin-empty-state {
+    color: #94a3b8 !important;
+}
+
+.admin-dark .admin-modal-overlay,
+.admin-dark .admin-company-modal-overlay {
+    background: rgba(2, 6, 23, 0.75) !important;
+}
