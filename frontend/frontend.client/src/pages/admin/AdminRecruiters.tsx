@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Clock, Mail, Search } from "lucide-react";
 
 interface Recruiter {
