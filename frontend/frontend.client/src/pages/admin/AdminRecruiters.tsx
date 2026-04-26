@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Clock, Mail, Search } from "lucide-react";
 
 interface Recruiter {
@@ -123,16 +123,20 @@ export default function AdminRecruiters() {
         }
     };
 
-    const handleReject = async (recruiterId: string) => {
+    const handleReject = async (recruiterId) => {
         try {
             const token = localStorage.getItem("jobify_token");
 
-            await fetch(`${API_URL}/auth/admin/reject-recruiter/${recruiterId}`, {
+            const res = await fetch(`${API_URL}/auth/admin/reject-recruiter/${recruiterId}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
                 },
+                body: JSON.stringify({ reason: "Rejected by admin" }),
             });
+
+            if (!res.ok) throw new Error(`Reject failed: ${res.status}`);
 
             fetchRecruiters();
             alert("Recruiter Rejected Successfully.");
