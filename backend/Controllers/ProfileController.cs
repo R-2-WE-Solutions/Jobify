@@ -1359,6 +1359,8 @@ public class ProfileController : ControllerBase
         if (!System.IO.File.Exists(path)) return NotFound();
         var ext = Path.GetExtension(profile.LogoFileName).ToLower();
         var mime = ext switch { ".png" => "image/png", ".webp" => "image/webp", _ => "image/jpeg" };
+        Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
         return PhysicalFile(Path.GetFullPath(path), mime);
     }
 
