@@ -332,7 +332,7 @@ function AppLayoutInner() {
     const filteredSearchOptions = getSearchMatches(globalQuery).slice(0, 10);
 
     return (
-        <div className="al-shell">
+    <div className={`al-shell ${darkMode ? "dark" : ""}`}>
             <header className={`al-header ${scrolled ? "isScrolled" : ""}`}>
                 <div className="al-headerInner">
                     <div className="al-headerSide al-left">
