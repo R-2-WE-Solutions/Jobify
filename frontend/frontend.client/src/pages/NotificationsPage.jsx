@@ -64,7 +64,19 @@ export default function NotificationsPage() {
             }
 
             if (notification.opportunityId) {
-                navigate(`/opportunities/${notification.opportunityId}`);
+                try {
+                    await api.get(`/Opportunities/${notification.opportunityId}`);
+                    navigate(`/opportunities/${notification.opportunityId}`);
+                } catch (err) {
+                    if (err.response?.status === 404) {
+                        setError("This opportunity no longer exists.");
+                        return;
+                    }
+
+                    console.error("Failed to open opportunity:", err);
+                    setError("Failed to open opportunity.");
+                    return;
+                }
             }
         } catch (err) {
             console.error("Failed to update notification:", err);
