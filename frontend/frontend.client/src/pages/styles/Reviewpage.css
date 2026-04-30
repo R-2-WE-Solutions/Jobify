@@ -511,3 +511,62 @@ input[type="checkbox"] {
             width: 100%;
         }
 }
+.reviewPage.review-dark,
+.rulesPage.review-dark {
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+.reviewPage.review-dark .card,
+.rulesPage.review-dark .rulesCard {
+    background: #111827;
+    border-color: #334155;
+    color: #e5e7eb;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.reviewPage.review-dark .cardTitle,
+.reviewPage.review-dark .v,
+.reviewPage.review-dark .vBig,
+.reviewPage.review-dark .docTitle,
+.reviewPage.review-dark .summary,
+.rulesPage.review-dark .rulesCard h2,
+.rulesPage.review-dark .rulesList,
+.rulesPage.review-dark .checkTitle {
+    color: #e5e7eb;
+}
+
+.reviewPage.review-dark .k,
+.reviewPage.review-dark .muted,
+.reviewPage.review-dark .docSub,
+.rulesPage.review-dark .muted,
+.rulesPage.review-dark .checkSub,
+.rulesPage.review-dark .rulesHeader p {
+    color: #cbd5e1;
+}
+
+.reviewPage.review-dark .detail,
+.reviewPage.review-dark .summary,
+.reviewPage.review-dark .docRow,
+.rulesPage.review-dark .checkRow {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.reviewPage.review-dark .detail:hover,
+.reviewPage.review-dark .docRow:hover,
+.rulesPage.review-dark .checkRow:hover {
+    background: #263449;
+}
+
+.reviewPage.review-dark .bottomInner {
+    background: rgba(15, 23, 42, 0.92);
+    border-color: #334155;
+}
+
+.reviewPage.review-dark .btnOutline,
+.rulesPage.review-dark .btnOutline {
+    background: #334155;
+    color: #ffffff;
+    border-color: #475569;
+}
