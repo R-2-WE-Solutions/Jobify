@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTheme } from "../../layout/useTheme";
 import "../styles/ReviewPage.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 function getToken() {
-  // preferred key
   let t = localStorage.getItem("jobify_token");
-  if (t) return String(t).replaceAll('"', ""); // in case it was JSON.stringified
+  if (t) return String(t).replaceAll('"', "");
 
-  // fallback: stored user object
   try {
     const u = JSON.parse(localStorage.getItem("jobify_user") || "{}");
     if (u?.token) return String(u.token).replaceAll('"', "");
@@ -21,6 +20,7 @@ function getToken() {
 export default function AssessmentRulesPage() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
 
   const [webcamConsent, setWebcamConsent] = useState(false);
   const [agreeRules, setAgreeRules] = useState(false);
@@ -46,7 +46,6 @@ export default function AssessmentRulesPage() {
         setRulesDataLoading(true);
         setRulesDataError("");
 
-        // Swagger shows /api/Applications/{applicationId}
         const res = await fetch(`${API_URL}/Application/${applicationId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -59,15 +58,12 @@ export default function AssessmentRulesPage() {
         const data = await res.json();
 
         if (!data?.hasAssessment || !data?.assessment) {
-            navigate(`/application/${applicationId}/result`);
-            return;
+          navigate(`/application/${applicationId}/result`);
+          return;
         }
 
-        // your backend likely returns:
-        // { hasAssessment, attempt: { ... }, assessment: { questions }, ... }
         const attempt = data?.attempt;
         const assessment = data?.assessment;
-
         const questions = assessment?.questions ?? [];
 
         const mcqFromQuestions = Array.isArray(questions)
@@ -115,7 +111,10 @@ export default function AssessmentRulesPage() {
     const minutes = typeof seconds === "number" ? Math.round(seconds / 60) : 45;
 
     const mcq = typeof rulesData.mcqCount === "number" ? rulesData.mcqCount : 5;
-    const ch = typeof rulesData.challengeCount === "number" ? rulesData.challengeCount : 2;
+    const ch =
+      typeof rulesData.challengeCount === "number"
+        ? rulesData.challengeCount
+        : 2;
 
     return [
       `You will have ${minutes} minutes to complete the assessment.`,
@@ -153,21 +152,23 @@ export default function AssessmentRulesPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_URL}/Application/${applicationId}/assessment/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ webcamConsent: true }),
-      });
+      const res = await fetch(
+        `${API_URL}/Application/${applicationId}/assessment/start`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ webcamConsent: true }),
+        }
+      );
 
       if (!res.ok) {
         const t = await res.text().catch(() => "");
         throw new Error(t || `Failed to start assessment (${res.status})`);
       }
 
-      // IMPORTANT: frontend route is plural + lowercase
       navigate(`/application/${applicationId}/assessment`);
     } catch (e) {
       alert(e?.message || "Failed to start assessment");
@@ -177,11 +178,14 @@ export default function AssessmentRulesPage() {
   };
 
   return (
-    <div className="rulesPage">
+    <div className={`rulesPage ${darkMode ? "review-dark" : ""}`}>
       <div className="rulesShell">
         <div className="rulesHeader">
           <h1>Assessment Rules & Consent</h1>
-          <p>Please read carefully before starting. Once started, the timer will run continuously.</p>
+          <p>
+            Please read carefully before starting. Once started, the timer will
+            run continuously.
+          </p>
         </div>
 
         {rulesDataLoading && (
@@ -192,7 +196,9 @@ export default function AssessmentRulesPage() {
 
         {rulesDataError && (
           <div className="rulesCard">
-            <p className="muted">Couldn’t load rules from backend. Using defaults.</p>
+            <p className="muted">
+              Couldn’t load rules from backend. Using defaults.
+            </p>
             <p className="muted" style={{ marginTop: 6 }}>
               {rulesDataError}
             </p>
@@ -210,7 +216,9 @@ export default function AssessmentRulesPage() {
 
         <section className="rulesCard">
           <h2>Anti-Cheating Measures</h2>
-          <p className="muted">These measures ensure fairness and integrity during the assessment.</p>
+          <p className="muted">
+            These measures ensure fairness and integrity during the assessment.
+          </p>
           <ul className="rulesList">
             {antiCheat.map((r, i) => (
               <li key={i}>{r}</li>
@@ -222,18 +230,32 @@ export default function AssessmentRulesPage() {
           <h2>Mandatory Consent</h2>
 
           <label className="checkRow">
-            <input type="checkbox" checked={webcamConsent} onChange={(e) => setWebcamConsent(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={webcamConsent}
+              onChange={(e) => setWebcamConsent(e.target.checked)}
+            />
             <div>
-              <div className="checkTitle">Webcam Monitoring (Required)</div>
-              <div className="checkSub">Webcam snapshots will be taken every 2–3 minutes during the assessment.</div>
+              <div className="checkTitle">Webcam Monitoring Required</div>
+              <div className="checkSub">
+                Webcam snapshots will be taken every 2–3 minutes during the
+                assessment.
+              </div>
             </div>
           </label>
 
           <label className="checkRow">
-            <input type="checkbox" checked={agreeRules} onChange={(e) => setAgreeRules(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={agreeRules}
+              onChange={(e) => setAgreeRules(e.target.checked)}
+            />
             <div>
               <div className="checkTitle">I agree to the rules</div>
-              <div className="checkSub">I understand the timer cannot be paused and unusual behavior may be flagged.</div>
+              <div className="checkSub">
+                I understand the timer cannot be paused and unusual behavior may
+                be flagged.
+              </div>
             </div>
           </label>
         </section>
@@ -243,7 +265,11 @@ export default function AssessmentRulesPage() {
             Back
           </button>
 
-          <button className="btnPrimary" onClick={startAssessment} disabled={!webcamConsent || !agreeRules || loading}>
+          <button
+            className="btnPrimary"
+            onClick={startAssessment}
+            disabled={!webcamConsent || !agreeRules || loading}
+          >
             {loading ? "Starting..." : "Start Assessment →"}
           </button>
         </div>
