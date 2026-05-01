@@ -212,7 +212,6 @@ export default function ProfileReviewPage() {
                     </div>
 
                     <div className="detailGrid">
-                        <Detail label="Education" value={educationText} />
                         <Detail label="Experience" value={experienceText} />
                         <Detail label="Projects" value={projectsText} />
                         <Detail label="Interests" value={interestsText} />
