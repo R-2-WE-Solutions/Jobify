@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Clock, Mail, Search } from "lucide-react";
-import { useTheme } from "../layout/useTheme";
+import { useTheme } from "../../layout/useTheme";
 
 interface Recruiter {
     id: string;
