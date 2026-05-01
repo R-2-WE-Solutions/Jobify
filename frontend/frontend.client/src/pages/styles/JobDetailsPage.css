@@ -1370,3 +1370,105 @@ body {
     gap: 10px;
     margin-top: 16px;
 }
+
+/* ===== FINAL DARK MODE OVERRIDES FOR JOB DETAILS PAGE ===== */
+
+html.dark .page {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark .card,
+html.dark .heroCard,
+html.dark .similarCard,
+html.dark .qaCard,
+html.dark .mapCard,
+html.dark .sticky {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .heroTitle,
+html.dark .sectionTitle,
+html.dark .subTitle,
+html.dark .subHeader,
+html.dark .qaUser,
+html.dark .qaQuestion,
+html.dark .kvVal,
+html.dark .matchTitle,
+html.dark .similarTitle,
+html.dark .ringPercent,
+html.dark .insightVal {
+  color: #f8fafc !important;
+}
+
+html.dark .text,
+html.dark .metaRow,
+html.dark .metaItem,
+html.dark .bulletItem,
+html.dark .qaAnswerText,
+html.dark .kvKey,
+html.dark .mutedSmall,
+html.dark .matchList,
+html.dark .profileRow,
+html.dark .similarMeta,
+html.dark .insightLeft {
+  color: #94a3b8 !important;
+}
+
+html.dark .logoWrap,
+html.dark .badge,
+html.dark .tag,
+html.dark .benefitItem,
+html.dark .btnOutline,
+html.dark .btnIcon,
+html.dark .salaryPill {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .btnOutline:hover,
+html.dark .btnIcon:hover {
+  background: #1f2937 !important;
+}
+
+html.dark .qaAnswer {
+  border-top-color: #334155 !important;
+}
+
+html.dark .divider,
+html.dark .similarWrap {
+  border-color: #334155 !important;
+}
+
+html.dark .progressBar {
+  background: #334155 !important;
+}
+
+html.dark .reportModal {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .reportModalTitle {
+  color: #f8fafc !important;
+}
+
+html.dark .reportModalText {
+  color: #94a3b8 !important;
+}
+
+html.dark .reportSelect,
+html.dark .reportTextarea {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .reportCloseBtn {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
