@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/JobDetailsPage.css";
+import { useApp } from "../../app/context/AppContext";
 
 import {
     MapPin,
@@ -22,7 +23,7 @@ import {
     ArrowRight,
 } from "lucide-react";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5159").replace(/\/+$/, "").replace(/\/api$/, "") + "/api";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5159") + "/api";
 
 function Badge({ children, variant = "neutral" }) {
     return <span className={`badge badge--${variant}`}>{children}</span>;
@@ -62,24 +63,6 @@ function formatDeadline(utcString) {
     });
 }
 
-function SimilarCardLogo({ companyName, recruiterUserId }) {
-    const [url, setUrl] = React.useState(null);
-    React.useEffect(() => {
-        if (!recruiterUserId) return;
-        const token = localStorage.getItem("jobify_token");
-        fetch(`${API_URL}/Profile/recruiter/logo?userId=${recruiterUserId}`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.ok ? r.blob() : null)
-            .then(b => b ? setUrl(URL.createObjectURL(b)) : null)
-            .catch(() => {});
-    }, [recruiterUserId]);
-    const letter = (companyName?.trim()?.[0] || "J").toUpperCase();
-    return (
-        <div className="similarLogo" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {url ? <img src={url} alt={companyName} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : letter}
-        </div>
-    );
-}
-
 function CompanyLogo({ name, size = 64, logoUrl }) {
     const letter = (name?.trim()?.[0] || "J").toUpperCase();
 
@@ -100,47 +83,8 @@ function CompanyLogo({ name, size = 64, logoUrl }) {
 
 export default function JobDetailsPage() {
     const { id } = useParams();
-
+    const { openOrgModal } = useApp();
     const navigate = useNavigate();
-
-    const toggleSaved = async (opportunityId) => {
-        try {
-            const token = localStorage.getItem("jobify_token");
-            if (!token) {
-                navigate("/login");
-                return;
-            }
-
-            setSavingId(opportunityId);
-
-            const currentlySaved = savedItems.includes(opportunityId);
-
-            const res = await fetch(`${API_URL}/opportunities/${opportunityId}/save`, {
-                method: currentlySaved ? "DELETE" : "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!res.ok) {
-                const t = await res.text().catch(() => "");
-                alert(t || "Failed to update saved opportunity.");
-                return;
-            }
-
-            if (currentlySaved) {
-                setSavedItems((prev) => prev.filter((x) => x !== opportunityId));
-            } else {
-                setSavedItems((prev) => [...prev, opportunityId]);
-            }
-
-        } catch (err) {
-            console.error("Failed to update saved opportunity:", err);
-            alert("Failed to update saved opportunity.");
-        } finally {
-            setSavingId(null);
-        }
-    };
 
     const handleApply = async () => {
         const token = localStorage.getItem("jobify_token");
@@ -180,13 +124,37 @@ export default function JobDetailsPage() {
 
 
     const [isSaved, setIsSaved] = useState(false);
-    const [savedItems, setSavedItems] = useState([]);
-    const [savingId, setSavingId] = useState(null);
+    const [savingToggle, setSavingToggle] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem("jobify_token");
+        if (!token || !id) return;
+        fetch(`${API_URL}/opportunities/saved/ids`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(r => r.ok ? r.json() : [])
+            .then(ids => setIsSaved(Array.isArray(ids) && ids.includes(Number(id))))
+            .catch(() => {});
+    }, [id]);
+
+    const handleToggleSave = async () => {
+        const token = localStorage.getItem("jobify_token");
+        if (!token) { navigate("/login"); return; }
+        setSavingToggle(true);
+        try {
+            if (isSaved) {
+                await fetch(`${API_URL}/opportunities/${id}/save`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+            } else {
+                await fetch(`${API_URL}/opportunities/${id}/save`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+            }
+            setIsSaved(s => !s);
+        } catch (e) { console.error(e); }
+        finally { setSavingToggle(false); }
+    };
 
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
-    const [logoUrl, setLogoUrl] = useState(null);
 
     const [similar, setSimilar] = useState([]);
     const [similarLoading, setSimilarLoading] = useState(true);
@@ -210,43 +178,6 @@ export default function JobDetailsPage() {
     const [shareErr, setShareErr] = useState("");
 
 
-    useEffect(() => {
-        const numericId = Number(id);
-        setIsSaved(savedItems.includes(numericId) || savedItems.includes(id));
-    }, [savedItems, id]);
-
-
-
-
-    useEffect(() => {
-        const controller = new AbortController();
-
-        const fetchSavedIds = async () => {
-            try {
-                const token = localStorage.getItem("jobify_token");
-                if (!token) return;
-
-                const res = await fetch(`${API_URL}/opportunities/saved/ids`, {
-                    signal: controller.signal,
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (!res.ok) return;
-
-                const data = await res.json();
-                setSavedItems(Array.isArray(data) ? data : []);
-            } catch (err) {
-                if (err?.name !== "AbortError") {
-                    console.error("Failed to fetch saved ids:", err);
-                }
-            }
-        };
-
-        fetchSavedIds();
-        return () => controller.abort();
-    }, []);
 
 
     useEffect(() => {
@@ -282,16 +213,6 @@ export default function JobDetailsPage() {
                         ? data.preferredSkills
                         : [],
                 });
-
-                const rid = data.recruiterUserId || data.RecruiterUserId;
-                if (rid) {
-                    fetch(`${API_URL}/Profile/recruiter/logo?userId=${rid}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    })
-                        .then(r => r.ok ? r.blob() : null)
-                        .then(b => b ? setLogoUrl(URL.createObjectURL(b)) : null)
-                        .catch(() => {});
-                }
             } catch (e) {
                 if (e?.name !== "AbortError") {
                     console.error(e);
@@ -307,7 +228,6 @@ export default function JobDetailsPage() {
         return () => controller.abort();
     }, [id]);
 
-
     useEffect(() => {
         const controller = new AbortController();
 
@@ -316,13 +236,9 @@ export default function JobDetailsPage() {
                 setSimilarLoading(true);
                 setSimilarErr("");
 
-                const token = localStorage.getItem("jobify_token");
                 const res = await fetch(`${API_URL}/opportunities/${id}/similar?take=4`, {
                     signal: controller.signal,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...(token && { Authorization: `Bearer ${token}` }),
-                    },
+                    headers: { "Content-Type": "application/json" },
                 });
 
                 if (!res.ok) throw new Error(`Failed to load similar (${res.status})`);
@@ -393,14 +309,6 @@ export default function JobDetailsPage() {
             if (refreshed.ok) {
                 const data = await refreshed.json();
                 setJob(data);
-                if (data.recruiterUserId || data.RecruiterUserId) {
-                    const rid = data.recruiterUserId || data.RecruiterUserId;
-                    const token = localStorage.getItem("jobify_token");
-                    fetch(`${API_URL}/Profile/recruiter/logo?userId=${rid}`, { headers: { Authorization: `Bearer ${token}` } })
-                        .then(r => r.ok ? r.blob() : null)
-                        .then(b => b ? setLogoUrl(URL.createObjectURL(b)) : null)
-                        .catch(() => {});
-                }
             }
         } catch (e) {
             console.error(e);
@@ -535,22 +443,36 @@ export default function JobDetailsPage() {
 
     const assessment = job?.assessment ?? null;
 
-    const mcqs = Array.isArray(assessment?.mcqs) ? assessment.mcqs : [];
-    const codingChallenges = Array.isArray(assessment?.codingChallenges)
-        ? assessment.codingChallenges
+    const assessmentQuestions = Array.isArray(assessment?.questions)
+        ? assessment.questions
         : [];
 
-    const mcqCount = mcqs.length;
-    const challengeCount = codingChallenges.length;
+    const mcqCount =
+        job?.assessmentMcqCount ??
+        assessment?.mcqCount ??
+        assessmentQuestions.filter((q) => (q?.type || "").toLowerCase() === "mcq").length ??
+        0;
 
-    const hasAssessment = mcqCount > 0 || challengeCount > 0;
+    const challengeCount =
+        job?.assessmentChallengeCount ??
+        assessment?.challengeCount ??
+        assessmentQuestions.filter((q) => {
+            const t = (q?.type || "").toLowerCase();
+            return t === "code" || t === "challenge" || t === "design";
+        }).length ??
+        0;
 
-    const timeLimitMinutes =
-        typeof assessment?.timeLimitMinutes === "number" && assessment.timeLimitMinutes > 0
-            ? assessment.timeLimitMinutes
-            : null;
+    const timeLimitSeconds =
+        job?.assessmentTimeLimitSeconds ??
+        assessment?.timeLimitSeconds ??
+        null;
 
-    const assessmentDuration = timeLimitMinutes ? `${timeLimitMinutes} min` : "—";
+    const assessmentDuration =
+        typeof timeLimitSeconds === "number" && timeLimitSeconds > 0
+            ? `${Math.round(timeLimitSeconds / 60)} min`
+            : assessment?.estimatedMinutes != null
+                ? `${assessment.estimatedMinutes} min`
+                : "—";
 
     const assessmentType =
         mcqCount > 0 && challengeCount > 0
@@ -559,14 +481,12 @@ export default function JobDetailsPage() {
                 ? "MCQ"
                 : challengeCount > 0
                     ? "Coding"
-                    : "No assessment";
+                    : (assessment?.type || "No assessment");
 
     const assessmentDeadline = deadlineText;
 
     const requiredSkills = job?.skillsRequired || job?.skills || [];
     const preferredSkills = job?.preferredSkills || [];
-
-
 
 
     return (
@@ -578,7 +498,9 @@ export default function JobDetailsPage() {
                     <div className="heroTop">
                         <div className="heroLeft">
                             <div className="logoWrap">
-                                <CompanyLogo name={job.companyName} size={64} logoUrl={logoUrl} />
+                                <div className="companyLogo">
+                                    <Building2 size={30} strokeWidth={1.8} />
+                                </div>
                             </div>
 
 
@@ -586,10 +508,10 @@ export default function JobDetailsPage() {
                                 <h1 className="heroTitle">{job.title}</h1>
 
                                 <div className="metaRow">
-                                    <a className="orgLink" href="#">
+                                    <button className="orgLink" type="button" onClick={() => openOrgModal(job.companyName, Number(id))}>
                                         <Building2 size={16} />
                                         {job.companyName}
-                                    </a>
+                                    </button>
 
                                     <span className="metaItem">
                                         <MapPin size={16} />
@@ -631,13 +553,11 @@ export default function JobDetailsPage() {
                             <div className="heroActions">
                                 <button
                                     className={`btnOutline ${isSaved ? "btnOutlineSaved" : ""}`}
-                                    onClick={() => toggleSaved(job.id)}
-                                    disabled={savingId === job.id}
+                                    onClick={handleToggleSave}
+                                    disabled={savingToggle}
                                 >
                                     <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
-                                    <span className="hideOnMobile">
-                                        {savingId === job.id ? "Saving..." : isSaved ? "Saved" : "Save"}
-                                    </span>
+                                    <span className="hideOnMobile">{isSaved ? "Saved" : "Save"}</span>
                                 </button>
 
                                 <button className="btnOutline" onClick={handleShare}>
@@ -800,39 +720,30 @@ export default function JobDetailsPage() {
 
                         </div>
 
+                       
 
                         <div className="card">
                             <h4 className="subHeader">
                                 <Clock size={18} className="blueIcon" /> Assessment Process
                             </h4>
 
-                            {hasAssessment ? (
-                                <div className="kv">
-                                    <div className="kvRow">
-                                        <span className="kvKey">Duration</span>
-                                        <span className="kvVal">{assessmentDuration}</span>
-                                    </div>
-
-                                    <div className="kvRow">
-                                        <span className="kvKey">Type</span>
-                                        <span className="kvVal">{assessmentType}</span>
-                                    </div>
-
-                                    <div className="kvRow">
-                                        <span className="kvKey">Deadline</span>
-                                        <span className="kvVal">{assessmentDeadline}</span>
-                                    </div>
+                            <div className="kv">
+                                <div className="kvRow">
+                                    <span className="kvKey">Duration</span>
+                                    <span className="kvVal">{assessmentDuration}</span>
                                 </div>
-                            ) : (
-                                <div className="kv">
-                                    <div className="kvRow">
-                                        <span className="kvKey">Status</span>
-                                        <span className="kvVal">No assessment</span>
-                                    </div>
+                                <div className="kvRow">
+                                    <span className="kvKey">Type</span>
+                                    <span className="kvVal">{assessmentType}</span>
                                 </div>
-                            )}
+                                <div className="kvRow">
+                                    <span className="kvKey">Deadline</span>
+                                    <span className="kvVal">{assessmentDeadline}</span>
+                                </div>
+
+                               
+                            </div>
                         </div>
-                       
 
                         <div className="card">
                             <SectionTitle>Q&A with the Recruiter</SectionTitle>
@@ -982,20 +893,20 @@ export default function JobDetailsPage() {
                                     onKeyDown={(e) => e.key === "Enter" && navigate(`/opportunities/${s.id}`)}
                                 >
                                     <div className="similarTop">
-                                        <SimilarCardLogo companyName={s.companyName} recruiterUserId={s.recruiterUserId} />
+                                        <div className="similarLogo">
+                                            <Building2 size={22} strokeWidth={1.8} />
+                                        </div>
                                         <button
-                                            className={`bookmarkBtn ${savedItems.includes(s.id) ? "isSaved" : ""}`}
-                                            title={savedItems.includes(s.id) ? "Unsave" : "Save"}
+                                            className="bookmarkBtn"
+                                            title="Save"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                toggleSaved(s.id);
+                                                const token = localStorage.getItem("jobify_token");
+                                                if (!token) return;
+                                                fetch(`${API_URL}/opportunities/${s.id}/save`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
                                             }}
-                                            disabled={savingId === s.id}
                                         >
-                                            <Bookmark
-                                                size={20}
-                                                fill={savedItems.includes(s.id) ? "currentColor" : "none"}
-                                            />
+                                            <Bookmark size={20} />
                                         </button>
                                     </div>
 
