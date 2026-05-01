@@ -157,23 +157,43 @@ export default function JobDetailsPage() {
             },
         });
 
+        const responseText = await res.text().catch(() => "");
+
         if (!res.ok) {
-            const t = await res.text().catch(() => "");
+            let message = responseText;
+
+            try {
+                const json = JSON.parse(responseText);
+                message =
+                    json.message ||
+                    json.title ||
+                    json.error ||
+                    responseText;
+            } catch {
+                // response is plain text, keep it
+            }
+
+            console.log("Apply error status:", res.status);
+            console.log("Apply error message:", message);
+
+            const lowerMessage = String(message).toLowerCase();
 
             if (
                 res.status === 400 ||
                 res.status === 409 ||
-                t.toLowerCase().includes("already")
+                lowerMessage.includes("already") ||
+                lowerMessage.includes("duplicate") ||
+                lowerMessage.includes("applied")
             ) {
                 alert("You already applied to this opportunity.");
                 return;
             }
 
-            alert(t || `Apply failed (${res.status})`);
+            alert(message || `Apply failed (${res.status})`);
             return;
         }
 
-        const data = await res.json();
+        const data = responseText ? JSON.parse(responseText) : {};
 
         navigate(`/apply/${data.applicationId}/review`);
     } catch (e) {
