@@ -485,14 +485,34 @@ const SkillsCard = ({ refreshKey }) => {
     }, [refreshKey]);
 
     const add = async () => {
-        if (!name.trim()) return;
+        const skillName = name.trim();
+
+        if (!skillName) return;
+
+        const alreadyExists = skills.some(
+            (s) => String(s.name).trim().toLowerCase() === skillName.toLowerCase()
+        );
+
+        if (alreadyExists) {
+            setError("Don't add duplicate skills.");
+            return;
+        }
+
         setError(null);
+
         try {
-            const added = await addSkill(name.trim());
+            const added = await addSkill(skillName);
             setSkills(prev => [...prev, added]);
             setName('');
         } catch (err) {
-            setError(err.message);
+            const status = err?.response?.status;
+
+            if (status === 409 || String(err.message || "").includes("409")) {
+                setError("Don't add duplicate skills.");
+                return;
+            }
+
+            setError(err.message || "Failed to add skill.");
         }
     };
 
@@ -746,6 +766,20 @@ const ProjectsCard = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 
+    const normalizeHttpsLink = (link) => {
+        const trimmed = String(link || "").trim();
+
+        if (!trimmed) return "";
+
+        if (trimmed.startsWith("https://")) return trimmed;
+
+        if (trimmed.startsWith("http://")) {
+            return trimmed.replace("http://", "https://");
+        }
+
+        return `https://${trimmed}`;
+    };
+
     useEffect(() => {
         getProjects().then(data => setItems(data.map(p => ({
             ...p,
@@ -759,7 +793,12 @@ const ProjectsCard = () => {
         setError(null);
         const techStack = form.tech.split(',').map(t => t.trim()).filter(Boolean);
         try {
-            const payload = { title: form.title, description: form.description, techStack, links: form.links || null };
+            const payload = {
+                title: form.title,
+                description: form.description,
+                techStack,
+                links: normalizeHttpsLink(form.links) || null
+            };
             if (editId) {
                 const updated = await updateProject(editId, payload);
                 setItems(prev => prev.map(i => i.id === editId ? {
@@ -844,7 +883,7 @@ const ProjectsCard = () => {
                                     <h4 className="pf-list-item__title">
                                         {proj.title}
                                         {proj.links && (
-                                            <a href={`https://${proj.links}`} target="_blank" rel="noopener noreferrer" className="pf-ext-link">
+                                            <a href={normalizeHttpsLink(proj.links)} target="_blank" rel="noopener noreferrer" className="pf-ext-link">
                                                 <ExternalLink size={13} />
                                             </a>
                                         )}
