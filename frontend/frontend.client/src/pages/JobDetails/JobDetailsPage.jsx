@@ -70,7 +70,7 @@ function SimilarCardLogo({ companyName, recruiterUserId }) {
         fetch(`${API_URL}/Profile/recruiter/logo?userId=${recruiterUserId}`, { headers: { Authorization: `Bearer ${token}` } })
             .then(r => r.ok ? r.blob() : null)
             .then(b => b ? setUrl(URL.createObjectURL(b)) : null)
-            .catch(() => { });
+            .catch(() => {});
     }, [recruiterUserId]);
     const letter = (companyName?.trim()?.[0] || "J").toUpperCase();
     return (
@@ -290,7 +290,7 @@ export default function JobDetailsPage() {
                     })
                         .then(r => r.ok ? r.blob() : null)
                         .then(b => b ? setLogoUrl(URL.createObjectURL(b)) : null)
-                        .catch(() => { });
+                        .catch(() => {});
                 }
             } catch (e) {
                 if (e?.name !== "AbortError") {
@@ -399,7 +399,7 @@ export default function JobDetailsPage() {
                     fetch(`${API_URL}/Profile/recruiter/logo?userId=${rid}`, { headers: { Authorization: `Bearer ${token}` } })
                         .then(r => r.ok ? r.blob() : null)
                         .then(b => b ? setLogoUrl(URL.createObjectURL(b)) : null)
-                        .catch(() => { });
+                        .catch(() => {});
                 }
             }
         } catch (e) {
@@ -832,7 +832,7 @@ export default function JobDetailsPage() {
                                 </div>
                             )}
                         </div>
-
+                       
 
                         <div className="card">
                             <SectionTitle>Q&A with the Recruiter</SectionTitle>
