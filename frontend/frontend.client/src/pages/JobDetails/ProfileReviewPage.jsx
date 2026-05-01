@@ -107,24 +107,6 @@ export default function ProfileReviewPage() {
             .filter(Boolean);
     }, [skills]);
 
-    const educationText = useMemo(() => {
-        if (!education?.length) return p.educationText || "";
-
-        return education
-            .map((e) => {
-                const uni = e?.university || "University";
-                const degree = e?.degree ? `${e.degree}` : "";
-                const major = e?.major ? ` in ${e.major}` : "";
-                const year = e?.graduationYear
-                    ? ` • Class of ${e.graduationYear}`
-                    : "";
-                const gpa = e?.gpa ? ` • GPA ${e.gpa}` : "";
-
-                return `${uni}\n${degree}${major}${year}${gpa}`.trim();
-            })
-            .join("\n\n");
-    }, [education, p.educationText]);
-
     const experienceText = useMemo(() => {
         if (!experience?.length) return p.experienceText || "";
 
@@ -215,19 +197,6 @@ export default function ProfileReviewPage() {
 
                 <section className="card">
                     <div className="cardTitle">Education & Skills</div>
-
-                    <div className="eduBlock">
-                        <div className="k">UNIVERSITY</div>
-                        <div className="vBig">{p.university || "—"}</div>
-                        <div className="muted">
-                            {p.major ? `${p.major}` : "—"}
-                            {p.gradYear || p.graduationYear
-                                ? ` • Graduated ${p.gradYear || p.graduationYear}`
-                                : ""}
-                        </div>
-                    </div>
-
-                    <div className="spacer16" />
 
                     <div className="k">SKILLS</div>
                     <div className="chips">
