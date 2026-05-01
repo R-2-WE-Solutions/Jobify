@@ -274,3 +274,119 @@
         transform: none;
         opacity: 0.75;
     }
+.dark .jobifyAssessment__qCard {
+    border-color: #334155;
+    background: #0f172a;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35);
+}
+
+.dark .jobifyAssessment__mcqPrompt,
+.dark .jobifyAssessment__qTitle,
+.dark .jobifyAssessment__testTitle,
+.dark .jobifyAssessment__stdinTitle,
+.dark .jobifyAssessment__resultName {
+    color: #f8fafc;
+}
+
+.dark .jobifyAssessment__qPrompt,
+.dark .jobifyAssessment__kv,
+.dark .jobifyAssessment__resultsHead,
+.dark .jobifyAssessment__status {
+    color: #cbd5e1;
+}
+
+.dark .jobifyAssessment__hint {
+    color: #94a3b8;
+}
+
+.dark .jobifyAssessment__mcqOpt {
+    border-color: #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.dark .jobifyAssessment__mcqOpt:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(129, 140, 248, 0.45);
+}
+
+.dark .jobifyAssessment__select,
+.dark .jobifyAssessment__codeArea {
+    border-color: #334155;
+    background: #020617;
+    color: #f8fafc;
+}
+
+.dark .jobifyAssessment__select option {
+    background: #020617;
+    color: #f8fafc;
+}
+
+.dark .jobifyAssessment__select:focus,
+.dark .jobifyAssessment__codeArea:focus {
+    border-color: rgba(129, 140, 248, 0.75);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.22);
+}
+
+.dark .jobifyAssessment__tests {
+    border-color: #475569;
+    background: #111827;
+}
+
+.dark .jobifyAssessment__testCard {
+    border-color: #334155;
+    background: #1e293b;
+}
+
+.dark .jobifyAssessment__pre {
+    color: #e2e8f0;
+    background: #020617;
+    border-color: #334155;
+}
+
+.dark .jobifyBtn {
+    border-color: #334155;
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+.dark .jobifyBtn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(129, 140, 248, 0.45);
+}
+
+.dark .jobifyBtn--primary {
+    border-color: rgba(129, 140, 248, 0.6);
+    background: rgba(99, 102, 241, 0.28);
+    color: #ffffff;
+}
+
+.dark .jobifyBtn--danger {
+    border-color: rgba(248, 113, 113, 0.55);
+    background: rgba(239, 68, 68, 0.22);
+    color: #fecaca;
+}
+
+.dark .jobifyAssessment__results {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+.dark .jobifyAssessment__resultCard {
+    border-color: #334155;
+    background: #1e293b;
+}
+
+.dark .jobifySubmitBtn {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: #ffffff !important;
+}
+
+.dark .jobifySubmitBtn:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+}
+
+.dark .jobifySubmitBtn:disabled {
+    background: #475569 !important;
+    color: #cbd5e1 !important;
+}
