@@ -546,22 +546,37 @@
         transform: translateY(-1px);
     }
 
-.orgdash-input option {
-    background: var(--surface);
-    color: var(--text);
+select.orgdash-input {
+    cursor: pointer;
+    appearance: auto;
 }
 
-.orgdash-input option:checked,
-.orgdash-input option:hover {
-    background: var(--primary);
-    color: #ffffff;
+    select.orgdash-input option {
+        background: #ffffff;
+        color: #0f172a;
+    }
+
+        select.orgdash-input option:checked {
+            background: #2563eb;
+            color: #ffffff;
+        }
+:where(.dark, .dark-mode, [data-theme="dark"]) select.orgdash-input {
+    background: #0f172a;
+    color: #f8fafc;
+    border-color: #334155;
+    color-scheme: dark;
 }
 
-.orgdash-input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
+    :where(.dark, .dark-mode, [data-theme="dark"]) select.orgdash-input option {
+        background: #0f172a;
+        color: #f8fafc;
+    }
 
-.orgdash-input {
+        :where(.dark, .dark-mode, [data-theme="dark"]) select.orgdash-input option:checked {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+:where(.dark, .dark-mode, [data-theme="dark"]) input[type="date"].orgdash-input {
     color-scheme: dark;
 }
