@@ -536,10 +536,16 @@ export default function AdminRecruiters() {
                     })}
                 </div>
 
-                <div className="admin-recruiters-table-wrap">
+                <div
+                    className="admin-recruiters-table-wrap"
+                    style={{
+                        backgroundColor: colors.cardBg,
+                        borderColor: colors.border,
+                    }}
+                >
                     <table className="admin-recruiters-table">
                         <thead>
-                            <tr style={{ backgroundColor: "#f9fafb" }}>
+                            <tr style={{ backgroundColor: colors.tableHead }}>
                                 <th
                                     style={{
                                         padding: "12px 16px",
@@ -632,8 +638,8 @@ export default function AdminRecruiters() {
                                         onMouseLeave={() => setHoveredRow(null)}
                                         style={{
                                             backgroundColor:
-                                                hoveredRow === recruiter.id ? "#f9fafb" : "white",
-                                            transition: "background-color 0.2s",
+                                                hoveredRow === recruiter.id ? colors.hover : colors.cardBg,
+                                            color: colors.text,
                                         }}
                                     >
                                         <td
