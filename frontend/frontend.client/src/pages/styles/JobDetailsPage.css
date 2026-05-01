@@ -95,9 +95,9 @@ body {
     font-size: 14px;
 }
 
-.navLink:hover {
-    color: var(--blue);
-}
+    .navLink:hover {
+        color: var(--blue);
+    }
 
 .navLinkActive {
     color: var(--text);
@@ -209,9 +209,9 @@ body {
     text-decoration: none;
 }
 
-.orgLink:hover {
-    text-decoration: underline;
-}
+    .orgLink:hover {
+        text-decoration: underline;
+    }
 
 .remotePill {
     display: inline-flex;
@@ -281,17 +281,17 @@ body {
     cursor: pointer;
 }
 
-.btnPrimary:hover {
-    background: var(--blue2);
-}
+    .btnPrimary:hover {
+        background: var(--blue2);
+    }
 
-.btnPrimary:active {
-    transform: scale(0.99);
-}
+    .btnPrimary:active {
+        transform: scale(0.99);
+    }
 
-.btnPrimary.full {
-    width: 100%;
-}
+    .btnPrimary.full {
+        width: 100%;
+    }
 
 .btnOutline {
     background: var(--card);
@@ -307,14 +307,14 @@ body {
     cursor: pointer;
 }
 
-.btnOutline:hover {
-    background: var(--surface-2);
-}
+    .btnOutline:hover {
+        background: var(--surface-2);
+    }
 
-.btnOutline.full {
-    width: 100%;
-    margin-top: 10px;
-}
+    .btnOutline.full {
+        width: 100%;
+        margin-top: 10px;
+    }
 
 .btnOutlineSaved {
     background: rgba(59, 130, 246, 0.14);
@@ -332,10 +332,10 @@ body {
     cursor: pointer;
 }
 
-.btnIcon:hover {
-    background: var(--surface-2);
-    color: #ef4444;
-}
+    .btnIcon:hover {
+        background: var(--surface-2);
+        color: #ef4444;
+    }
 
 .heroRight {
     width: 340px;
@@ -523,13 +523,13 @@ body {
     gap: 8px;
 }
 
-.qaUser::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(59,130,246,0.9);
-}
+    .qaUser::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(59,130,246,0.9);
+    }
 
 .qaQuestion {
     font-size: 15px;
@@ -571,11 +571,11 @@ body {
     transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
 }
 
-.btnDashed:hover {
-    background: rgba(59,130,246,0.10);
-    border-color: rgba(59,130,246,0.65);
-    transform: translateY(-1px);
-}
+    .btnDashed:hover {
+        background: rgba(59,130,246,0.10);
+        border-color: rgba(59,130,246,0.65);
+        transform: translateY(-1px);
+    }
 
 .twoCol {
     display: grid;
@@ -773,9 +773,9 @@ body {
     text-decoration: none;
 }
 
-.link:hover {
-    text-decoration: underline;
-}
+    .link:hover {
+        text-decoration: underline;
+    }
 
 .ring {
     width: 140px;
@@ -871,9 +871,9 @@ body {
     align-items: center;
 }
 
-.similarLink:hover {
-    text-decoration: underline;
-}
+    .similarLink:hover {
+        text-decoration: underline;
+    }
 
 .similarGrid {
     display: grid;
@@ -891,11 +891,11 @@ body {
     color: var(--text);
 }
 
-.similarCard:hover {
-    border-color: rgba(59, 130, 246, 0.35);
-    box-shadow: var(--shadow);
-    transform: translateY(-2px);
-}
+    .similarCard:hover {
+        border-color: rgba(59, 130, 246, 0.35);
+        box-shadow: var(--shadow);
+        transform: translateY(-2px);
+    }
 
 .similarTop {
     display: flex;
@@ -917,12 +917,12 @@ body {
     overflow: hidden;
 }
 
-.similarLogo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 16px;
-}
+    .similarLogo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 16px;
+    }
 
 .bookmarkBtn {
     border: 0;
@@ -931,9 +931,9 @@ body {
     cursor: pointer;
 }
 
-.bookmarkBtn:hover {
-    color: var(--blue);
-}
+    .bookmarkBtn:hover {
+        color: var(--blue);
+    }
 
 .similarJobTitle {
     margin: 0 0 6px;
@@ -984,17 +984,17 @@ body {
     overflow: hidden;
 }
 
-.companyLogo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 22px;
-}
+    .companyLogo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 22px;
+    }
 
-.companyLogo:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 40px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
-}
+    .companyLogo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
 
 .jobMatchBadge {
     margin-top: 10px;
@@ -1158,12 +1158,12 @@ body {
 
 
 .fullWidthMap {
-    grid-column: 1 / -1; 
+    grid-column: 1 / -1;
 }
 
 .mapFrame {
     width: 100%;
-    height: 300px; 
+    height: 300px;
     border: 0;
     border-radius: 16px;
 }
@@ -1199,24 +1199,25 @@ body {
     overflow: hidden;
 }
 
-.similarLogo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 16px;
-}
+    .similarLogo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 16px;
+    }
+
 .jobMatchBadge {
-  margin-top: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 14px;
-  background: rgba(59, 130, 246, 0.14);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.28);
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    background: rgba(59, 130, 246, 0.14);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.28);
 }
 
 .remoteMapPlaceholder {
