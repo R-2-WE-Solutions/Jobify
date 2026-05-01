@@ -143,64 +143,70 @@ export default function JobDetailsPage() {
     };
 
     const handleApply = async () => {
-    const token = localStorage.getItem("jobify_token");
-    if (!token) {
-        navigate("/login");
-        return;
-    }
+        const token = localStorage.getItem("jobify_token");
 
-    try {
-        const res = await fetch(`${API_URL}/opportunities/${id}/apply`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        const responseText = await res.text().catch(() => "");
-
-        if (!res.ok) {
-            let message = responseText;
-
-            try {
-                const json = JSON.parse(responseText);
-                message =
-                    json.message ||
-                    json.title ||
-                    json.error ||
-                    responseText;
-            } catch {
-                // response is plain text, keep it
-            }
-
-            console.log("Apply error status:", res.status);
-            console.log("Apply error message:", message);
-
-            const lowerMessage = String(message).toLowerCase();
-
-            if (
-                res.status === 400 ||
-                res.status === 409 ||
-                lowerMessage.includes("already") ||
-                lowerMessage.includes("duplicate") ||
-                lowerMessage.includes("applied")
-            ) {
-                alert("You already applied to this opportunity.");
-                return;
-            }
-
-            alert(message || `Apply failed (${res.status})`);
+        if (!token) {
+            navigate("/login");
             return;
         }
 
-        const data = responseText ? JSON.parse(responseText) : {};
+        if (alreadyApplied) {
+            setApplyErr("You already applied to this opportunity.");
+            return;
+        }
 
-        navigate(`/apply/${data.applicationId}/review`);
-    } catch (e) {
-        console.error(e);
-        alert("Failed to apply. Try again.");
-    }
-};
+        try {
+            setApplyErr("");
+            setApplyLoading(true);
+
+            const res = await fetch(`${API_URL}/opportunities/${id}/apply`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const text = await res.text().catch(() => "");
+
+            if (!res.ok) {
+                const lower = text.toLowerCase();
+
+                if (
+                    res.status === 400 ||
+                    res.status === 409 ||
+                    lower.includes("already") ||
+                    lower.includes("applied")
+                ) {
+                    setAlreadyApplied(true);
+                    setApplyErr("You already applied to this opportunity.");
+                    return;
+                }
+
+                setApplyErr(text || `Apply failed (${res.status})`);
+                return;
+            }
+
+            let data = {};
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch {
+                data = {};
+            }
+
+            setAlreadyApplied(true);
+
+            if (data.applicationId) {
+                navigate(`/apply/${data.applicationId}/review`);
+            } else {
+                setApplyErr("Application created, but no application ID was returned.");
+            }
+        } catch (e) {
+            console.error(e);
+            setApplyErr("Failed to apply. Try again.");
+        } finally {
+            setApplyLoading(false);
+        }
+    };
 
 
     const [isSaved, setIsSaved] = useState(false);
@@ -232,6 +238,11 @@ export default function JobDetailsPage() {
 
     const [shareOk, setShareOk] = useState("");
     const [shareErr, setShareErr] = useState("");
+
+    const [applyLoading, setApplyLoading] = useState(false);
+    const [applyErr, setApplyErr] = useState("");
+    const [alreadyApplied, setAlreadyApplied] = useState(false);
+
 
 
     useEffect(() => {
@@ -271,6 +282,45 @@ export default function JobDetailsPage() {
         fetchSavedIds();
         return () => controller.abort();
     }, []);
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const checkAlreadyApplied = async () => {
+            try {
+                const token = localStorage.getItem("jobify_token");
+                if (!token || !id) return;
+
+                const res = await fetch(`${API_URL}/application/me`, {
+                    signal: controller.signal,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) {
+                    console.error("Failed to check applications:", res.status);
+                    return;
+                }
+
+                const applications = await res.json();
+
+                const exists = Array.isArray(applications) && applications.some((a) => {
+                    return Number(a.opportunityId) === Number(id);
+                });
+
+                setAlreadyApplied(exists);
+            } catch (err) {
+                if (err?.name !== "AbortError") {
+                    console.error("Failed to check existing application:", err);
+                }
+            }
+        };
+
+        checkAlreadyApplied();
+
+        return () => controller.abort();
+    }, [id]);
 
 
     useEffect(() => {
@@ -651,6 +701,11 @@ export default function JobDetailsPage() {
                             <button className="btnPrimary" onClick={handleApply}>
                                 Apply Now <ArrowRight size={18} />
                             </button>
+                            {applyErr ? (
+                                <div style={{ marginTop: 10, color: "#ef4444", fontSize: 14, fontWeight: 600 }}>
+                                    {applyErr}
+                                </div>
+                            ) : null}
 
                             <div className="heroActions">
                                 <button
