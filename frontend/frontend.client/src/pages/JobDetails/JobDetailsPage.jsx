@@ -150,8 +150,13 @@ export default function JobDetailsPage() {
             return;
         }
 
-        if (alreadyApplied) {
+        if (alreadyApplied && !canReapplyAfterWithdraw) {
             setApplyErr("You already applied to this opportunity.");
+            return;
+        }
+
+        if (isWithdrawnApplication && hasAssessment) {
+            setApplyErr("You cannot reapply after withdrawing because this opportunity has an assessment.");
             return;
         }
 
@@ -242,6 +247,8 @@ export default function JobDetailsPage() {
     const [applyLoading, setApplyLoading] = useState(false);
     const [applyErr, setApplyErr] = useState("");
     const [alreadyApplied, setAlreadyApplied] = useState(false);
+    const [existingApplicationStatus, setExistingApplicationStatus] = useState("");
+
 
 
 
@@ -305,11 +312,15 @@ export default function JobDetailsPage() {
 
                 const applications = await res.json();
 
-                const exists = Array.isArray(applications) && applications.some((a) => {
-                    return Number(a.opportunityId) === Number(id);
-                });
+                const existingApplication = Array.isArray(applications)
+                    ? applications.find((a) => Number(a.opportunityId) === Number(id))
+                    : null;
 
-                setAlreadyApplied(exists);
+                const status = existingApplication?.status || existingApplication?.applicationStatus || "";
+
+                setExistingApplicationStatus(status);
+
+                setAlreadyApplied(!!existingApplication && status.toLowerCase() !== "withdrawn");
             } catch (err) {
                 if (err?.name !== "AbortError") {
                     console.error("Failed to check existing application:", err);
@@ -619,6 +630,12 @@ export default function JobDetailsPage() {
 
     const hasAssessment = mcqCount > 0 || challengeCount > 0;
 
+    const isWithdrawnApplication =
+    existingApplicationStatus.toLowerCase() === "withdrawn";
+
+    const canReapplyAfterWithdraw =
+        isWithdrawnApplication && !hasAssessment;
+
     const timeLimitMinutes =
         typeof assessment?.timeLimitMinutes === "number" && assessment.timeLimitMinutes > 0
             ? assessment.timeLimitMinutes
@@ -699,7 +716,7 @@ export default function JobDetailsPage() {
 
                         <div className="heroRight">
                             <button className="btnPrimary" onClick={handleApply}>
-                                Apply Now <ArrowRight size={18} />
+                                {canReapplyAfterWithdraw ? "Reapply" : "Apply Now"} <ArrowRight size={18} />
                             </button>
                             {applyErr ? (
                                 <div style={{ marginTop: 10, color: "#ef4444", fontSize: 14, fontWeight: 600 }}>
@@ -874,7 +891,7 @@ export default function JobDetailsPage() {
                             </div>
 
                             <button className="btnPrimary full" onClick={handleApply}>
-                                Apply Now <ArrowRight size={18} />
+                                {canReapplyAfterWithdraw ? "Reapply" : "Apply Now"} <ArrowRight size={18} />
                             </button>
 
                         </div>
